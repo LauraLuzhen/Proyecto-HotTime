@@ -1,5 +1,5 @@
 from enum import Enum
 
-class disponibility_type(str, Enum):
+class DisponibilityType(str, Enum):
     FULL = 'full'
     OTHER = 'other'
