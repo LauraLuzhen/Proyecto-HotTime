@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create User</title>
+</head>
+<body>
+    <h2>Create App User</h2>
+
+    <form action="/create" method="post">
+        <label>Name:</label><br>
+        <input type="text" name="name" required><br><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="email" required><br><br>
+
+        <label>Password:</label><br>
+        <input type="password" name="password" required><br><br>
+
+        <label>Country Code:</label><br>
+        <input type="text" name="country_code" value="+34"><br><br>
+
+        <label>Phone:</label><br>
+        <input type="text" name="phone"><br><br>
+
+        <label>Role:</label><br>
+        <select name="role">
+            <option value="employee">Employee</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+        </select><br><br>
+
+        <label>Disponibility:</label><br>
+        <select name="disponibility">
+            <option value="full">Full</option>
+            <option value="other">Other</option>
+        </select><br><br>
+
+        <label>Disponibility Text (if other):</label><br>
+        <input type="text" name="disponibility_text"><br><br>
+
+        <button type="submit">Crear Usuario</button>
+    </form>
+</body>
+</html>
