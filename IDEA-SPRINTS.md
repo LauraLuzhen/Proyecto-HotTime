@@ -33,26 +33,40 @@ Salario y pluses (nocturnidades, festivos)
 Nómina
 
 ## 2. Sprints
-### Sprint 1 (16 abril - 19 abril)
+### TODO: Sprint 1
+- General: estructura base ✅
+- Back: estructura base ✅
+- Back: bd postgres + docker ✅
+- Back: prisma + schema ✅
+- Back: seed datos iniciales ✅
+- Back: token hash passwords
+- Back: middleware JWT auth (protección de rutas)
+- Back: modules crud user, crud category
+- Back: app.ts mejorado
+- Front: login page
+- Front: dashboard page
+- Front: logout (are your sure? warning)
+- Front: myuser page
+- General: permisos por roles
+- Front: contacts page by role
 
+### TODO: Sprint 2
+- Comunicado page
+- Horario page 
 
-BD - user, category, organization ✅
-BD - seed (default), jwt, auth, middleware auth
-Backend - crud user, category 
-Backend - app.ts mejorado
-Frontend - login, dashboard, myuser, contacts,  
+### TODO: Sprint 3
+- Fichaje page
+- QR page
 
-### Sprint 2 (20 abril - 26 abril)
-Comunicado
-Comenzar horario - fichaje
+### TODO: Sprint 4
+- Aplicar Fichaje a Comunicado
+- Mejorar QR
 
-### Sprint 3 (27 abril - 3 mayo)
-Horario y fichaje "QR"
+### TODO: Sprint 5
+- Mejoras de la aplicación / visual
+- Cálculo de horas page (+)
 
-### Sprint 4 (4 mayo - 10 mayo)
-Aplicarlo a comunicado
-Aplicar QR
-
-### Sprint 5 (11 mayo - 17 mayo)
-
-### Sprint 6 (18 mayo - 24 mayo)
+### TODO: Sprint 6
+- Contrato page (+)
+- Salario + pluses (nocturnidades, festivos, etc) (+)
+- Nómina (+)
