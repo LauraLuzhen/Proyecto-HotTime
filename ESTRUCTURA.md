@@ -17,15 +17,16 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
     tsconfig.base.json
 
 ## 2. Puertos
+    BD 5432
     Backend 3001
     Frontend 5173
-    BD 5432
 
 ## 3. Instalación
     corepack enable
     corepack prepare pnpm@latest --activate
-        prueba: pnpm install
+    docker compose up -d
     backend .env listo
+        prueba: pnpm install
         prueba: pnpm dev
     
 
@@ -36,3 +37,5 @@ Back: estructura base
 Back: bd postgres + docker
 Back: prisma + schema
 Back: seed datos iniciales
+Back: token hash passwords
+Back: middleware JWT (protección de rutas)

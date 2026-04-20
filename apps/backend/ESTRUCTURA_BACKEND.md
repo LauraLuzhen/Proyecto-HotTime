@@ -1,11 +1,11 @@
 # ESTRUCTURA DEL BACKEND
 
-# PUERTOS (cntr + shift + v)
-Backend 3001
-BD 5432
+## 1. Puertos (cntr + shift + v)
+    BD 5432
+    Backend 3001
 
 
-# ESTRUCTURA
+# 2. ESTRUCTURA
 ## De carpetas
 /backend
     /src
@@ -26,18 +26,13 @@ BD 5432
     repository.ts  → Prisma 
     schemas.ts     → Zod
 
+# 3. BD Postgres y Prisma
+## Información general
+    🐘 Postgres 16 
+    👤 usuario: laura
+    🔑 password: luzhen
+    📦 database: hottime_db
 
-# Dependencias
-fastify - framework para el servidor se encarga de recibir peticiones HTTP y enviar respuestas
-@fastify/cors - plugin de fastify gestiona CORS
-@prisma/client - permite utilizar código de BD en los archivos .ts
-prisma - permite comandos de administración
-zod - librería de validación de esquemas
-dotenv - lee los archivos .env
-bcrypt - librería para la encriptación de contraseñas
-
-
-# Desarrollo BD
 ## Relación E-R
 enum Role
 
