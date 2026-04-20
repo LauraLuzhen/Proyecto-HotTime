@@ -1,13 +1,12 @@
 # ESTRUCTURA DEL BACKEND
 
-## 1. Puertos (cntr + shift + v)
-    BD 5432
-    Backend 3001
-
-
-# 2. ESTRUCTURA
-## De carpetas
+## 1. Estructura
+### De carpetas
 /backend
+    /prisma
+        /migrations
+        schema.prisma
+        seed.ts
     /src
         /common
         /config
@@ -17,23 +16,28 @@
         app.ts
         server.ts
     .env
+    
     package.json
     tsconfig.json
 
-## De carpetas para el /backend/modules
+### De carpetas para el /backend/modules
     routes.ts      → HTTP (Fastify)
     service.ts     → lógica
     repository.ts  → Prisma 
     schemas.ts     → Zod
 
-# 3. BD Postgres y Prisma
-## Información general
+## 2. Puertos (cntr + shift + v)
+    BD 5432
+    Backend 3001
+
+## 3. BD Postgres y Prisma
+### Información general
     🐘 Postgres 16 
     👤 usuario: laura
     🔑 password: luzhen
     📦 database: hottime_db
 
-## Relación E-R
+### Relación E-R
 enum Role
 
 🟣 Organization (centro)
@@ -47,7 +51,7 @@ enum Role
     puede tener category (opcional)
     tiene role fijo
 
-## Datos iniciales (seed.ts)
+### Datos iniciales (seed.ts)
 Organization
     Muerde la Pasta
     Nervión

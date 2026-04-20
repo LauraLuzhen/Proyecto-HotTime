@@ -15,6 +15,10 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
     /packages
     package.json
     tsconfig.base.json
+    .env
+    docker-compose.yml
+    pnpm-lock.yaml
+    pnpm-workspace.yaml
 
 ## 2. Puertos
     BD 5432
@@ -28,6 +32,7 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
     backend .env listo
         prueba: pnpm install
         prueba: pnpm dev
+    npx prisma generate
     npx prisma db seed
         visualización BD: npx prisma studio
         formatear schema: npx prisma format
