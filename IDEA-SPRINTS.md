@@ -39,8 +39,9 @@ Nómina
 - Back: bd postgres + docker ✅
 - Back: prisma + schema ✅
 - Back: seed datos iniciales ✅
-- Back: token hash passwords
-- Back: middleware JWT auth (protección de rutas)
+- Back: hash passwords
+- Back: login api
+- Back: middleware JWT (protección de rutas)
 - Back: modules crud user, crud category
 - Back: app.ts mejorado
 - Front: login page

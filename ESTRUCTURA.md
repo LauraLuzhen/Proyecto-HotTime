@@ -33,6 +33,7 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
         prueba: pnpm install
         prueba: pnpm dev
     npx prisma generate
+    npx prisma db push
     npx prisma db seed
         visualización BD: npx prisma studio
         formatear schema: npx prisma format
