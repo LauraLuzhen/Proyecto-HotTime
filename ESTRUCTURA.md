@@ -32,10 +32,10 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
 
 
 # TODO
-General: estructura base 
-Back: estructura base
-Back: bd postgres + docker
-Back: prisma + schema
+General: estructura base ✅
+Back: estructura base ✅
+Back: bd postgres + docker ✅
+Back: prisma + schema ✅
 Back: seed datos iniciales
 Back: token hash passwords
 Back: middleware JWT (protección de rutas)
