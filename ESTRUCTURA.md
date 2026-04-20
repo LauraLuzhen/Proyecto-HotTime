@@ -9,6 +9,9 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
             package.json
             tsconfig.json
         /frontend
+            .env
+            package.json
+            tsconfig.json
     /packages
     package.json
     tsconfig.base.json
@@ -21,8 +24,15 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
 ## 3. Instalación
     corepack enable
     corepack prepare pnpm@latest --activate
+        prueba: pnpm install
+    backend .env listo
+        prueba: pnpm dev
+    
 
 
 # TODO
-General: estructura base
+General: estructura base 
 Back: estructura base
+Back: bd postgres + docker
+Back: prisma + schema
+Back: seed datos iniciales
