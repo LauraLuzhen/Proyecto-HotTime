@@ -4,51 +4,44 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-}
-
-enum Role {
-  ADMIN
-  MANAGER
-  EMPLOYEE
+  url      = env("DATABASE_URL")
 }
 
 model Organization {
-  id         Int         @id @default(autoincrement())
-  name       String      @db.VarChar(100)
-
-  users      User[]
+  id         Int        @id @default(autoincrement())
+  name       String     @db.VarChar(100)
   categories Category[]
+  users      User[]
 }
 
 model Category {
-  id             Int           @id @default(autoincrement())
-  name           String        @db.VarChar(100)
-
+  id             Int          @id @default(autoincrement())
+  name           String       @db.VarChar(100)
   organizationId Int
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-
+  organization   Organization @relation(fields: [organizationId], references: [id])
   users          User[]
 
   @@unique([name, organizationId])
 }
 
 model User {
-  id             Int        @id @default(autoincrement())
-  fullName       String     @db.VarChar(100)
-  email          String     @unique @db.VarChar(150)
+  id             Int          @id @default(autoincrement())
+  fullName       String       @db.VarChar(100)
+  email          String       @unique @db.VarChar(150)
   password       String
-
   role           Role
-
   birthDate      DateTime
   initDate       DateTime
-
-  phone          String     @db.VarChar(20)
-  imgProfile     String?    @db.VarChar(255)
-
+  phone          String       @db.VarChar(20)
+  imgProfile     String?      @db.VarChar(255)
   organizationId Int
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
   categoryId     Int?
   category       Category?    @relation(fields: [categoryId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
 }
