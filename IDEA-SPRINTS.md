@@ -41,14 +41,15 @@ Nómina
 - Back: seed datos iniciales ✅
 - Back: hash passwords ✅
 - Back: login api ✅
-- Back: middleware JWT (protección de rutas)
+- Back: middleware JWT (protección de rutas) ✅
+- Back: permisos por roles
 - Back: modules crud user, crud category
 - Back: app.ts mejorado
 - Front: login page
 - Front: dashboard page
 - Front: logout (are your sure? warning)
 - Front: myuser page
-- General: permisos por roles
+- Front: permisos por roles
 - Front: contacts page by role
 
 ### TODO: Sprint 2

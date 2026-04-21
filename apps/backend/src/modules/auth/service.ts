@@ -1,6 +1,7 @@
 import * as userRepo from "../user/repository";
 import { comparePassword } from "../../lib/hash";
 import { LoginInput } from "./schemas";
+import { signToken } from "../../lib/jwt";
 
 export async function login(data: LoginInput) {
   const user = await userRepo.findByEmail(data.email);
@@ -22,10 +23,16 @@ export async function login(data: LoginInput) {
 
   // 🚀 devolver usuario sin password
   return {
-    id: user.id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    organizationId: user.organizationId,
+    token: signToken({
+      id: user.id,
+      role: user.role,
+      organizationId: user.organizationId,
+    }),
+    user: {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+    },
   };
 }

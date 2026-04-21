@@ -1,9 +1,14 @@
 import { FastifyInstance } from "fastify";
 import * as service from "./service";
 import { createUserSchema } from "./schemas";
+import { authPlugin } from "../../plugins/auth";
+
 
 export async function userRoutes(app: FastifyInstance) {
-  app.get("/", async () => {
+  // 🔐 TODAS protegidas
+  app.register(authPlugin);
+
+  app.get("/", async (req) => {
     return service.getUsers();
   });
 
