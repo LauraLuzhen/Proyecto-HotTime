@@ -32,7 +32,7 @@ Contrato
 Salario y pluses (nocturnidades, festivos)
 Nómina
 
-## 2. Sprints
+## 2. Sprints 🔴🟡🟢
 ### TODO: Sprint 1
 - General: estructura base ✅
 - Back: estructura base ✅
@@ -42,7 +42,7 @@ Nómina
 - Back: hash passwords ✅
 - Back: login api ✅
 - Back: middleware JWT (protección de rutas) ✅
-- Back: permisos por roles
+- Back: permisos por roles ✅
 - Back: modules crud user, crud category
 - Back: app.ts mejorado
 - Front: login page

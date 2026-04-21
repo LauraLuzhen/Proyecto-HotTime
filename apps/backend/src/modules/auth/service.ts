@@ -1,38 +1,33 @@
-import * as userRepo from "../user/repository";
 import { comparePassword } from "../../lib/hash";
-import { LoginInput } from "./schemas";
 import { signToken } from "../../lib/jwt";
+import * as userRepo from "../user/repository";
+import { LoginInput } from "./schemas";
 
 export async function login(data: LoginInput) {
   const user = await userRepo.findByEmail(data.email);
 
-  // 🔍 validar existencia
+  // Validar existencia
   if (!user) {
-    throw new Error("Invalid credentials");
+    throw new Error("🟡Invalid credentials");
   }
 
-  // 🔐 comparar password
+  // Comparar password
   const isValid = await comparePassword(
     data.password,
     user.password
   );
 
   if (!isValid) {
-    throw new Error("Invalid credentials");
+    throw new Error("🟡Invalid credentials");
   }
 
-  // 🚀 devolver usuario sin password
+  // Devolver usuario
   return {
     token: signToken({
       id: user.id,
       role: user.role,
       organizationId: user.organizationId,
     }),
-    user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-    },
+    user
   };
 }

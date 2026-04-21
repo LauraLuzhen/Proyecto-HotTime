@@ -4,45 +4,37 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("🟢Seeding database...");
   
+  // Contraseña común de todos los usuarios
   const hash = await bcrypt.hash("123456", 10);
 
-  // =========================
-  // CLEAN (opcional pero recomendado en dev)
-  // =========================
+  // Clean BD
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();
   await prisma.organization.deleteMany();
 
-  // =========================
-  // ORGANIZATIONS
-  // =========================
+  // Table Organizations
   const muerde = await prisma.organization.create({
     data: { name: "Muerde la Pasta" },
   });
-
   const nervion = await prisma.organization.create({
     data: { name: "Nervión" },
   });
 
-  // =========================
-  // CATEGORIES (solo Muerde la Pasta)
-  // =========================
+  // Table Categories
   const cocina = await prisma.category.create({
     data: {
       name: "cocina",
       organizationId: muerde.id,
     },
   });
-
   const sala = await prisma.category.create({
     data: {
       name: "sala",
       organizationId: muerde.id,
     },
   });
-
   const office = await prisma.category.create({
     data: {
       name: "office",
@@ -50,9 +42,7 @@ async function main() {
     },
   });
 
-  // =========================
-  // USERS - MUERDE LA PASTA (4 USERS)
-  // =========================
+  // Table Users
   await prisma.user.createMany({
     data: [
       {
@@ -102,9 +92,6 @@ async function main() {
     ],
   });
 
-  // =========================
-  // USERS - NERVIÓN (1 ADMIN)
-  // =========================
   await prisma.user.create({
     data: {
       fullName: "Admin Nervión",
@@ -119,12 +106,12 @@ async function main() {
     },
   });
 
-  console.log("✅ Seed completed successfully");
+  console.log("🟢Seed completed successfully");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed error:", e);
+    console.error("🔴Seed error:", e);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+
 import { verifyToken } from "../lib/jwt";
 
 export async function authPlugin(app: FastifyInstance) {
@@ -9,7 +10,7 @@ export async function authenticate(req: any, reply: any) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return reply.status(401).send({ message: "No token" });
+    return reply.status(401).send({ message: "🔴No token" });
   }
 
   try {
@@ -18,6 +19,6 @@ export async function authenticate(req: any, reply: any) {
 
     req.user = decoded;
   } catch {
-    return reply.status(401).send({ message: "Invalid token" });
+    return reply.status(401).send({ message: "🟡Invalid token" });
   }
 }

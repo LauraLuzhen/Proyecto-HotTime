@@ -11,8 +11,15 @@
         /common
         /config
         /lib
+            hash.ts
+            jwt.ts
         /modules
+            /auth
+            /user
+            /category
         /plugins
+            auth.ts
+            roles.ts
         app.ts
         server.ts
     .env

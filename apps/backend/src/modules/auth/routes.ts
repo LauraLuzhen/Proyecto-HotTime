@@ -1,10 +1,11 @@
 import { FastifyInstance } from "fastify";
+
 import { loginSchema } from "./schemas";
 import * as service from "./service";
 
 export async function authRoutes(app: FastifyInstance) {
   app.post("/login", async (req, reply) => {
-    console.log("🔥 LOGIN HIT");
+    console.log("🟢Login HIT");
 
     const parsed = loginSchema.safeParse(req.body);
 
@@ -17,7 +18,7 @@ export async function authRoutes(app: FastifyInstance) {
       return result;
     } catch (err) {
       return reply.status(401).send({
-        message: "Invalid credentials",
+        message: "🟡Invalid credentials",
       });
     }
   });

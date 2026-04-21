@@ -5,7 +5,6 @@ dotenv.config();
 
 const start = async () => {
   const app = await buildApp();
-
   const port = Number(process.env.PORT_BACKEND) || 3001;
 
   try {
