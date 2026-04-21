@@ -1,29 +1,23 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { FastifyInstance } from "fastify";
 import { verifyToken } from "../lib/jwt";
-
-declare module "fastify" {
-  interface FastifyRequest {
-    user?: any;
-  }
-}
 
 export async function authPlugin(app: FastifyInstance) {
   app.decorateRequest("user", null);
+}
 
-  app.addHook("preHandler", async (request: FastifyRequest, reply) => {
-    const authHeader = request.headers.authorization;
+export async function authenticate(req: any, reply: any) {
+  const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-      return reply.status(401).send({ message: "No token provided" });
-    }
+  if (!authHeader) {
+    return reply.status(401).send({ message: "No token" });
+  }
 
+  try {
     const token = authHeader.replace("Bearer ", "");
+    const decoded = verifyToken(token);
 
-    try {
-      const decoded = verifyToken(token);
-      request.user = decoded;
-    } catch (err) {
-      return reply.status(401).send({ message: "Invalid token" });
-    }
-  });
+    req.user = decoded;
+  } catch {
+    return reply.status(401).send({ message: "Invalid token" });
+  }
 }

@@ -1,24 +1,33 @@
 import { FastifyInstance } from "fastify";
 import * as service from "./service";
-import { createUserSchema } from "./schemas";
-import { authPlugin } from "../../plugins/auth";
-
+import { authenticate } from "../../plugins/auth";
+import { requireRole } from "../../plugins/roles";
 
 export async function userRoutes(app: FastifyInstance) {
-  // 🔐 TODAS protegidas
-  app.register(authPlugin);
-
-  app.get("/", async (req) => {
-    return service.getUsers();
-  });
-
-  app.post("/", async (req, reply) => {
-    const parsed = createUserSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return reply.status(400).send(parsed.error);
+  
+  app.get(
+    "/",
+    {
+      preHandler: [
+        authenticate,
+        requireRole(["ADMIN", "MANAGER"]),
+      ],
+    },
+    async (req) => {
+      return service.getUsers();
     }
+  );
 
-    return service.createUser(parsed.data);
-  });
+  app.post(
+    "/",
+    {
+      preHandler: [
+        authenticate,
+        requireRole(["ADMIN"]),
+      ],
+    },
+    async (req) => {
+      return service.createUser(req.body);
+    }
+  );
 }
