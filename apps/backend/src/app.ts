@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 
 import { userRoutes } from "./modules/user/routes";
+import { authRoutes } from "./modules/auth/routes";
 
 export const buildApp = async () => {
   const app = Fastify({ logger: true });
@@ -11,6 +12,7 @@ export const buildApp = async () => {
   });
 
   app.register(userRoutes, { prefix: "/users" });
+  app.register(authRoutes, { prefix: "/auth" });
 
   return app;
 };

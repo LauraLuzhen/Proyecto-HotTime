@@ -9,3 +9,9 @@ export function create(data: any) {
 export function findAll() {
   return prisma.user.findMany();
 }
+
+export function findByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: { email },
+  });
+}

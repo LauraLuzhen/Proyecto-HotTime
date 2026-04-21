@@ -31,9 +31,11 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
     docker compose up -d
     backend .env listo
         prueba: pnpm install
-        prueba: pnpm dev
+    npx prisma migrate reset
     npx prisma generate
+    npx prisma db push --force-reset
     npx prisma db push
     npx prisma db seed
+        prueba: pnpm dev
         visualización BD: npx prisma studio
         formatear schema: npx prisma format
