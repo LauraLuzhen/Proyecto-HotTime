@@ -6,8 +6,26 @@ export function create(data: any) {
   return prisma.user.create({ data });
 }
 
-export function findAll() {
-  return prisma.user.findMany();
+export function findAll(filters: any) {
+  return prisma.user.findMany({
+    where: {
+      // Filtro de texto parcial (ignora mayúsculas/minúsculas con mode: 'insensitive')
+      fullName: filters.fullName 
+        ? { contains: filters.fullName, mode: 'insensitive' } 
+        : undefined,
+
+      // Filtro exacto
+      role: filters.role || undefined,
+
+      // Filtros numéricos
+      categoryId: filters.categoryId ? Number(filters.categoryId) : undefined,
+      organizationId: filters.organizationId ? Number(filters.organizationId) : undefined,
+    },
+    include: {
+      category: true,
+      organization: true,
+    },
+  });
 }
 
 export function findByEmail(email: string) {
@@ -45,5 +63,12 @@ export function findByResetToken(token: string) {
         gte: new Date(), // no expirado
       },
     },
+  });
+}
+
+export function updateUser(userId: number, data: any) {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
   });
 }

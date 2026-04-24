@@ -45,7 +45,7 @@ Nómina
 - Back: permisos por roles ✅
 - Back: modules crud user 
     - LogIn, LogOut, Reset password ✅
-    - Crud user to me
+    - Crud user to me ✅
     - Crud user to users
 - Back: modules crud category
 - Back: app.ts mejorado
