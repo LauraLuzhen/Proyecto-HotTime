@@ -36,6 +36,8 @@ model User {
   imgProfile     String?      @db.VarChar(255)
   organizationId Int
   categoryId     Int?
+  resetToken     String?      @unique @db.VarChar(255)
+  resetTokenExp  DateTime?
   category       Category?    @relation(fields: [categoryId], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id])
 }

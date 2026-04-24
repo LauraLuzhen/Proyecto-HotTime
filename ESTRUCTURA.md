@@ -32,6 +32,7 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
     backend .env listo
         prueba: pnpm install
     npx prisma migrate reset
+    npx prisma migrate dev
     npx prisma generate
     npx prisma db push --force-reset
     npx prisma db push

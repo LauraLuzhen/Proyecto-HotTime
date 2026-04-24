@@ -43,7 +43,11 @@ Nómina
 - Back: login api ✅
 - Back: middleware JWT (protección de rutas) ✅
 - Back: permisos por roles ✅
-- Back: modules crud user, crud category
+- Back: modules crud user 
+    - LogIn, LogOut, Reset password ✅
+    - Crud user to me
+    - Crud user to users
+- Back: modules crud category
 - Back: app.ts mejorado
 - Front: login page
 - Front: dashboard page

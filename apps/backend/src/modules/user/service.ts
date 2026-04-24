@@ -1,5 +1,5 @@
 import * as repo from "./repository";
-import { hashPassword } from "../../lib/hash";
+import { hashPassword, comparePassword } from "../../lib/hash";
 
 export async function createUser(data: any) {
   // 🔐 HASHEAR PASSWORD

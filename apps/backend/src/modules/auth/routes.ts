@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import { resetPasswordSchema } from "./schemas";
 
 import { loginSchema } from "./schemas";
 import * as service from "./service";
@@ -22,4 +23,30 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
   });
+
+  // FORGOT
+app.post("/forgot-password", async (req, reply) => {
+  const { email } = req.body as any;
+  return service.forgotPassword(email);
+});
+
+// RESET
+app.post("/reset-password", async (req, reply) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send(parsed.error);
+  }
+
+  try {
+    return await service.resetPassword(
+      parsed.data.token,
+      parsed.data.password
+    );
+  } catch (err) {
+    return reply.status(400).send({
+      message: "Invalid or expired token",
+    });
+  }
+});
 }

@@ -7,7 +7,7 @@ async function main() {
   console.log("🟢Seeding database...");
   
   // Contraseña común de todos los usuarios
-  const hash = await bcrypt.hash("123456", 10);
+  const hash = await bcrypt.hash("Password1.", 10);
 
   // Clean BD
   await prisma.user.deleteMany();
@@ -47,7 +47,7 @@ async function main() {
     data: [
       {
         fullName: "Admin Muerde",
-        email: "admin@muerde.com",
+        email: "laurarm1002@gmail.com",
         password: hash,
         role: Role.ADMIN,
         birthDate: new Date("1990-01-01"),
