@@ -47,7 +47,7 @@ Nómina
     - LogIn, LogOut, Reset password ✅
     - Crud user to me ✅
     - Crud user to users ✅
-- Back: modules crud category
+- Back: modules crud category ✅
 - Back: app.ts mejorado
 - Front: login page
 - Front: dashboard page
