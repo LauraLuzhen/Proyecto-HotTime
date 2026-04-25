@@ -6,21 +6,23 @@ import { requireRole } from "../../plugins/roles";
 import {
   updateMeSchema,
   changePasswordSchema,
+  adminCreateUserSchema
 } from "./schemas";
 
 export async function userRoutes(app: FastifyInstance) {
 
-  app.get(
+app.get(
   "/",
   {
     preHandler: [authenticate],
   },
-  async (req) => {
-    const query = req.query as any;
-    return service.getUsers(query);
+  async (req: any) => {
+    const query = req.query;
+    return service.getUsers(query, req.user.id, req.user.organizationId); // 👈 AÑADIR ESTO
   }
 );
 
+  // 👮 ADMIN: CREATE USER
   app.post(
     "/",
     {
@@ -29,8 +31,30 @@ export async function userRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req) => {
-      return service.createUser(req.body);
+    async (req, reply) => {
+      const parsed = adminCreateUserSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send(parsed.error);
+      }
+
+      return service.adminCreateUser(parsed.data, req.user.organizationId);
+    }
+  );
+
+  // 👮 ADMIN: DELETE USER
+  app.delete(
+    "/:id",
+    {
+      preHandler: [
+        authenticate,
+        requireRole(["ADMIN"]),
+      ],
+    },
+    async (req, reply) => {
+      const { id } = req.params as any;
+
+      return service.adminDeleteUser(Number(id));
     }
   );
 
@@ -79,4 +103,14 @@ export async function userRoutes(app: FastifyInstance) {
       );
     }
   );
+}
+
+declare module "fastify" {
+  interface FastifyRequest {
+    user: {
+      id: number;
+      role: "ADMIN" | "MANAGER" | "EMPLOYEE";
+      organizationId: number;
+    };
+  }
 }

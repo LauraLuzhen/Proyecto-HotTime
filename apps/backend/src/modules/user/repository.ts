@@ -6,9 +6,15 @@ export function create(data: any) {
   return prisma.user.create({ data });
 }
 
-export function findAll(filters: any) {
+export function findAll(filters: any, userId: number, organizationId: number) {
   return prisma.user.findMany({
     where: {
+      // ❌ EXCLUIRME
+      NOT: {
+        id: userId,
+      },
+      organizationId,
+
       // Filtro de texto parcial (ignora mayúsculas/minúsculas con mode: 'insensitive')
       fullName: filters.fullName 
         ? { contains: filters.fullName, mode: 'insensitive' } 
@@ -18,8 +24,7 @@ export function findAll(filters: any) {
       role: filters.role || undefined,
 
       // Filtros numéricos
-      categoryId: filters.categoryId ? Number(filters.categoryId) : undefined,
-      organizationId: filters.organizationId ? Number(filters.organizationId) : undefined,
+      categoryId: filters.categoryId ? Number(filters.categoryId) : undefined
     },
     include: {
       category: true,
@@ -70,5 +75,17 @@ export function updateUser(userId: number, data: any) {
   return prisma.user.update({
     where: { id: userId },
     data,
+  });
+}
+
+export function deleteUser(userId: number) {
+  return prisma.user.delete({
+    where: { id: userId },
+  });
+}
+
+export function findCategoryById(id: number) {
+  return prisma.category.findUnique({
+    where: { id },
   });
 }

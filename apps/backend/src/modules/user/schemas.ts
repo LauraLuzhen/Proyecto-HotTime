@@ -1,16 +1,22 @@
 import { z } from "zod";
 
-export const createUserSchema = z.object({
+export const adminCreateUserSchema = z.object({
   fullName: z.string(),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8),
+
   role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]),
+
   birthDate: z.string(),
   initDate: z.string(),
+
   phone: z.string(),
-  organizationId: z.number(),
+
+  imgProfile: z.string().optional(),
+
   categoryId: z.number().nullable().optional(),
 });
+
 
 // 👤 UPDATE PERFIL (email, phone, img)
 export const updateMeSchema = z.object({
