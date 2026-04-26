@@ -1,9 +1,9 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 
-import { userRoutes } from "./modules/user/routes";
-import { authRoutes } from "./modules/auth/routes";
-import { categoryRoutes } from "./modules/category/routes";
+import { userRoutes } from "@/modules/user/routes";
+import { authRoutes } from "@/modules/auth/routes";
+import { categoryRoutes } from "@/modules/category/routes";
 
 export const buildApp = async () => {
   const app = Fastify({ logger: true });

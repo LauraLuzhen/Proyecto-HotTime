@@ -1,15 +1,21 @@
-import { httpError } from "../../lib/httpError";
-import * as repo from "./reporitory";
+import type {
+  CreateCategoryFn,
+  DeleteCategoryFn,
+  GetCategoriesFn,
+  GetUsersFromCategoryFn,
+  UpdateCategoryFn,
+} from "@hottime/types";
+import { httpError } from "@/lib/httpError";
+import * as repo from "@/modules/category/reporitory";
 
 // GET
-export async function getCategories(organizationId: number) {
-  return repo.findAllByOrganization(organizationId);
-}
+export const getCategories: GetCategoriesFn = async (organizationId: number) =>
+  repo.findAllByOrganization(organizationId);
 
-export async function getUsersFromCategory(
+export const getUsersFromCategory: GetUsersFromCategoryFn = async (
   categoryId: number,
   organizationId: number
-) {
+) => {
   const category = await repo.findById(categoryId);
 
   if (!category || category.organizationId !== organizationId) {
@@ -17,25 +23,22 @@ export async function getUsersFromCategory(
   }
 
   return repo.getUsersByCategory(categoryId, organizationId);
-}
+};
 
 // CREATE
-export async function createCategory(
-  name: string,
-  organizationId: number
-) {
+export const createCategory: CreateCategoryFn = async (name: string, organizationId: number) => {
   return repo.create({
     name,
     organizationId,
   });
-}
+};
 
 // UPDATE
-export async function updateCategory(
+export const updateCategory: UpdateCategoryFn = async (
   id: number,
   name: string,
   organizationId: number
-) {
+) => {
   const category = await repo.findById(id);
 
   if (!category || category.organizationId !== organizationId) {
@@ -43,13 +46,13 @@ export async function updateCategory(
   }
 
   return repo.updateName(id, name);
-}
+};
 
 // DELETE
-export async function deleteCategory(
+export const deleteCategory: DeleteCategoryFn = async (
   id: number,
   organizationId: number
-) {
+) => {
   const category = await repo.findById(id);
 
   if (!category || category.organizationId !== organizationId) {
@@ -59,4 +62,4 @@ export async function deleteCategory(
   await repo.unassignUsers(id);
 
   return repo.deleteCategory(id);
-}
+};

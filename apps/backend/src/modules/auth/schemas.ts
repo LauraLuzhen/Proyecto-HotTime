@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { LoginDto } from "@hottime/types";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -16,4 +17,4 @@ export const resetPasswordSchema = z.object({
     .regex(/[^A-Za-z0-9]/, "Debe tener un carácter especial"),
 });
 
-export type LoginInput = z.infer<typeof loginSchema>;
+export type LoginInput = LoginDto;

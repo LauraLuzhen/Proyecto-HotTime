@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { buildApp } from "./app";
+import { buildApp } from "@/app";
 
 dotenv.config();
 

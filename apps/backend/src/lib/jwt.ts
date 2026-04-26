@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
+import type { JwtPayload } from "@hottime/types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 // Crear token
-export function signToken(payload: object): string {
+export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: "7d",
   });
@@ -11,5 +12,5 @@ export function signToken(payload: object): string {
 
 // Verificar token
 export function verifyToken(token: string) {
-  return jwt.verify(token, JWT_SECRET);
+  return jwt.verify(token, JWT_SECRET) as JwtPayload;
 }

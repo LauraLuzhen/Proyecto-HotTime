@@ -49,6 +49,9 @@ Nómina
     - Crud user to users ✅
 - Back: modules crud category ✅
 - Back: app.ts mejorado ❌
+- General: types aplicarlo al backend
+
+
 - Front: login page
 - Front: dashboard page
 - Front: logout (are your sure? warning)

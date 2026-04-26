@@ -1,9 +1,10 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { ForgotPasswordDto } from "@hottime/types";
 
-import { httpError } from "../../lib/httpError";
-import { resetPasswordSchema } from "./schemas";
-import { loginSchema } from "./schemas";
-import * as service from "./service";
+import { httpError } from "@/lib/httpError";
+import { resetPasswordSchema } from "@/modules/auth/schemas";
+import { loginSchema } from "@/modules/auth/schemas";
+import * as service from "@/modules/auth/service";
 
 export async function authRoutes(app: FastifyInstance) {
   // LogIn
@@ -23,8 +24,8 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Forgot password
-  app.post("/forgot-password", async (req, reply) => {
-    const { email } = req.body as any;
+  app.post("/forgot-password", async (req: FastifyRequest<{ Body: ForgotPasswordDto }>, reply) => {
+    const { email } = req.body;
     try {
       const result = await service.forgotPassword(email);
       return result;

@@ -1,14 +1,15 @@
-import { FastifyInstance } from "fastify";
+import type { CategoryIdParamDto, CreateCategoryDto, UpdateCategoryDto } from "@hottime/types";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import { authenticate } from "../../plugins/auth";
-import { httpError } from "../../lib/httpError";
-import { requireRole } from "../../plugins/roles";
+import { authenticate } from "@/plugins/auth";
+import { httpError } from "@/lib/httpError";
+import { requireRole } from "@/plugins/roles";
 import {
   createCategorySchema,
   updateCategorySchema,
   categoryIdSchema,
-} from "./schemas";
-import * as service from "./service";
+} from "@/modules/category/schemas";
+import * as service from "@/modules/category/service";
 
 export async function categoryRoutes(app: FastifyInstance) {
 
@@ -16,14 +17,14 @@ export async function categoryRoutes(app: FastifyInstance) {
   app.get(
     "/",
     { preHandler: [authenticate] },
-    async (req: any) => { return service.getCategories(req.user.organizationId); }
+    async (req: FastifyRequest) => { return service.getCategories(req.user.organizationId); }
   );
 
   // Get users by category
   app.get(
     "/:id/users",
     { preHandler: [authenticate] },
-    async (req: any, reply) => {
+    async (req: FastifyRequest<{ Params: CategoryIdParamDto }>, reply) => {
       const parsed = categoryIdSchema.safeParse(req.params);
 
       if (!parsed.success) {
@@ -46,7 +47,7 @@ export async function categoryRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req: any, reply) => {
+    async (req: FastifyRequest<{ Body: CreateCategoryDto }>, reply) => {
       const parsed = createCategorySchema.safeParse(req.body);
 
       if (!parsed.success) {
@@ -69,7 +70,7 @@ export async function categoryRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req: any, reply) => {
+    async (req: FastifyRequest<{ Params: CategoryIdParamDto; Body: UpdateCategoryDto }>, reply) => {
       const idParsed = categoryIdSchema.safeParse(req.params);
       const bodyParsed = updateCategorySchema.safeParse(req.body);
 
@@ -94,7 +95,7 @@ export async function categoryRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req: any, reply) => {
+    async (req: FastifyRequest<{ Params: CategoryIdParamDto }>, reply) => {
       const parsed = categoryIdSchema.safeParse(req.params);
 
       if (!parsed.success) {

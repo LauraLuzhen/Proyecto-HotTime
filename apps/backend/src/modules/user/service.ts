@@ -1,14 +1,22 @@
-import { httpError } from "../../lib/httpError";
-import { hashPassword, comparePassword } from "../../lib/hash";
+import type {
+  AdminCreateUserDto,
+  AdminCreateUserFn,
+  AdminDeleteUserFn,
+  GetMyUserFn,
+  GetUsersFn,
+  UpdateMeDto,
+  UpdateMyUserFn,
+} from "@hottime/types";
+import { httpError } from "@/lib/httpError";
+import { hashPassword, comparePassword } from "@/lib/hash";
 
-import * as repo from "./repository";
+import * as repo from "@/modules/user/repository";
 
 // GET
-export async function getUsers(filters: any, userId: number, organizationId: number) {
-  return repo.findAll(filters, userId, organizationId);
-}
+export const getUsers: GetUsersFn = async (filters, userId, organizationId) =>
+  repo.findAll(filters, userId, organizationId);
 
-export async function getMyUser(userId: number) {
+export const getMyUser: GetMyUserFn = async (userId: number) => {
   const user = await repo.findById(userId);
 
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
@@ -16,10 +24,10 @@ export async function getMyUser(userId: number) {
   const { password, resetToken, ...safe } = user;
 
   return safe;
-}
+};
 
 // CREATE
-export async function createUser(data: any, organizationId: number) {
+export async function createUser(data: AdminCreateUserDto, organizationId: number) {
   const hashedPassword = await hashPassword(data.password);
 
   return repo.create({
@@ -31,7 +39,7 @@ export async function createUser(data: any, organizationId: number) {
   });
 }
 
-export async function adminCreateUser(data: any, organizationId: number) {
+export const adminCreateUser: AdminCreateUserFn = async (data, organizationId) => {
   const hashedPassword = await hashPassword(data.password);
 
   if (data.categoryId) {
@@ -50,12 +58,11 @@ export async function adminCreateUser(data: any, organizationId: number) {
     birthDate: new Date(data.birthDate),
     initDate: new Date(data.initDate),
   });
-}
+};
 
 // UPDATE
-export async function updateMyUser(userId: number, data: any) {
-  return repo.updateUser(userId, data);
-}
+export const updateMyUser: UpdateMyUserFn = async (userId: number, data: UpdateMeDto) =>
+  repo.updateUser(userId, data);
 
 export async function changeMyPassword(
   userId: number,
@@ -76,10 +83,10 @@ export async function changeMyPassword(
 }
 
 // DELETE
-export async function adminDeleteUser(userId: number) {
+export const adminDeleteUser: AdminDeleteUserFn = async (userId: number) => {
   const user = await repo.findById(userId);
 
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
 
   return repo.deleteUser(userId);
-}
+};

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,7 @@ export function getUsersByCategory(
 }
 
 // CREATE
-export function create(data: any) {
+export function create(data: Prisma.CategoryUncheckedCreateInput) {
   return prisma.category.create({
     data,
   });

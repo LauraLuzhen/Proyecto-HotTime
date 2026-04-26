@@ -1,11 +1,17 @@
+import type { Prisma, User } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
+import type {
+  AdminCreateUserDto,
+  UpdateMeDto,
+  UserFiltersDto,
+} from "@hottime/types";
 
-import { httpError } from "../../lib/httpError";
+import { httpError } from "@/lib/httpError";
 
 const prisma = new PrismaClient();
 
 // GET
-export function findAll(filters: any, userId: number, organizationId: number) {
+export function findAll(filters: UserFiltersDto, userId: number, organizationId: number) {
   return prisma.user.findMany({
     where: {
       NOT: {
@@ -65,7 +71,7 @@ export async function findCategoryById(id: number) {
 }
 
 // CREATE
-export function create(data: any) {
+export function create(data: Prisma.UserUncheckedCreateInput) {
   return prisma.user.create({ data });
 }
 
@@ -87,7 +93,7 @@ export function setResetToken(userId: number, token: string | null) {
   });
 }
 
-export function updateUser(userId: number, data: any) {
+export function updateUser(userId: number, data: UpdateMeDto): Promise<User> {
   return prisma.user.update({
     where: { id: userId },
     data,

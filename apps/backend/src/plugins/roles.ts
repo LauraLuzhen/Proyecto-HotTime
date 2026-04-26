@@ -1,7 +1,9 @@
-import { httpError } from "../lib/httpError";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import type { Role } from "@hottime/types";
+import { httpError } from "@/lib/httpError";
 
-export function requireRole(roles: string[]) {
-  return async (req: any, reply: any) => {
+export function requireRole(roles: Role[]) {
+  return async (req: FastifyRequest, reply: FastifyReply) => {
     if (!req.user) {
       return reply.status(401).send(
         httpError("Unauthorized", 401, "UNAUTHORIZED")

@@ -1,15 +1,21 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import type {
+  AdminCreateUserDto,
+  ChangePasswordDto,
+  UpdateMeDto,
+  UserFiltersDto,
+} from "@hottime/types";
 
-import { httpError } from "../../lib/httpError";
-import { authenticate } from "../../plugins/auth";
-import { requireRole } from "../../plugins/roles";
+import { httpError } from "@/lib/httpError";
+import { authenticate } from "@/plugins/auth";
+import { requireRole } from "@/plugins/roles";
 import {
   updateMeSchema,
   changePasswordSchema,
   adminCreateUserSchema
-} from "./schemas";
+} from "@/modules/user/schemas";
 
-import * as service from "./service";
+import * as service from "@/modules/user/service";
 
 export async function userRoutes(app: FastifyInstance) {
 
@@ -17,7 +23,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.get(
     "/",
     {preHandler: [authenticate]},
-    async (req: any) => {
+    async (req: FastifyRequest<{ Querystring: UserFiltersDto }>) => {
       const query = req.query;
       return service.getUsers(query, req.user.id, req.user.organizationId);
     }
@@ -26,7 +32,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.get(
     "/me",
     { preHandler: [authenticate] },
-    async (req: any, reply) => {
+    async (req: FastifyRequest, reply) => {
       try {
         return await service.getMyUser(req.user.id);
       } catch (err: any) {
@@ -39,7 +45,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.post(
     "/",
     {preHandler: [authenticate, requireRole(["ADMIN"])]},
-    async (req, reply) => {
+    async (req: FastifyRequest<{ Body: AdminCreateUserDto }>, reply) => {
       const parsed = adminCreateUserSchema.safeParse(req.body);
 
       if (!parsed.success) return reply.status(400).send(httpError("Invalid user data", 400, "VALIDATION_ERROR"));
@@ -52,7 +58,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.put(
     "/me",
     { preHandler: [authenticate] },
-    async (req: any, reply) => {
+    async (req: FastifyRequest<{ Body: UpdateMeDto }>, reply) => {
       const parsed = updateMeSchema.safeParse(req.body);
 
       if (!parsed.success) return reply.status(400).send(parsed.error);
@@ -64,7 +70,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.put(
     "/me/password",
     { preHandler: [authenticate] },
-    async (req: any, reply) => {
+    async (req: FastifyRequest<{ Body: ChangePasswordDto }>, reply) => {
       const parsed = changePasswordSchema.safeParse(req.body);
 
       if (!parsed.success) return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
@@ -87,22 +93,12 @@ export async function userRoutes(app: FastifyInstance) {
   app.delete(
     "/:id",
     {preHandler: [authenticate, requireRole(["ADMIN"])]},
-    async (req, reply) => {
-      const { id } = req.params as any;
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const { id } = req.params;
 
       if (!id) return reply.status(400).send(httpError("User id is required", 400, "MISSING_ID"));
 
       return service.adminDeleteUser(Number(id));
     }
   );
-}
-
-declare module "fastify" {
-  interface FastifyRequest {
-    user: {
-      id: number;
-      role: "ADMIN" | "MANAGER" | "EMPLOYEE";
-      organizationId: number;
-    };
-  }
 }

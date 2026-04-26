@@ -1,7 +1,9 @@
-import { verifyToken } from "../lib/jwt";
-import { httpError } from "../lib/httpError";
+import type { FastifyReply, FastifyRequest } from "fastify";
 
-export async function authenticate(req: any, reply: any) {
+import { verifyToken } from "@/lib/jwt";
+import { httpError } from "@/lib/httpError";
+
+export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
