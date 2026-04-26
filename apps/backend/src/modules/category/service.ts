@@ -1,24 +1,25 @@
+import { httpError } from "../../lib/httpError";
 import * as repo from "./reporitory";
 
+// GET
 export async function getCategories(organizationId: number) {
   return repo.findAllByOrganization(organizationId);
 }
 
-// 👤 USERS POR CATEGORÍA (SEGURA)
 export async function getUsersFromCategory(
   categoryId: number,
   organizationId: number
 ) {
   const category = await repo.findById(categoryId);
 
-  // 🔒 VALIDACIÓN MULTI-TENANT
   if (!category || category.organizationId !== organizationId) {
-    throw new Error("Category not found in your organization");
+    throw httpError("Category not found in your organization", 404, "CATEGORY_NOT_FOUND");
   }
 
   return repo.getUsersByCategory(categoryId, organizationId);
 }
 
+// CREATE
 export async function createCategory(
   name: string,
   organizationId: number
@@ -29,6 +30,7 @@ export async function createCategory(
   });
 }
 
+// UPDATE
 export async function updateCategory(
   id: number,
   name: string,
@@ -37,12 +39,13 @@ export async function updateCategory(
   const category = await repo.findById(id);
 
   if (!category || category.organizationId !== organizationId) {
-    throw new Error("Category not found in your organization");
+    throw httpError("Category not found in your organization", 404, "CATEGORY_NOT_FOUND");
   }
 
   return repo.updateName(id, name);
 }
 
+// DELETE
 export async function deleteCategory(
   id: number,
   organizationId: number
@@ -50,10 +53,9 @@ export async function deleteCategory(
   const category = await repo.findById(id);
 
   if (!category || category.organizationId !== organizationId) {
-    throw new Error("Category not found in your organization");
+    throw httpError("Category not found in your organization", 404, "CATEGORY_NOT_FOUND");
   }
 
-  // 🔥 usuarios pasan a "sin categoría"
   await repo.unassignUsers(id);
 
   return repo.deleteCategory(id);

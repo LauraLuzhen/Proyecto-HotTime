@@ -17,15 +17,12 @@ export const adminCreateUserSchema = z.object({
   categoryId: z.number().nullable().optional(),
 });
 
-
-// 👤 UPDATE PERFIL (email, phone, img)
 export const updateMeSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   imgProfile: z.string().optional(),
 });
 
-// 🔐 CHANGE PASSWORD
 export const changePasswordSchema = z.object({
   currentPassword: z.string(),
   newPassword: z

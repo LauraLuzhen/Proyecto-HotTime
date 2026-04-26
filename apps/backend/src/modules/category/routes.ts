@@ -1,34 +1,43 @@
 import { FastifyInstance } from "fastify";
+
 import { authenticate } from "../../plugins/auth";
-import * as service from "./service";
+import { httpError } from "../../lib/httpError";
 import { requireRole } from "../../plugins/roles";
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  categoryIdSchema,
+} from "./schemas";
+import * as service from "./service";
 
 export async function categoryRoutes(app: FastifyInstance) {
-  
-  // 📂 GET CATEGORIES DE MI ORGANIZACIÓN
+
+  // Get categories
   app.get(
     "/",
     { preHandler: [authenticate] },
-    async (req: any) => {
-      return service.getCategories(req.user.organizationId);
-    }
+    async (req: any) => { return service.getCategories(req.user.organizationId); }
   );
 
-  // 👤 USERS POR CATEGORÍA
+  // Get users by category
   app.get(
     "/:id/users",
     { preHandler: [authenticate] },
-    async (req: any) => {
-      const { id } = req.params;
+    async (req: any, reply) => {
+      const parsed = categoryIdSchema.safeParse(req.params);
+
+      if (!parsed.success) {
+        return reply.status(400).send(httpError("Invalid category id", 400, "INVALID_ID"));
+      }
 
       return service.getUsersFromCategory(
-        Number(id),
+        parsed.data.id,
         req.user.organizationId
       );
     }
   );
 
-    // ➕ CREATE CATEGORY (ADMIN ONLY)
+  // Create category
   app.post(
     "/",
     {
@@ -37,17 +46,21 @@ export async function categoryRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req: any) => {
-      const { name } = req.body;
+    async (req: any, reply) => {
+      const parsed = createCategorySchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
+      }
 
       return service.createCategory(
-        name,
+        parsed.data.name,
         req.user.organizationId
       );
     }
   );
 
-  // ✏️ UPDATE CATEGORY NAME (ADMIN ONLY)
+  // Update category
   app.put(
     "/:id",
     {
@@ -56,19 +69,23 @@ export async function categoryRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req: any) => {
-      const { id } = req.params;
-      const { name } = req.body;
+    async (req: any, reply) => {
+      const idParsed = categoryIdSchema.safeParse(req.params);
+      const bodyParsed = updateCategorySchema.safeParse(req.body);
+
+      if (!idParsed.success || !bodyParsed.success) {
+        return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
+      }
 
       return service.updateCategory(
-        Number(id),
-        name,
+        idParsed.data.id,
+        bodyParsed.data.name,
         req.user.organizationId
       );
     }
   );
 
-  // 🗑 DELETE CATEGORY (ADMIN ONLY)
+  // Delete category
   app.delete(
     "/:id",
     {
@@ -77,11 +94,15 @@ export async function categoryRoutes(app: FastifyInstance) {
         requireRole(["ADMIN"]),
       ],
     },
-    async (req: any) => {
-      const { id } = req.params;
+    async (req: any, reply) => {
+      const parsed = categoryIdSchema.safeParse(req.params);
+
+      if (!parsed.success) {
+        return reply.status(400).send(httpError("Invalid category id", 400, "INVALID_ID"));
+      }
 
       return service.deleteCategory(
-        Number(id),
+        parsed.data.id,
         req.user.organizationId
       );
     }

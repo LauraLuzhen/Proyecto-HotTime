@@ -14,5 +14,14 @@ export const buildApp = async () => {
   app.register(authRoutes, { prefix: "/auth" });
   app.register(categoryRoutes, { prefix: "/categories" });
 
+  app.setErrorHandler((error, req, reply) => {
+    console.error(error);
+
+    reply.status(500).send({
+      message: "Internal server error",
+      code: "INTERNAL_ERROR",
+    });
+  });
+
   return app;
 };

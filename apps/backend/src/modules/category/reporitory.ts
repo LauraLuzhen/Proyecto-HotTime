@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// GET
 export function findById(id: number) {
   return prisma.category.findUnique({
     where: { id },
@@ -30,12 +31,14 @@ export function getUsersByCategory(
   });
 }
 
+// CREATE
 export function create(data: any) {
   return prisma.category.create({
     data,
   });
 }
 
+// UPDATE
 export function updateName(id: number, name: string) {
   return prisma.category.update({
     where: { id },
@@ -43,15 +46,16 @@ export function updateName(id: number, name: string) {
   });
 }
 
-export function deleteCategory(id: number) {
-  return prisma.category.delete({
-    where: { id },
-  });
-}
-
 export function unassignUsers(categoryId: number) {
   return prisma.user.updateMany({
     where: { categoryId },
     data: { categoryId: null },
+  });
+}
+
+// DELETE
+export function deleteCategory(id: number) {
+  return prisma.category.delete({
+    where: { id },
   });
 }
