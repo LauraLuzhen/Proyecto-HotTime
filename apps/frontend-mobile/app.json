@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "HotTime",
+    "slug": "hottime",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "assetBundlePatterns": ["**/*"]
+  }
+}
+

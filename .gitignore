@@ -9,3 +9,6 @@ pnpm-debug.log*
 
 # prisma
 prisma/dev.db
+
+# expo local state
+.expo/

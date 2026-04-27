@@ -40,3 +40,8 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
         prueba: pnpm dev
         visualización BD: npx prisma studio
         formatear schema: npx prisma format
+
+
+pnpm --filter backend dev
+pnpm --filter frontend-web dev
+pnpm --filter frontend-mobile dev
