@@ -50,11 +50,9 @@ Nómina
 - Back: modules crud category ✅
 - Back: app.ts mejorado ❌
 - General: types aplicarlo al backend ✅
+- Front: login page and dashboard page ✅
+- Front: dashboard page ✅
 
-
-- Front: login page and dashboard page
-- Front: dashboard page
-- Front: logout (are your sure? warning)
 - Front: myuser page
 - Front: permisos por roles
 - Front: contacts page by role

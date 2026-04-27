@@ -1,10 +1,8 @@
 import { createHotTimeApi } from "@hottime/api";
 
-import { env } from "./env";
-
 export function createApi(getToken: () => string | null | Promise<string | null>) {
   return createHotTimeApi({
-    baseUrl: env.apiBaseUrl,
+    baseUrl: "http://192.168.1.129:3001",
     getToken,
   });
 }
