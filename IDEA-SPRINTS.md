@@ -51,11 +51,7 @@ Nómina
 - Back: app.ts mejorado ❌
 - General: types aplicarlo al backend ✅
 - Front: login page and dashboard page ✅
-- Front: dashboard page ✅
-
-- Front: myuser page
-- Front: permisos por roles
-- Front: contacts page by role
+- Front: permisos por roles ✅
 
 ### TODO: Sprint 2
 - Comunicado page
