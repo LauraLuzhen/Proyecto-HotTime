@@ -8,10 +8,11 @@ datasource db {
 }
 
 model Organization {
-  id         Int        @id @default(autoincrement())
-  name       String     @db.VarChar(100)
-  categories Category[]
-  users      User[]
+  id              Int        @id @default(autoincrement())
+  name            String     @db.VarChar(100)
+  categories      Category[]
+  users           User[]
+  comunications   Communication[]
 }
 
 model Category {
@@ -25,25 +26,64 @@ model Category {
 }
 
 model User {
-  id             Int          @id @default(autoincrement())
-  fullName       String       @db.VarChar(100)
-  email          String       @unique @db.VarChar(150)
-  password       String
-  role           Role
-  birthDate      DateTime
-  initDate       DateTime
-  phone          String       @db.VarChar(20)
-  imgProfile     String?      @db.VarChar(255)
+  id                      Int                 @id @default(autoincrement())
+  fullName                String              @db.VarChar(100)
+  email                   String              @unique @db.VarChar(150)
+  password                String
+  role                    Role
+  birthDate               DateTime
+  initDate                DateTime
+  phone                   String              @db.VarChar(20)
+  imgProfile              String?             @db.VarChar(255)
+  organizationId          Int
+  categoryId              Int?
+  resetToken              String?             @unique @db.VarChar(255)
+  resetTokenExp           DateTime?
+  category                Category?           @relation(fields: [categoryId], references: [id])
+  organization            Organization        @relation(fields: [organizationId], references: [id])
+
+  sentCommunications      Communication[]     @relation("SentCommunications") 
+  receivedCommunications  CommunicationUser[]
+}
+
+model Communication {
+  id             Int                 @id @default(autoincrement())
+  title          String              @db.VarChar(150)
+  content        String              @db.Text
+  type           CommunicationType
+  senderId       Int
+  sender         User                @relation("SentCommunications", fields: [senderId], references: [id])
   organizationId Int
-  categoryId     Int?
-  resetToken     String?      @unique @db.VarChar(255)
-  resetTokenExp  DateTime?
-  category       Category?    @relation(fields: [categoryId], references: [id])
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime            @default(now())
+  recipients     CommunicationUser[]
+}
+
+model CommunicationUser {
+  id               Int            @id @default(autoincrement())
+  communicationId  Int
+  userId           Int
+  communication    Communication  @relation(fields: [communicationId], references: [id])
+  user             User           @relation(fields: [userId], references: [id])
+  read             Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+
+  @@unique([communicationId, userId])
+  @@index([userId, read])
 }
 
 enum Role {
   ADMIN
   MANAGER
   EMPLOYEE
+}
+
+enum CommunicationType {
+  GENERAL
+  REQUEST_DAYS
+  VACATION
+  ABSENCE
+  TEMP_LEAVE
+  PERM_LEAVE
+  STAFF_SHORTAGE
 }

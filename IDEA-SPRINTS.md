@@ -54,6 +54,10 @@ Nómina
 - Front: permisos por roles ✅
 
 ### TODO: Sprint 2
+- Back: comunicado bd y backend
+
+- My user page
+- Contactos page
 - Comunicado page
 - Horario page 
 
