@@ -1,4 +1,4 @@
-# IDEA DE LA APLICACIÓN Y ORGANIZACIÓN POR SPRINTS
+# IDEA DE LA APLICACIÓN Y ORGANIZACIÓN POR SPRINTS 
 ## 1. Idea de la aplicación
 ### Pestañas (Sidebar)
 - Usuario (T)
@@ -32,7 +32,7 @@ Contrato
 Salario y pluses (nocturnidades, festivos)
 Nómina
 
-## 2. Sprints 🔴🟡🟢
+## 2. Sprints
 ### TODO: Sprint 1
 - General: estructura base ✅
 - Back: estructura base ✅
@@ -55,6 +55,12 @@ Nómina
 
 ### TODO: Sprint 2
 - Back: comunicado bd y backend
+- Api: types y api de comunicado
+- Back: email forgot password funcional
+- Back: horarios y turnos bd
+- Back: horarios y turnos backend
+- Api: types y api horarios y turnos
+- Investigar sobre fichaje
 
 - My user page
 - Contactos page
@@ -77,3 +83,8 @@ Nómina
 - Contrato page (+)
 - Salario + pluses (nocturnidades, festivos, etc) (+)
 - Nómina (+)
+
+
+
+
+Colorines: 🔴🟡🟢
