@@ -1,15 +1,6 @@
-import type {
-  AdminCreateUserDto,
-  AdminCreateUserFn,
-  AdminDeleteUserFn,
-  GetMyUserFn,
-  GetUsersFn,
-  UpdateMeDto,
-  UpdateMyUserFn,
-} from "@hottime/types";
+import type { AdminCreateUserDto, AdminCreateUserFn, AdminDeleteUserFn, GetMyUserFn, GetUsersFn, UpdateMeDto, UpdateMyUserFn } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import { hashPassword, comparePassword } from "@/lib/hash";
-
 import * as repo from "@/modules/user/repository";
 
 // GET

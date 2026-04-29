@@ -1,10 +1,6 @@
 import type { Prisma, User } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
-import type {
-  AdminCreateUserDto,
-  UpdateMeDto,
-  UserFiltersDto,
-} from "@hottime/types";
+import type { AdminCreateUserDto, UpdateMeDto, UserFiltersDto } from "@hottime/types";
 
 import { httpError } from "@/lib/httpError";
 

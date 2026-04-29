@@ -1,6 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { ForgotPasswordDto } from "@hottime/types";
-
 import { httpError } from "@/lib/httpError";
 import { resetPasswordSchema } from "@/modules/auth/schemas";
 import { loginSchema } from "@/modules/auth/schemas";

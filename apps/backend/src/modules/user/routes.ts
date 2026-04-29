@@ -1,26 +1,15 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import type {
-  AdminCreateUserDto,
-  ChangePasswordDto,
-  UpdateMeDto,
-  UserFiltersDto,
-} from "@hottime/types";
-
+import type { AdminCreateUserDto, ChangePasswordDto, UpdateMeDto, UserFiltersDto } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import { authenticate } from "@/plugins/auth";
 import { requireRole } from "@/plugins/roles";
-import {
-  updateMeSchema,
-  changePasswordSchema,
-  adminCreateUserSchema
-} from "@/modules/user/schemas";
-
+import { updateMeSchema, changePasswordSchema, adminCreateUserSchema } from "@/modules/user/schemas";
 import * as service from "@/modules/user/service";
 
 export async function userRoutes(app: FastifyInstance) {
 
   // GET
-  app.get(
+  app.get<{ Querystring: UserFiltersDto }>(
     "/",
     {preHandler: [authenticate]},
     async (req: FastifyRequest<{ Querystring: UserFiltersDto }>) => {
@@ -42,7 +31,7 @@ export async function userRoutes(app: FastifyInstance) {
   );
 
   // CREATE
-  app.post(
+  app.post<{ Body: AdminCreateUserDto }>(
     "/",
     {preHandler: [authenticate, requireRole(["ADMIN"])]},
     async (req: FastifyRequest<{ Body: AdminCreateUserDto }>, reply) => {
@@ -55,7 +44,7 @@ export async function userRoutes(app: FastifyInstance) {
   );
 
   // UPDATE
-  app.put(
+  app.put<{ Body: UpdateMeDto }>(
     "/me",
     { preHandler: [authenticate] },
     async (req: FastifyRequest<{ Body: UpdateMeDto }>, reply) => {
@@ -67,7 +56,7 @@ export async function userRoutes(app: FastifyInstance) {
     }
   );
 
-  app.put(
+  app.put<{ Body: ChangePasswordDto }>(
     "/me/password",
     { preHandler: [authenticate] },
     async (req: FastifyRequest<{ Body: ChangePasswordDto }>, reply) => {
@@ -90,7 +79,7 @@ export async function userRoutes(app: FastifyInstance) {
   );
 
   // DELETE
-  app.delete(
+  app.delete<{ Params: { id: string } }>(
     "/:id",
     {preHandler: [authenticate, requireRole(["ADMIN"])]},
     async (req: FastifyRequest<{ Params: { id: string } }>, reply) => {

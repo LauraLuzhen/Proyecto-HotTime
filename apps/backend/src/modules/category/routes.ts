@@ -1,14 +1,9 @@
-import type { CategoryIdParamDto, CreateCategoryDto, UpdateCategoryDto } from "@hottime/types";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-
-import { authenticate } from "@/plugins/auth";
+import type { CategoryIdParamDto, CreateCategoryDto, UpdateCategoryDto } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
+import { authenticate } from "@/plugins/auth";
 import { requireRole } from "@/plugins/roles";
-import {
-  createCategorySchema,
-  updateCategorySchema,
-  categoryIdSchema,
-} from "@/modules/category/schemas";
+import { createCategorySchema, updateCategorySchema, categoryIdSchema } from "@/modules/category/schemas";
 import * as service from "@/modules/category/service";
 
 export async function categoryRoutes(app: FastifyInstance) {
@@ -21,7 +16,7 @@ export async function categoryRoutes(app: FastifyInstance) {
   );
 
   // Get users by category
-  app.get(
+  app.get<{ Params: CategoryIdParamDto }>(
     "/:id/users",
     { preHandler: [authenticate] },
     async (req: FastifyRequest<{ Params: CategoryIdParamDto }>, reply) => {
@@ -39,7 +34,7 @@ export async function categoryRoutes(app: FastifyInstance) {
   );
 
   // Create category
-  app.post(
+  app.post<{ Body: CreateCategoryDto }>(
     "/",
     {
       preHandler: [
@@ -62,7 +57,7 @@ export async function categoryRoutes(app: FastifyInstance) {
   );
 
   // Update category
-  app.put(
+  app.put<{ Params: CategoryIdParamDto; Body: UpdateCategoryDto }>(
     "/:id",
     {
       preHandler: [
@@ -87,7 +82,7 @@ export async function categoryRoutes(app: FastifyInstance) {
   );
 
   // Delete category
-  app.delete(
+  app.delete<{ Params: CategoryIdParamDto }>(
     "/:id",
     {
       preHandler: [

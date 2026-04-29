@@ -24,3 +24,6 @@ __exportStar(require("./modules/user/functions"), exports);
 __exportStar(require("./modules/category/entities"), exports);
 __exportStar(require("./modules/category/dtos"), exports);
 __exportStar(require("./modules/category/functions"), exports);
+__exportStar(require("./modules/communication/entities"), exports);
+__exportStar(require("./modules/communication/dtos"), exports);
+__exportStar(require("./modules/communication/functions"), exports);

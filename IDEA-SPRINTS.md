@@ -55,7 +55,7 @@ Nómina
 
 ### TODO: Sprint 2
 - Back: comunicado bd y backend
-- Api: types y api de comunicado
+- Api: types de comunicado
 - Back: email forgot password funcional
 - Back: horarios y turnos bd
 - Back: horarios y turnos backend

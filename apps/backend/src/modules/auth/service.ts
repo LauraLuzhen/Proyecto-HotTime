@@ -1,10 +1,5 @@
 import { randomUUID } from "crypto";
-import type {
-  ForgotPasswordFn,
-  LoginFn,
-  ResetPasswordFn,
-} from "@hottime/types";
-
+import type { ForgotPasswordFn, LoginFn, ResetPasswordFn } from "@hottime/types";
 import { comparePassword, hashPassword } from "@/lib/hash";
 import { httpError } from "@/lib/httpError";
 import { signToken } from "@/lib/jwt";

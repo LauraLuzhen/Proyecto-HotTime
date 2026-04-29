@@ -11,3 +11,5 @@ export interface ApiErrorPayload {
   code: string;
   statusCode: number;
 }
+
+export type CommunicationType = "GENERAL" | "REQUEST_DAYS" | "VACATION" | "ABSENCE" | "TEMP_LEAVE" | "PERM_LEAVE" | "STAFF_SHORTAGE";

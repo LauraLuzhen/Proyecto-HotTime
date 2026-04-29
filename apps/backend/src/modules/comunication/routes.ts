@@ -1,8 +1,13 @@
 import { FastifyInstance } from "fastify";
-import { authenticate } from "../../plugins/auth";
+import type {
+  CreateCommunicationDTO,
+  InboxItemDTO,
+  OutboxItemDTO,
+  UnreadCountDTO,
+} from "@hottime/types";
 import { httpError } from "../../lib/httpError";
+import { authenticate } from "../../plugins/auth";
 import * as service from "./service";
-
 import {
   createCommunicationSchema,
   communicationIdSchema,

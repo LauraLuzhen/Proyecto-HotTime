@@ -1,10 +1,4 @@
-import type {
-  CreateCategoryFn,
-  DeleteCategoryFn,
-  GetCategoriesFn,
-  GetUsersFromCategoryFn,
-  UpdateCategoryFn,
-} from "@hottime/types";
+import type { CreateCategoryFn, DeleteCategoryFn, GetCategoriesFn, GetUsersFromCategoryFn, UpdateCategoryFn } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import * as repo from "@/modules/category/reporitory";
 
