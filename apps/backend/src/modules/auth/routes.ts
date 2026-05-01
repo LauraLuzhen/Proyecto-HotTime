@@ -1,18 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import type { ForgotPasswordDto } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
-import { resetPasswordSchema } from "@/modules/auth/schemas";
-import { loginSchema } from "@/modules/auth/schemas";
+import { loginSchema, forgotPasswordSchema, resetPasswordSchema } from "@/modules/auth/schemas";
 import * as service from "@/modules/auth/service";
 
 export async function authRoutes(app: FastifyInstance) {
   // LogIn
   app.post("/login", async (req, reply) => {
     const parsed = loginSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
-    }
+    if (!parsed.success) return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
 
     try {
       const result = await service.login(parsed.data);
@@ -23,10 +18,12 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Forgot password
-  app.post("/forgot-password", async (req: FastifyRequest<{ Body: ForgotPasswordDto }>, reply) => {
-    const { email } = req.body;
+  app.post("/forgot-password", async (req, reply) => {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
+
     try {
-      const result = await service.forgotPassword(email);
+      const result = await service.forgotPassword(parsed.data);
       return result;
     } catch (err) {
       return reply.status(400).send(httpError("Error sending reset email", 400, "FORGOT_PASSWORD_ERROR"));
@@ -36,16 +33,11 @@ export async function authRoutes(app: FastifyInstance) {
   // Reset password
   app.post("/reset-password", async (req, reply) => {
     const parsed = resetPasswordSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
-    }
+    if (!parsed.success) return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
 
     try {
-      return await service.resetPassword(
-        parsed.data.token,
-        parsed.data.password
-      );
+      const result = await service.resetPassword(parsed.data);
+      return result;
     } catch (err) {
       return reply.status(400).send(httpError("Invalid or expired token", 400, "INVALID_TOKEN"));
     }

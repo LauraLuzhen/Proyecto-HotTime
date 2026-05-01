@@ -11,8 +11,8 @@ export const buildApp = async () => {
 
   await app.register(cors, { origin: true });
   
-  app.register(userRoutes, { prefix: "/users" });
   app.register(authRoutes, { prefix: "/auth" });
+  app.register(userRoutes, { prefix: "/users" });
   app.register(categoryRoutes, { prefix: "/categories" });
   app.register(communicationRoutes, { prefix: "/communications" });
 

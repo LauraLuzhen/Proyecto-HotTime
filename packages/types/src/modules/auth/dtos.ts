@@ -2,20 +2,19 @@ export interface LoginDto {
   email: string;
   password: string;
 }
-
+export interface ForgotPasswordDto {
+  email: string;
+}
 export interface ResetPasswordDto {
   token: string;
   password: string;
 }
-
-export interface ForgotPasswordDto {
-  email: string;
+export interface LogInResponse {
+  token: string;
 }
-
-export interface ForgotPasswordResponseDto {
-  message: string;
+export interface ForgotPasswordResponse {
+  resetToken: string;
 }
-
-export interface ResetPasswordResponseDto {
-  message: string;
+export interface SuccessResponse {
+  success: boolean;
 }

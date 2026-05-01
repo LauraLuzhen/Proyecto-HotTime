@@ -41,6 +41,7 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
         visualización BD: npx prisma studio
         formatear schema: npx prisma format
     pnpm --filter @hottime/types build: montar types 
+    cntrl + shift + p --> TypeScript: Restart TS Server
 
 pnpm --filter backend dev
 pnpm --filter frontend-web dev
