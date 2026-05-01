@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, SafeAreaView, Text, TextInput, View } from "react-native";
 
-import { ApiClientError } from "@hottime/api";
+import { ApiClientError } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 
 export function LoginScreen() {

@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { ApiClientError } from "@hottime/api";
-
-import { createApi } from "../../lib/api";
+import { createApi, type ApiClientError } from "../../lib/api";
 import { tokenStorage } from "./storage";
 import { AuthContext, type AuthState, type SessionUser } from "./AuthContext";
 

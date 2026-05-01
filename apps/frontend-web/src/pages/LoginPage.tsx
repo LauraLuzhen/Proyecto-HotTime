@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
-import { ApiClientError } from "@hottime/api";
+import { ApiClientError } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 import styles from "./LoginPage.module.css";
 

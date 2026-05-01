@@ -45,3 +45,10 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
 pnpm --filter backend dev
 pnpm --filter frontend-web dev
 pnpm --filter frontend-mobile dev
+
+
+puertos
+netstat -ano | findstr :8080
+taskkill /F /PID 1234
+
+
