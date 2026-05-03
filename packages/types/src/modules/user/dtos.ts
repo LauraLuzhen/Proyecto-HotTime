@@ -1,30 +1,67 @@
-import type { Role } from "../../shared/common";
+import { Role } from "../../shared/common";
 
-export interface UserFiltersDto {
-  fullName?: string;
-  role?: Role;
-  categoryId?: string | number;
-}
-
-export interface AdminCreateUserDto {
+export interface CreateUserDto {
   fullName: string;
   email: string;
   password: string;
   role: Role;
-  birthDate: string;
-  initDate: string;
+  birthDate: Date;
   phone: string;
-  imgProfile?: string;
-  categoryId?: number | null;
+  categoryId: number | null;
+}
+
+export interface CreateUserResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  role: Role;
+  birthDate: Date;
+  phone: string;
+  categoryId: number | null;
+  initDate: Date;
+  organizationId: number;
+};
+
+export interface DeleteUserResponse {
+  success: boolean;
+}
+
+export interface GetUsersQueryDto {
+  fullName?: string;
+  role?: Role;
+  categoryId?: number;
+}
+
+export interface GeneralUserResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  role: Role;
+  birthDate: Date;
+  initDate: Date;
+  phone: string;
+  imgProfile: string | null;
+  organizationId: number;
+  categoryId: number | null;
 }
 
 export interface UpdateMeDto {
+  fullName?: string;
   email?: string;
+  password?: string;
+  birthDate?: Date;
   phone?: string;
-  imgProfile?: string;
+  imgProfile?: string | null;
 }
 
-export interface ChangePasswordDto {
-  currentPassword: string;
-  newPassword: string;
+export interface UpdateUsersDto {
+  fullName?: string;
+  email?: string;
+  password?: string;
+  birthDate?: Date;
+  phone?: string;
+  imgProfile?: string | null;
+  role?: Role;
+  initDate?: Date;
+  categoryId?: number | null;
 }

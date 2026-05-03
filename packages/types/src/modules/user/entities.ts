@@ -15,5 +15,3 @@ export interface UserEntity {
   resetToken: string | null;
   resetTokenExp: Date | null;
 }
-
-export interface PublicUserEntity extends Omit<UserEntity, "password" | "resetToken" | "resetTokenExp"> {}

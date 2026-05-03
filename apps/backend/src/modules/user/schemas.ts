@@ -1,35 +1,65 @@
 import { z } from "zod";
+import type { CreateUserDto } from "@hottime/types";
 
-export const adminCreateUserSchema = z.object({
-  fullName: z.string(),
+export const createUserSchema = z.object({
+  fullName: z.string().min(5),
   email: z.string().email(),
-  password: z.string().min(8),
-
-  role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]),
-
-  birthDate: z.string(),
-  initDate: z.string(),
-
-  phone: z.string(),
-
-  imgProfile: z.string().optional(),
-
-  categoryId: z.number().nullable().optional(),
-});
-
-export const updateMeSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  imgProfile: z.string().optional(),
-});
-
-export const changePasswordSchema = z.object({
-  currentPassword: z.string(),
-  newPassword: z
+  password: z
     .string()
     .min(8)
-    .regex(/[A-Z]/, "1 mayúscula")
-    .regex(/[a-z]/, "1 minúscula")
-    .regex(/[0-9]/, "1 número")
-    .regex(/[^A-Za-z0-9]/, "1 carácter especial"),
+    .regex(/[A-Z]/, "A capital letter")
+    .regex(/[a-z]/, "A lowercase")
+    .regex(/[0-9]/, "A number")
+    .regex(/[^A-Za-z0-9]/, "A special character"),
+  role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]),
+  birthDate: z.coerce.date().refine((date) => date < new Date()),
+  phone: z.string().length(9).regex(/^\d+$/),
+  categoryId: z.number().int().positive().nullable().default(null),
+});
+
+export const getUserIdSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
+export const getUsersSchema = z.object({
+  fullName: z.string().optional(),
+  role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]).optional(),
+  categoryId: z.coerce.number().optional(),
+}).strict();
+
+export type CreateUserInput = CreateUserDto;
+
+export const updateMeSchema = z.object({
+  fullName: z.string().min(5).optional(),
+  email: z.string().email().optional(),
+  password: z
+    .string()
+    .min(8)
+    .regex(/[A-Z]/, "A capital letter")
+    .regex(/[a-z]/, "A lowercase")
+    .regex(/[0-9]/, "A number")
+    .regex(/[^A-Za-z0-9]/, "A special character")
+    .optional(),
+  birthDate: z.coerce.date().refine((date) => date < new Date()).optional(),
+  phone: z.string().length(9).regex(/^\d+$/).optional(),
+  imgProfile: z.string().nullable().optional(),
+});
+
+export const updateUsersSchema = z.object({
+  fullName: z.string().min(5).optional(),
+  email: z.string().email().optional(),
+  password: z
+    .string()
+    .min(8)
+    .regex(/[A-Z]/, "A capital letter")
+    .regex(/[a-z]/, "A lowercase")
+    .regex(/[0-9]/, "A number")
+    .regex(/[^A-Za-z0-9]/, "A special character")
+    .optional(),
+  birthDate: z.coerce.date().refine((date) => date < new Date()).optional(),
+  phone: z.string().length(9).regex(/^\d+$/).optional(),
+  imgProfile: z.string().nullable().optional(),
+  role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]).optional(),
+  initDate: z.coerce.date().refine((d) => d < new Date()).optional(),
+  categoryId: z.coerce.number().int().positive().nullable().optional(),
 });
