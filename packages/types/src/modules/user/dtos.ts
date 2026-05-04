@@ -1,5 +1,6 @@
 import { Role } from "../../shared/common";
 
+// CREATE
 export interface CreateUserDto {
   fullName: string;
   email: string;
@@ -9,7 +10,6 @@ export interface CreateUserDto {
   phone: string;
   categoryId: number | null;
 }
-
 export interface CreateUserResponse {
   id: number;
   fullName: string;
@@ -22,16 +22,12 @@ export interface CreateUserResponse {
   organizationId: number;
 };
 
-export interface DeleteUserResponse {
-  success: boolean;
-}
-
+// GET
 export interface GetUsersQueryDto {
   fullName?: string;
   role?: Role;
   categoryId?: number;
 }
-
 export interface GeneralUserResponse {
   id: number;
   fullName: string;
@@ -45,6 +41,7 @@ export interface GeneralUserResponse {
   categoryId: number | null;
 }
 
+// UPDATE
 export interface UpdateMeDto {
   fullName?: string;
   email?: string;
@@ -53,7 +50,6 @@ export interface UpdateMeDto {
   phone?: string;
   imgProfile?: string | null;
 }
-
 export interface UpdateUsersDto {
   fullName?: string;
   email?: string;
@@ -64,4 +60,9 @@ export interface UpdateUsersDto {
   role?: Role;
   initDate?: Date;
   categoryId?: number | null;
+}
+
+// DELETE
+export interface DeleteUserResponse {
+  success: boolean;
 }

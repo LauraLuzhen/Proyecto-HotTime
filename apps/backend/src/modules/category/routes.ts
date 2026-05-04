@@ -1,106 +1,71 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
-import type { CategoryIdParamDto, CreateCategoryDto, UpdateCategoryDto } from "@hottime/types";
+import type { FastifyInstance } from "fastify";
 import { httpError } from "@/lib/httpError";
 import { authenticate } from "@/plugins/auth";
 import { requireRole } from "@/plugins/roles";
-import { createCategorySchema, updateCategorySchema, categoryIdSchema } from "@/modules/category/schemas";
 import * as service from "@/modules/category/service";
+import { getUsersByCategorySchema, createCategorySchema, updateCategorySchema, deleteCategorySchema, updateCategoryParamsSchema } from "./schemas";
 
 export async function categoryRoutes(app: FastifyInstance) {
+  // Create category by ADMIN
+  app.post("/", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
+      const parsed = createCategorySchema.safeParse(req.body);
+      if (!parsed.success) return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
+
+      const category = await service.createCategory(
+        parsed.data,
+        req.user.organizationId
+      );
+      return reply.status(201).send(category);
+    }
+  );
 
   // Get categories
-  app.get(
-    "/",
-    { preHandler: [authenticate] },
-    async (req: FastifyRequest) => { return service.getCategories(req.user.organizationId); }
+  app.get("/", { preHandler: [authenticate] }, async (req, reply) => {
+      const categories = await service.getCategories(req.user.organizationId);
+      return reply.send(categories);
+    }
   );
 
   // Get users by category
-  app.get<{ Params: CategoryIdParamDto }>(
-    "/:id/users",
-    { preHandler: [authenticate] },
-    async (req: FastifyRequest<{ Params: CategoryIdParamDto }>, reply) => {
-      const parsed = categoryIdSchema.safeParse(req.params);
+  app.get("/:categoryId/users", { preHandler: [authenticate] },async (req, reply) => {
+      const parsed = getUsersByCategorySchema.safeParse(req.params);
+      if (!parsed.success) return reply.status(400).send(httpError("Invalid categoryId", 400, "VALIDATION_ERROR"));
 
-      if (!parsed.success) {
-        return reply.status(400).send(httpError("Invalid category id", 400, "INVALID_ID"));
-      }
-
-      return service.getUsersFromCategory(
-        parsed.data.id,
+      const users = await service.getUsersByCategory(
+        parsed.data.categoryId,
         req.user.organizationId
       );
+      return reply.send(users);
     }
   );
 
-  // Create category
-  app.post<{ Body: CreateCategoryDto }>(
-    "/",
-    {
-      preHandler: [
-        authenticate,
-        requireRole(["ADMIN"]),
-      ],
-    },
-    async (req: FastifyRequest<{ Body: CreateCategoryDto }>, reply) => {
-      const parsed = createCategorySchema.safeParse(req.body);
+  // Update category by ADMIN
+    app.patch("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
+      const params = updateCategoryParamsSchema.safeParse(req.params);
+      if (!params.success) return reply.status(400).send(httpError("Invalid categoryId", 400, "VALIDATION_ERROR"));
 
-      if (!parsed.success) {
-        return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
-      }
-
-      return service.createCategory(
-        parsed.data.name,
-        req.user.organizationId
+      const parsed = updateCategorySchema.safeParse(req.body);
+      if (!parsed.success) return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
+      
+      const category = await service.updateCategory(
+        params.data.id,
+        req.user.organizationId,
+        parsed.data
       );
+      return reply.send(category);
     }
   );
 
-  // Update category
-  app.put<{ Params: CategoryIdParamDto; Body: UpdateCategoryDto }>(
-    "/:id",
-    {
-      preHandler: [
-        authenticate,
-        requireRole(["ADMIN"]),
-      ],
-    },
-    async (req: FastifyRequest<{ Params: CategoryIdParamDto; Body: UpdateCategoryDto }>, reply) => {
-      const idParsed = categoryIdSchema.safeParse(req.params);
-      const bodyParsed = updateCategorySchema.safeParse(req.body);
+  // Delete category by ADMIN
+  app.delete("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
+    const parsed = deleteCategorySchema.safeParse(req.params);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid categoryId", 400, "VALIDATION_ERROR"));
 
-      if (!idParsed.success || !bodyParsed.success) {
-        return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
-      }
-
-      return service.updateCategory(
-        idParsed.data.id,
-        bodyParsed.data.name,
-        req.user.organizationId
-      );
-    }
-  );
-
-  // Delete category
-  app.delete<{ Params: CategoryIdParamDto }>(
-    "/:id",
-    {
-      preHandler: [
-        authenticate,
-        requireRole(["ADMIN"]),
-      ],
-    },
-    async (req: FastifyRequest<{ Params: CategoryIdParamDto }>, reply) => {
-      const parsed = categoryIdSchema.safeParse(req.params);
-
-      if (!parsed.success) {
-        return reply.status(400).send(httpError("Invalid category id", 400, "INVALID_ID"));
-      }
-
-      return service.deleteCategory(
-        parsed.data.id,
-        req.user.organizationId
-      );
+    const result = await service.deleteCategory(
+      parsed.data.id,
+      req.user.organizationId
+    );
+      return reply.send(result);
     }
   );
 }

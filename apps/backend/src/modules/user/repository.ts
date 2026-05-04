@@ -18,7 +18,6 @@ export async function findByEmail(email: string) {
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   return user;
 }
-
 export function findByEmailOrNull(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }
@@ -42,9 +41,9 @@ export async function findById(id: number) {
   });
 
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
-  
   return user;
 }
+
 // Find by reset token
 export async function findByResetToken(token: string) {
   const user = await prisma.user.findFirst({

@@ -27,18 +27,6 @@ export const createUser: CreateUserFn = async (data, organizationId) => {
   return user;
 };
 
-// Delete user
-export const deleteUser: DeleteUserFn = async (userId, organizationId, currentUserId) => {
-  const user = await repo.findById(userId);
-  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
-
-  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-  if (user.id === currentUserId) throw httpError("You cannot delete your own account", 400, "CANNOT_DELETE_SELF");
-
-  await repo.deleteById(userId);
-  return { success: true };
-};
-
 // Get me
 export const getMe: GetMeFn = async (userId: number) => {
   const user = await repo.findById(userId);
@@ -89,4 +77,16 @@ export const updateUsers: UpdateUsersFn = async (userId, adminOrganizationId, cu
     if (category.organizationId !== adminOrganizationId) throw httpError("Category does not belong to your organization", 403, "CATEGORY_FORBIDDEN");
   }
   return repo.updateUser(userId, updateData);
+};
+
+// Delete user
+export const deleteUser: DeleteUserFn = async (userId, organizationId, currentUserId) => {
+  const user = await repo.findById(userId);
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+
+  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
+  if (user.id === currentUserId) throw httpError("You cannot delete your own account", 400, "CANNOT_DELETE_SELF");
+
+  await repo.deleteById(userId);
+  return { success: true };
 };

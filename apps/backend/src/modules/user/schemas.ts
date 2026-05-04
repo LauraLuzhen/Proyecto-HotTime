@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { CreateUserDto } from "@hottime/types";
 
+// CREATE
 export const createUserSchema = z.object({
   fullName: z.string().min(5),
   email: z.string().email(),
@@ -16,19 +17,19 @@ export const createUserSchema = z.object({
   phone: z.string().length(9).regex(/^\d+$/),
   categoryId: z.number().int().positive().nullable().default(null),
 });
+export type CreateUserInput = CreateUserDto;
 
+// GET
 export const getUserIdSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
-
 export const getUsersSchema = z.object({
   fullName: z.string().optional(),
   role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]).optional(),
   categoryId: z.coerce.number().optional(),
 }).strict();
 
-export type CreateUserInput = CreateUserDto;
-
+// UPDATE
 export const updateMeSchema = z.object({
   fullName: z.string().min(5).optional(),
   email: z.string().email().optional(),
@@ -44,7 +45,6 @@ export const updateMeSchema = z.object({
   phone: z.string().length(9).regex(/^\d+$/).optional(),
   imgProfile: z.string().nullable().optional(),
 });
-
 export const updateUsersSchema = z.object({
   fullName: z.string().min(5).optional(),
   email: z.string().email().optional(),

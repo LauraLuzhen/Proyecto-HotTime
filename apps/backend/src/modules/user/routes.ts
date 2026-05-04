@@ -15,21 +15,7 @@ export async function userRoutes(app: FastifyInstance) {
     return reply.status(201).send(user);
   });
 
-  // Delete user by ADMIN
-  app.delete("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
-    const parsed = getUserIdSchema.safeParse(req.params);
-    if (!parsed.success) return reply.status(400).send(httpError("Invalid user data", 400, "VALIDATION_ERROR"));
-
-    const result = await service.deleteUser(
-      parsed.data.id,
-      req.user.organizationId,
-      req.user.id
-    );
-
-    return reply.send(result);
-  });
-
-  // Get me
+    // Get me
   app.get("/me", { preHandler: [authenticate] }, async (req, reply) => {
     const user = await service.getMe(req.user.id);
     return reply.send(user);
@@ -72,6 +58,19 @@ export async function userRoutes(app: FastifyInstance) {
       parsed.data
     );
     return reply.send(user);
-  }
-);
+  });
+
+  // Delete user by ADMIN
+  app.delete("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
+    const parsed = getUserIdSchema.safeParse(req.params);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid user data", 400, "VALIDATION_ERROR"));
+
+    const result = await service.deleteUser(
+      parsed.data.id,
+      req.user.organizationId,
+      req.user.id
+    );
+
+    return reply.send(result);
+  });
 }

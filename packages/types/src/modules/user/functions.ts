@@ -1,5 +1,4 @@
 import type { CreateUserDto, CreateUserResponse, DeleteUserResponse, GetUsersQueryDto, GeneralUserResponse, UpdateMeDto, UpdateUsersDto } from "./dtos";
-import { UserEntity } from "./entities";
 
 export type CreateUserFn = (data: CreateUserDto, organizationId: number) => Promise<CreateUserResponse>;
 export type DeleteUserFn = (userId: number, organizationId: number, currentUserId: number) => Promise<DeleteUserResponse>;

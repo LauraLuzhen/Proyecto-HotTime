@@ -1,11 +1,24 @@
+// CREATE
 export interface CreateCategoryDto {
   name: string;
 }
 
-export interface UpdateCategoryDto {
+// GET
+export interface CategoriesResponse {
+  id: number;
   name: string;
+  organizationId: number;
+}
+export interface GetUsersByCategoryDto {
+  categoryId: number;
 }
 
-export interface CategoryIdParamDto {
-  id: number;
+// UPDATE
+export interface UpdateCategoryDto {
+  name?: string;
+}
+
+// DELETE
+export interface DeleteCategoryResponse {
+  success: boolean;
 }

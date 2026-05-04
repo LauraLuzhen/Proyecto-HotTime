@@ -1,59 +1,59 @@
-import type { CreateCategoryFn, DeleteCategoryFn, GetCategoriesFn, GetUsersFromCategoryFn, UpdateCategoryFn } from "@hottime/types";
+import type { GetCategoriesFn, GetUsersByCategoryFn, CreateCategoryFn, UpdateCategoryFn, DeleteCategoryFn } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import * as repo from "@/modules/category/reporitory";
+import { CreateCategoryInput, UpdateCategoryInput } from "./schemas";
 
-// GET
-export const getCategories: GetCategoriesFn = async (organizationId: number) =>
-  repo.findAllByOrganization(organizationId);
+// Create category by ADMIN
+export const createCategory: CreateCategoryFn = async (data: CreateCategoryInput, organizationId: number) => {
+  const existing = await repo.findByNameAndOrganization(data.name, organizationId);
+  if (existing) throw httpError("Category already exists", 409, "CATEGORY_ALREADY_EXISTS");
 
-export const getUsersFromCategory: GetUsersFromCategoryFn = async (
-  categoryId: number,
-  organizationId: number
-) => {
-  const category = await repo.findById(categoryId);
-
-  if (!category || category.organizationId !== organizationId) {
-    throw httpError("Category not found in your organization", 404, "CATEGORY_NOT_FOUND");
-  }
-
-  return repo.getUsersByCategory(categoryId, organizationId);
-};
-
-// CREATE
-export const createCategory: CreateCategoryFn = async (name: string, organizationId: number) => {
   return repo.create({
-    name,
+    name: data.name,
     organizationId,
   });
 };
 
-// UPDATE
-export const updateCategory: UpdateCategoryFn = async (
-  id: number,
-  name: string,
-  organizationId: number
-) => {
-  const category = await repo.findById(id);
+// Get categories
+export const getCategories: GetCategoriesFn = async (organizationId) => {
+  const org = await repo.findOrganizationById(organizationId);
+  if (!org) throw httpError("Organization not found", 404, "ORGANIZATION_NOT_FOUND");
 
-  if (!category || category.organizationId !== organizationId) {
-    throw httpError("Category not found in your organization", 404, "CATEGORY_NOT_FOUND");
-  }
-
-  return repo.updateName(id, name);
+  return repo.findByOrganization(organizationId);
 };
 
-// DELETE
-export const deleteCategory: DeleteCategoryFn = async (
-  id: number,
-  organizationId: number
-) => {
-  const category = await repo.findById(id);
+// Get users by category
+export const getUsersByCategory: GetUsersByCategoryFn = async (categoryId: number, organizationId: number) => {
+  const category = await repo.findById(categoryId);
+  if (!category) throw httpError("Category not found", 404, "CATEGORY_NOT_FOUND");
+  if (category.organizationId !== organizationId) throw httpError("Category does not belong to your organization", 403, "CATEGORY_FORBIDDEN");
 
-  if (!category || category.organizationId !== organizationId) {
-    throw httpError("Category not found in your organization", 404, "CATEGORY_NOT_FOUND");
+  return repo.findUsersByCategory(categoryId);
+};
+
+// Update category by ADMIN
+export const updateCategory: UpdateCategoryFn = async (categoryId: number, organizationId: number, data: UpdateCategoryInput) => {
+  const category = await repo.findById(categoryId);
+  if (!category) throw httpError("Category not found", 404, "CATEGORY_NOT_FOUND");
+  if (category.organizationId !== organizationId) throw httpError("Category does not belong to your organization", 403, "CATEGORY_FORBIDDEN");
+
+  if (data.name) {
+    const existing = await repo.findByNameAndOrganization(
+      data.name,
+      organizationId
+    );
+
+    if (existing && existing.id !== categoryId) throw httpError("Category already exists", 409, "CATEGORY_ALREADY_EXISTS");
   }
+  return repo.update(categoryId, data);
+};
 
-  await repo.unassignUsers(id);
+// Delete category by ADMIN
+export const deleteCategory: DeleteCategoryFn = async (categoryId: number, organizationId: number) => {
+  const category = await repo.findById(categoryId);
+  if (!category) throw httpError("Category not found", 404, "CATEGORY_NOT_FOUND");
+  if (category.organizationId !== organizationId) throw httpError("Category does not belong to your organization", 403, "CATEGORY_FORBIDDEN");
 
-  return repo.deleteCategory(id);
+  await repo.deleteCategoryWithUsers(categoryId);
+  return { success: true };
 };
