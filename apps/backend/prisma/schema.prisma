@@ -43,33 +43,18 @@ model User {
   organization            Organization        @relation(fields: [organizationId], references: [id])
 
   sentCommunications      Communication[]     @relation("SentCommunications") 
-  receivedCommunications  CommunicationUser[]
 }
 
 model Communication {
   id             Int                 @id @default(autoincrement())
   title          String              @db.VarChar(150)
   content        String              @db.Text
-  type           CommunicationType
+  type           CommunicationType   
   senderId       Int
   sender         User                @relation("SentCommunications", fields: [senderId], references: [id])
   organizationId Int
   organization   Organization        @relation(fields: [organizationId], references: [id])
   createdAt      DateTime            @default(now())
-  recipients     CommunicationUser[]
-}
-
-model CommunicationUser {
-  id               Int            @id @default(autoincrement())
-  communicationId  Int
-  userId           Int
-  communication    Communication  @relation(fields: [communicationId], references: [id])
-  user             User           @relation(fields: [userId], references: [id])
-  read             Boolean        @default(false)
-  createdAt        DateTime       @default(now())
-
-  @@unique([communicationId, userId])
-  @@index([userId, read])
 }
 
 enum Role {
@@ -79,11 +64,8 @@ enum Role {
 }
 
 enum CommunicationType {
-  GENERAL
-  REQUEST_DAYS
-  VACATION
-  ABSENCE
-  TEMP_LEAVE
-  PERM_LEAVE
-  STAFF_SHORTAGE
+  INFO        // gris
+  NORMAL      // azul
+  WARNING     // amarillo
+  URGENT      // rojo
 }
