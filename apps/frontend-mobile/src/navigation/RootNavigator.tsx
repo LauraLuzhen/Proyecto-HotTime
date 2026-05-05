@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../state/auth/AuthContext";
 import { LoginScreen } from "../screens/LoginScreen";
 import { DashboardScreen } from "../screens/DashboardScreen";
-import { AdminOnlyScreen } from "../screens/AdminOnlyScreen";
+import { AdministrationScreen } from "../screens/AdministrationScreen";
 import { ManagerOnlyScreen } from "../screens/ManagerOnlyScreen";
 import { EmployeeOnlyScreen } from "../screens/EmployeeOnlyScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
@@ -23,7 +23,7 @@ function AppDrawer() {
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
       <Drawer.Screen name="Contacts" component={ContactsScreen} />
-      <Drawer.Screen name="Admin" component={AdminOnlyScreen} />
+      <Drawer.Screen name="Administration" component={AdministrationScreen} />
       <Drawer.Screen name="Manager" component={ManagerOnlyScreen} />
       <Drawer.Screen name="Employee" component={EmployeeOnlyScreen} />
     </Drawer.Navigator>

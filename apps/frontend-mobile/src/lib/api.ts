@@ -135,17 +135,17 @@ export function createApi(getToken: () => string | null | Promise<string | null>
     user: {
       getUsers: (filters?: GetUsersQueryDto) => http.get<GeneralUserResponse[]>(`/users${buildUserQuery(filters)}`),
       getMe: () => http.get<MeResponse>("/users/me"),
-      createUser: (data: CreateUserDto, organizationId: number) => http.post<CreateUserResponse, CreateUserDto>("/users", data),
+      createUser: (data: CreateUserDto) => http.post<CreateUserResponse, CreateUserDto>("/users", data),
       updateMe: (data: UpdateMeDto) => http.patch<GeneralUserResponse, UpdateMeDto>("/users/me", data),
-      updateUsers: (userId: number, adminOrganizationId: number, currentUserId: number, data: UpdateUsersDto) => http.patch<GeneralUserResponse, UpdateUsersDto>(`/users/${userId}`, data),
-      deleteUser: (userId: number, organizationId: number, currentUserId: number) => http.delete<DeleteUserResponse>(`/users/${userId}`),
+      updateUsers: (userId: number, data: UpdateUsersDto) => http.patch<GeneralUserResponse, UpdateUsersDto>(`/users/${userId}`, data),
+      deleteUser: (userId: number) => http.delete<DeleteUserResponse>(`/users/${userId}`),
     },
     category: {
       getCategories: () => http.get<CategoriesResponse[]>("/categories"),
       getUsersByCategory: (categoryId: number, organizationId: number) => http.get<GeneralUserResponse[]>(`/categories/${categoryId}/users`),
-      createCategory: (data: CreateCategoryDto, organizationId: number) => http.post<CategoriesResponse, CreateCategoryDto>("/categories", data),
-      updateCategory: (categoryId: number, organizationId: number, data: UpdateCategoryDto) => http.patch<CategoriesResponse, UpdateCategoryDto>(`/categories/${categoryId}`, data),
-      deleteCategory: (categoryId: number, organizationId: number) => http.delete<DeleteCategoryResponse>(`/categories/${categoryId}`),
+      createCategory: (data: CreateCategoryDto) => http.post<CategoriesResponse, CreateCategoryDto>("/categories", data),
+      updateCategory: (categoryId: number, data: UpdateCategoryDto) => http.patch<CategoriesResponse, UpdateCategoryDto>(`/categories/${categoryId}`, data),
+      deleteCategory: (categoryId: number) => http.delete<DeleteCategoryResponse>(`/categories/${categoryId}`),
     },
   };
 }

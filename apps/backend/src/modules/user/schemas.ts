@@ -3,7 +3,7 @@ import type { CreateUserDto } from "@hottime/types";
 
 // CREATE
 export const createUserSchema = z.object({
-  fullName: z.string().min(5),
+  fullName: z.string().min(1),
   email: z.string().email(),
   password: z
     .string()
@@ -31,7 +31,7 @@ export const getUsersSchema = z.object({
 
 // UPDATE
 export const updateMeSchema = z.object({
-  fullName: z.string().min(5).optional(),
+  fullName: z.string().min(1).optional(),
   email: z.string().email().optional(),
   password: z
     .string()
@@ -46,7 +46,7 @@ export const updateMeSchema = z.object({
   imgProfile: z.string().nullable().optional(),
 });
 export const updateUsersSchema = z.object({
-  fullName: z.string().min(5).optional(),
+  fullName: z.string().min(1).optional(),
   email: z.string().email().optional(),
   password: z
     .string()

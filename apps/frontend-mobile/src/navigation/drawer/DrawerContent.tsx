@@ -32,8 +32,8 @@ export function DrawerContent(props: DrawerContentComponentProps) {
               {/* visible para ADMIN */}
               {auth.user?.role === "ADMIN" && (
                 <DrawerItem
-                  label="Admin Settings"
-                  onPress={() => props.navigation.navigate("Admin")}
+                  label="Administration"
+                  onPress={() => props.navigation.navigate("Administration")}
                 />
               )}
 
