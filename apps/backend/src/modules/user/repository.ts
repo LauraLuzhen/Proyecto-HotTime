@@ -97,6 +97,35 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
     },
   });
 }
+
+// Find user with name category and organization
+export function findMeWithRelations(userId: number) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      phone: true,
+      imgProfile: true,
+      birthDate: true,
+      initDate: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      organization: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+}
 //#endregion
 
 //#region UPDATE

@@ -15,7 +15,7 @@ export async function userRoutes(app: FastifyInstance) {
     return reply.status(201).send(user);
   });
 
-    // Get me
+  // Get me
   app.get("/me", { preHandler: [authenticate] }, async (req, reply) => {
     const user = await service.getMe(req.user.id);
     return reply.send(user);

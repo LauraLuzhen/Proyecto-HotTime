@@ -1,15 +1,8 @@
 import { createContext, useContext } from "react";
 
-import type { Role } from "@hottime/types";
+import type { MeResponse, UpdateMeDto } from "@hottime/types";
 
-export interface SessionUser {
-  id: number;
-  email: string;
-  fullName: string;
-  role: Role;
-  categoryId: number;
-  organizationId: number;
-}
+export type SessionUser = MeResponse;
 
 export interface AuthState {
   status: "loading" | "anonymous" | "authenticated";
@@ -21,6 +14,7 @@ export interface AuthActions {
   login(email: string, password: string): Promise<void>;
   logout(): Promise<void>;
   refreshMe(): Promise<void>;
+  updateMe(data: UpdateMeDto): Promise<void>;
 }
 
 export const AuthContext = createContext<(AuthState & AuthActions) | null>(null);

@@ -4,17 +4,6 @@ import { createApi, type ApiClientError } from "../../lib/api";
 import { AuthContext, type SessionUser } from "./AuthContext";
 import { tokenStorage } from "./storage";
 
-function toSessionUser(me: any): SessionUser {
-  return {
-    id: me.id,
-    email: me.email,
-    fullName: me.fullName,
-    role: me.role,
-    categoryId: me.categoryId,
-    organizationId: me.organizationId,
-  };
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -34,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const me = await api.user.getMe();
-      setUser(toSessionUser(me));
+      setUser(me);
       setStatus("authenticated");
     } catch (err) {
       const e = err as ApiClientError;
@@ -66,6 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus("anonymous");
   }, []);
 
+  const updateMe = useCallback(
+    async (data: Parameters<typeof api.user.updateMe>[0]) => {
+      await api.user.updateMe(data);
+      await refreshMe();
+    },
+    [api.user, refreshMe]
+  );
+
   useEffect(() => {
     refreshMe().catch(() => setStatus("anonymous"));
   }, [refreshMe]);
@@ -78,8 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       refreshMe,
+      updateMe,
     }),
-    [status, token, user, login, logout, refreshMe]
+    [status, token, user, login, logout, refreshMe, updateMe]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

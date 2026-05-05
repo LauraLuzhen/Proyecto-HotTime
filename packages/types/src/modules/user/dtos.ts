@@ -40,6 +40,24 @@ export interface GeneralUserResponse {
   organizationId: number;
   categoryId: number | null;
 }
+export interface MeResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  role: Role;
+  phone: string;
+  imgProfile: string | null;
+  birthDate: Date;
+  initDate: Date;
+  category: {
+    id: number;
+    name: string;
+  } | null;
+  organization: {
+    id: number;
+    name: string;
+  };
+}
 
 // UPDATE
 export interface UpdateMeDto {

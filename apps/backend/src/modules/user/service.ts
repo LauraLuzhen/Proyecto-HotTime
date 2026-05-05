@@ -29,7 +29,7 @@ export const createUser: CreateUserFn = async (data, organizationId) => {
 
 // Get me
 export const getMe: GetMeFn = async (userId: number) => {
-  const user = await repo.findById(userId);
+  const user = await repo.findMeWithRelations(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   return user;
 };

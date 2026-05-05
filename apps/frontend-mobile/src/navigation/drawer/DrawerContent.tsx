@@ -1,5 +1,7 @@
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
+import { Alert } from "react-native";
+
 import { useAuth } from "../../state/auth/AuthContext";
 
 export function DrawerContent(props: DrawerContentComponentProps) {
@@ -8,7 +10,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
   return (
     <DrawerContentScrollView {...props}>
       <DrawerItem label="Dashboard" onPress={() => props.navigation.navigate("Dashboard")} />
-
+      <DrawerItem label="Profile" onPress={() => props.navigation.navigate("Profile")} />
       {auth.user?.role === "ADMIN" && (
         <DrawerItem label="Admin (vacía)" onPress={() => props.navigation.navigate("Admin")} />
       )}
@@ -21,8 +23,17 @@ export function DrawerContent(props: DrawerContentComponentProps) {
 
       <DrawerItem
         label="Logout"
-        onPress={async () => {
-          await auth.logout();
+        onPress={() => {
+          Alert.alert("Cerrar sesion", "Seguro que quieres cerrar sesion?", [
+            { text: "No", style: "cancel" },
+            {
+              text: "Si",
+              style: "destructive",
+              onPress: () => {
+                void auth.logout();
+              },
+            },
+          ]);
         }}
       />
     </DrawerContentScrollView>
