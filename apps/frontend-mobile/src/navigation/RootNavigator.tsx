@@ -8,6 +8,7 @@ import { AdminOnlyScreen } from "../screens/AdminOnlyScreen";
 import { ManagerOnlyScreen } from "../screens/ManagerOnlyScreen";
 import { EmployeeOnlyScreen } from "../screens/EmployeeOnlyScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
+import { ContactsScreen } from "../screens/ContactsScreen";
 import { DrawerContent } from "./drawer/DrawerContent";
 
 const Stack = createNativeStackNavigator();
@@ -21,6 +22,7 @@ function AppDrawer() {
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="Contacts" component={ContactsScreen} />
       <Drawer.Screen name="Admin" component={AdminOnlyScreen} />
       <Drawer.Screen name="Manager" component={ManagerOnlyScreen} />
       <Drawer.Screen name="Employee" component={EmployeeOnlyScreen} />

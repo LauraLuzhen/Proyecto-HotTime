@@ -110,7 +110,7 @@ class BackendHttpClient {
   }
 }
 
-function buildUserQuery(filters: GetUsersQueryDto): string {
+function buildUserQuery(filters?: GetUsersQueryDto): string {
   if (!filters) return "";
 
   const params = new URLSearchParams();
@@ -133,7 +133,7 @@ export function createApi(getToken: () => string | null | Promise<string | null>
       resetPassword: (data: ResetPasswordDto) => http.post<SuccessResponse, ResetPasswordDto>("/auth/reset-password", data),
     },
     user: {
-      getUsers: (organizationId: number, filters: GetUsersQueryDto, userId: number) => http.get<GeneralUserResponse[]>(`/users${buildUserQuery(filters)}`),
+      getUsers: (filters?: GetUsersQueryDto) => http.get<GeneralUserResponse[]>(`/users${buildUserQuery(filters)}`),
       getMe: () => http.get<MeResponse>("/users/me"),
       createUser: (data: CreateUserDto, organizationId: number) => http.post<CreateUserResponse, CreateUserDto>("/users", data),
       updateMe: (data: UpdateMeDto) => http.patch<GeneralUserResponse, UpdateMeDto>("/users/me", data),
@@ -141,7 +141,7 @@ export function createApi(getToken: () => string | null | Promise<string | null>
       deleteUser: (userId: number, organizationId: number, currentUserId: number) => http.delete<DeleteUserResponse>(`/users/${userId}`),
     },
     category: {
-      getCategories: (organizationId: number) => http.get<CategoriesResponse[]>("/categories"),
+      getCategories: () => http.get<CategoriesResponse[]>("/categories"),
       getUsersByCategory: (categoryId: number, organizationId: number) => http.get<GeneralUserResponse[]>(`/categories/${categoryId}/users`),
       createCategory: (data: CreateCategoryDto, organizationId: number) => http.post<CategoriesResponse, CreateCategoryDto>("/categories", data),
       updateCategory: (categoryId: number, organizationId: number, data: UpdateCategoryDto) => http.patch<CategoriesResponse, UpdateCategoryDto>(`/categories/${categoryId}`, data),
