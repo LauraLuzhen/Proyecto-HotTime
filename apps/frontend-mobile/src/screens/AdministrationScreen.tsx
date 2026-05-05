@@ -24,6 +24,8 @@ type CategoryGroup = {
   users: GeneralUserResponse[];
 };
 
+type FieldErrors = Partial<Record<"fullName" | "email" | "password" | "phone" | "birthDate" | "initDate" | "categoryName", string>>;
+
 const roles: Role[] = ["ADMIN", "MANAGER", "EMPLOYEE"];
 
 function initials(name?: string) {
@@ -55,7 +57,54 @@ function formatDate(value?: Date) {
 function toDateInputValue(value?: Date) {
   if (!value) return "";
 
-  return new Date(value).toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value)).replace(/\//g, "-");
+}
+
+function parseDateInput(value: string): Date | null {
+  const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+function validateName(value: string, minLength: number) {
+  return value.trim().length >= minLength ? undefined : `Minimo ${minLength} caracteres.`;
+}
+
+function validateEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? undefined : "Formato email: correo@correo.com.";
+}
+
+function validatePassword(value: string, required: boolean) {
+  const password = value.trim();
+  if (!required && !password) return undefined;
+  if (password.length < 8) return "Minimo 8 caracteres.";
+  if (!/[A-Z]/.test(password)) return "Debe tener 1 mayuscula.";
+  if (!/[a-z]/.test(password)) return "Debe tener 1 minuscula.";
+  if (!/[0-9]/.test(password)) return "Debe tener 1 numero.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Debe tener 1 caracter especial.";
+  return undefined;
+}
+
+function validatePhone(value: string) {
+  return /^\d{9}$/.test(value.trim()) ? undefined : "Debe tener 9 digitos.";
+}
+
+function validateDate(value: string) {
+  const parsed = parseDateInput(value);
+  if (!parsed) return "Formato fecha: DD-MM-YYYY.";
+  if (parsed >= new Date()) return "La fecha debe ser anterior a hoy.";
+  return undefined;
 }
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {
@@ -84,6 +133,7 @@ function Field({
   autoCapitalize = "sentences",
   keyboardType = "default",
   secureTextEntry,
+  error,
 }: {
   label: string;
   value: string;
@@ -92,6 +142,7 @@ function Field({
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   keyboardType?: "default" | "email-address" | "phone-pad";
   secureTextEntry?: boolean;
+  error?: string;
 }) {
   return (
     <View style={styles.field}>
@@ -105,6 +156,7 @@ function Field({
         style={styles.editInput}
         value={value}
       />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>
   );
 }
@@ -176,6 +228,7 @@ export function AdministrationScreen() {
   const [formRole, setFormRole] = useState<Role>("EMPLOYEE");
   const [formCategoryId, setFormCategoryId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [createCategoryName, setCreateCategoryName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -274,6 +327,7 @@ export function AdministrationScreen() {
     setSelectedUser(null);
     setEditing(false);
     setFormError(null);
+    setFieldErrors({});
   }
 
   function closeCategoryPreview() {
@@ -281,12 +335,14 @@ export function AdministrationScreen() {
     setCategoryEditing(false);
     setCategoryName("");
     setFormError(null);
+    setFieldErrors({});
   }
 
   function closeCreateModal() {
     setCreateMode(null);
     setFabOpen(false);
     setFormError(null);
+    setFieldErrors({});
     setCreateCategoryName("");
     setFormFullName("");
     setFormEmail("");
@@ -310,6 +366,7 @@ export function AdministrationScreen() {
     setFormRole(selectedUser.role);
     setFormCategoryId(selectedUser.categoryId);
     setFormError(null);
+    setFieldErrors({});
     setEditing(true);
   }
 
@@ -324,6 +381,7 @@ export function AdministrationScreen() {
     setFormRole("EMPLOYEE");
     setFormCategoryId(null);
     setFormError(null);
+    setFieldErrors({});
   }
 
   function openCreateCategory() {
@@ -331,6 +389,7 @@ export function AdministrationScreen() {
     setFabOpen(false);
     setCreateCategoryName("");
     setFormError(null);
+    setFieldErrors({});
   }
 
   function openCategoryPreview(category: CategoriesResponse) {
@@ -338,15 +397,28 @@ export function AdministrationScreen() {
     setCategoryName(category.name);
     setCategoryEditing(false);
     setFormError(null);
+    setFieldErrors({});
   }
 
   async function saveUser() {
     if (!selectedUser) return;
 
-    if (!formFullName.trim() || !formEmail.trim() || !formPhone.trim() || !formBirthDate.trim() || !formInitDate.trim()) {
-      setFormError("Completa nombre, email, telefono, nacimiento y fecha de alta.");
+    const errors: FieldErrors = {
+      fullName: validateName(formFullName, 5),
+      email: validateEmail(formEmail),
+      phone: validatePhone(formPhone),
+      birthDate: validateDate(formBirthDate),
+      initDate: validateDate(formInitDate),
+      password: validatePassword(formPassword, false),
+    };
+
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
       return;
     }
+
+    const birthDate = parseDateInput(formBirthDate)!;
+    const initDate = parseDateInput(formInitDate)!;
 
     setSaving(true);
     setFormError(null);
@@ -355,8 +427,8 @@ export function AdministrationScreen() {
       fullName: formFullName.trim(),
       email: formEmail.trim(),
       phone: formPhone.trim(),
-      birthDate: new Date(`${formBirthDate}T00:00:00`),
-      initDate: new Date(`${formInitDate}T00:00:00`),
+      birthDate,
+      initDate,
       role: formRole,
       categoryId: formCategoryId,
     };
@@ -377,10 +449,20 @@ export function AdministrationScreen() {
   }
 
   async function createUser() {
-    if (!formFullName.trim() || !formEmail.trim() || !formPhone.trim() || !formBirthDate.trim() || !formPassword.trim()) {
-      setFormError("Completa nombre, email, password, telefono y nacimiento.");
+    const errors: FieldErrors = {
+      fullName: validateName(formFullName, 5),
+      email: validateEmail(formEmail),
+      password: validatePassword(formPassword, true),
+      phone: validatePhone(formPhone),
+      birthDate: validateDate(formBirthDate),
+    };
+
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
       return;
     }
+
+    const birthDate = parseDateInput(formBirthDate)!;
 
     setSaving(true);
     setFormError(null);
@@ -391,7 +473,7 @@ export function AdministrationScreen() {
         email: formEmail.trim(),
         password: formPassword.trim(),
         role: formRole,
-        birthDate: new Date(`${formBirthDate}T00:00:00`),
+        birthDate,
         phone: formPhone.trim(),
         categoryId: formCategoryId,
       });
@@ -406,8 +488,12 @@ export function AdministrationScreen() {
   }
 
   async function createCategory() {
-    if (!createCategoryName.trim()) {
-      setFormError("Introduce un nombre de categoria.");
+    const errors: FieldErrors = {
+      categoryName: validateName(createCategoryName, 3),
+    };
+
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
       return;
     }
 
@@ -429,8 +515,12 @@ export function AdministrationScreen() {
   async function saveCategory() {
     if (!selectedCategory) return;
 
-    if (!categoryName.trim()) {
-      setFormError("Introduce un nombre de categoria.");
+    const errors: FieldErrors = {
+      categoryName: validateName(categoryName, 3),
+    };
+
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
       return;
     }
 
@@ -628,28 +718,31 @@ export function AdministrationScreen() {
 
                 {editing ? (
                   <View style={styles.editPanel}>
-                    <Field label="Nombre" value={formFullName} onChangeText={setFormFullName} />
+                    <Field label="Nombre" value={formFullName} onChangeText={setFormFullName} error={fieldErrors.fullName} />
                     <Field
                       autoCapitalize="none"
                       keyboardType="email-address"
                       label="Email"
                       value={formEmail}
                       onChangeText={setFormEmail}
+                      error={fieldErrors.email}
                     />
-                    <Field keyboardType="phone-pad" label="Telefono" value={formPhone} onChangeText={setFormPhone} />
+                    <Field keyboardType="phone-pad" label="Telefono" value={formPhone} onChangeText={setFormPhone} error={fieldErrors.phone} />
                     <Field
                       autoCapitalize="none"
                       label="Nacimiento"
-                      placeholder="YYYY-MM-DD"
+                      placeholder="DD-MM-YYYY"
                       value={formBirthDate}
                       onChangeText={setFormBirthDate}
+                      error={fieldErrors.birthDate}
                     />
                     <Field
                       autoCapitalize="none"
                       label="Alta"
-                      placeholder="YYYY-MM-DD"
+                      placeholder="DD-MM-YYYY"
                       value={formInitDate}
                       onChangeText={setFormInitDate}
+                      error={fieldErrors.initDate}
                     />
                     <Field
                       autoCapitalize="none"
@@ -658,6 +751,7 @@ export function AdministrationScreen() {
                       secureTextEntry
                       value={formPassword}
                       onChangeText={setFormPassword}
+                      error={fieldErrors.password}
                     />
                     <SelectField
                       label="Rol"
@@ -736,7 +830,7 @@ export function AdministrationScreen() {
 
                 {categoryEditing ? (
                   <View style={styles.editPanel}>
-                    <Field label="Nombre" value={categoryName} onChangeText={setCategoryName} />
+                    <Field label="Nombre" value={categoryName} onChangeText={setCategoryName} error={fieldErrors.categoryName} />
                     {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
                     <View style={styles.modalActions}>
@@ -784,13 +878,14 @@ export function AdministrationScreen() {
 
               {createMode === "user" ? (
                 <View style={styles.editPanel}>
-                  <Field label="Nombre" value={formFullName} onChangeText={setFormFullName} />
+                  <Field label="Nombre" value={formFullName} onChangeText={setFormFullName} error={fieldErrors.fullName} />
                   <Field
                     autoCapitalize="none"
                     keyboardType="email-address"
                     label="Email"
                     value={formEmail}
                     onChangeText={setFormEmail}
+                    error={fieldErrors.email}
                   />
                   <Field
                     autoCapitalize="none"
@@ -798,14 +893,16 @@ export function AdministrationScreen() {
                     secureTextEntry
                     value={formPassword}
                     onChangeText={setFormPassword}
+                    error={fieldErrors.password}
                   />
-                  <Field keyboardType="phone-pad" label="Telefono" value={formPhone} onChangeText={setFormPhone} />
+                  <Field keyboardType="phone-pad" label="Telefono" value={formPhone} onChangeText={setFormPhone} error={fieldErrors.phone} />
                   <Field
                     autoCapitalize="none"
                     label="Nacimiento"
-                    placeholder="YYYY-MM-DD"
+                    placeholder="DD-MM-YYYY"
                     value={formBirthDate}
                     onChangeText={setFormBirthDate}
+                    error={fieldErrors.birthDate}
                   />
                   <SelectField
                     label="Rol"
@@ -823,7 +920,7 @@ export function AdministrationScreen() {
                   />
                 </View>
               ) : (
-                <Field label="Nombre" value={createCategoryName} onChangeText={setCreateCategoryName} />
+                <Field label="Nombre" value={createCategoryName} onChangeText={setCreateCategoryName} error={fieldErrors.categoryName} />
               )}
 
               {formError ? <Text style={styles.formError}>{formError}</Text> : null}
@@ -1110,6 +1207,10 @@ const styles = StyleSheet.create({
     color: "#4c4c47",
     fontSize: 13,
     fontWeight: "700",
+  },
+  fieldError: {
+    color: "#b42318",
+    fontSize: 12,
   },
   editInput: {
     borderColor: "#d7d7d0",
