@@ -10,6 +10,7 @@ function toSessionUser(me: any): SessionUser {
     email: me.email,
     fullName: me.fullName,
     role: me.role,
+    categoryId: me.categoryId,
     organizationId: me.organizationId,
   };
 }

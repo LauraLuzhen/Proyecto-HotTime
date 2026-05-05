@@ -18,6 +18,10 @@ ResetPassword POST - /auth/reset-password ✅
 LogIn
 Get me GET - /users/me ✅
 Get users GET - /users ✅
+    filtros
+        /users?fullName=juan
+        /users?role=ADMIN
+        /users?categoryId=2
 Create user by admin POST - /users ✅
 {
     "fullName": "Juan Perez",
@@ -55,8 +59,8 @@ Create category by admin POST - /categories ✅
 {
   "name": "Nueva categoria"
 }
-Update category by admin PATCH - /categories/:id
+Update category by admin PATCH - /categories/:id ✅
 {
   "name": "Cocina nueva"
 }
-Delete category by admin DELETE - /categories/:id
+Delete category by admin DELETE - /categories/:id ✅

@@ -16,6 +16,7 @@ export function DashboardScreen() {
         <Text>Nombre: {u?.fullName}</Text>
         <Text>Email: {u?.email}</Text>
         <Text>Rol: {u?.role}</Text>
+        <Text>CategoryId: {u?.categoryId}</Text>
         <Text>OrganizationId: {u?.organizationId}</Text>
       </View>
     </SafeAreaView>

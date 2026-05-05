@@ -1,18 +1,21 @@
 import type {
-  AdminCreateUserDto,
-  CategoryEntity,
-  ChangePasswordDto,
-  CreateCategoryDto,
-  ForgotPasswordDto,
-  ForgotPasswordResponseDto,
   LoginDto,
-  LoginResponseDto,
+  LogInResponse,
+  ForgotPasswordDto,
+  ForgotPasswordResponse,
   ResetPasswordDto,
-  ResetPasswordResponseDto,
+  SuccessResponse,
+  CategoriesResponse,
+  CreateCategoryDto,
+  GeneralUserResponse,
   UpdateCategoryDto,
+  DeleteCategoryResponse,
+  CreateUserDto,
+  GetUsersQueryDto,
   UpdateMeDto,
-  UserEntity,
-  UserFiltersDto,
+  UpdateUsersDto,
+  CreateUserResponse,
+  DeleteUserResponse,
 } from "@hottime/types";
 
 export interface ApiErrorResponse {
@@ -36,7 +39,7 @@ export class ApiClientError extends Error {
 }
 
 type TokenProvider = () => string | null | undefined | Promise<string | null | undefined>;
-type Method = "GET" | "POST" | "PUT" | "DELETE";
+type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 interface RequestOptions {
   method: Method;
@@ -63,6 +66,10 @@ class BackendHttpClient {
 
   put<TResponse, TBody = unknown>(path: string, body?: TBody): Promise<TResponse> {
     return this.request<TResponse>({ method: "PUT", path, body });
+  }
+
+  patch<TResponse, TBody = unknown>(path: string, body?: TBody): Promise<TResponse> {
+    return this.request<TResponse>({ method: "PATCH", path, body });
   }
 
   delete<TResponse>(path: string): Promise<TResponse> {
@@ -102,7 +109,7 @@ class BackendHttpClient {
   }
 }
 
-function buildUserQuery(filters?: UserFiltersDto): string {
+function buildUserQuery(filters: GetUsersQueryDto): string {
   if (!filters) return "";
 
   const params = new URLSearchParams();
@@ -120,30 +127,24 @@ export function createApi(getToken: () => string | null | Promise<string | null>
 
   return {
     auth: {
-      login: (data: LoginDto) => http.post<LoginResponseDto, LoginDto>("/auth/login", data),
-      forgotPassword: (data: ForgotPasswordDto) =>
-        http.post<ForgotPasswordResponseDto, ForgotPasswordDto>("/auth/forgot-password", data),
-      resetPassword: (data: ResetPasswordDto) =>
-        http.post<ResetPasswordResponseDto, ResetPasswordDto>("/auth/reset-password", data),
+      login: (data: LoginDto) => http.post<LogInResponse, LoginDto>("/auth/login", data),
+      forgotPassword: (data: ForgotPasswordDto) => http.post<ForgotPasswordResponse, ForgotPasswordDto>("/auth/forgot-password", data),
+      resetPassword: (data: ResetPasswordDto) => http.post<SuccessResponse, ResetPasswordDto>("/auth/reset-password", data),
     },
     user: {
-      getUsers: (filters?: UserFiltersDto) =>
-        http.get<(UserEntity & { category?: unknown; organization?: unknown })[]>(`/users${buildUserQuery(filters)}`),
-      getMe: () => http.get<Omit<UserEntity, "password" | "resetToken" | "resetTokenExp">>("/users/me"),
-      createUser: (data: AdminCreateUserDto) => http.post<UserEntity, AdminCreateUserDto>("/users", data),
-      updateMe: (data: UpdateMeDto) => http.put<UserEntity, UpdateMeDto>("/users/me", data),
-      changeMyPassword: (data: ChangePasswordDto) =>
-        http.put<UserEntity, ChangePasswordDto>("/users/me/password", data),
-      deleteUser: (userId: number) => http.delete<UserEntity>(`/users/${userId}`),
+      getUsers: (organizationId: number, filters: GetUsersQueryDto, userId: number) => http.get<GeneralUserResponse[]>(`/users${buildUserQuery(filters)}`),
+      getMe: (userId?: number) => http.get<GeneralUserResponse>("/users/me"),
+      createUser: (data: CreateUserDto, organizationId: number) => http.post<CreateUserResponse, CreateUserDto>("/users", data),
+      updateMe: (userId: number, data: UpdateMeDto) => http.patch<GeneralUserResponse, UpdateMeDto>("/users/me", data),
+      updateUsers: (userId: number, adminOrganizationId: number, currentUserId: number, data: UpdateUsersDto) => http.patch<GeneralUserResponse, UpdateUsersDto>(`/users/${userId}`, data),
+      deleteUser: (userId: number, organizationId: number, currentUserId: number) => http.delete<DeleteUserResponse>(`/users/${userId}`),
     },
     category: {
-      getCategories: () => http.get<CategoryEntity[]>("/categories"),
-      getUsersByCategory: (categoryId: number) => http.get<UserEntity[]>(`/categories/${categoryId}/users`),
-      createCategory: (data: CreateCategoryDto) => http.post<CategoryEntity, CreateCategoryDto>("/categories", data),
-      updateCategory: (categoryId: number, data: UpdateCategoryDto) =>
-        http.put<CategoryEntity, UpdateCategoryDto>(`/categories/${categoryId}`, data),
-      deleteCategory: (categoryId: number) => http.delete<CategoryEntity>(`/categories/${categoryId}`),
+      getCategories: (organizationId: number) => http.get<CategoriesResponse[]>("/categories"),
+      getUsersByCategory: (categoryId: number, organizationId: number) => http.get<GeneralUserResponse[]>(`/categories/${categoryId}/users`),
+      createCategory: (data: CreateCategoryDto, organizationId: number) => http.post<CategoriesResponse, CreateCategoryDto>("/categories", data),
+      updateCategory: (categoryId: number, organizationId: number, data: UpdateCategoryDto) => http.patch<CategoriesResponse, UpdateCategoryDto>(`/categories/${categoryId}`, data),
+      deleteCategory: (categoryId: number, organizationId: number) => http.delete<DeleteCategoryResponse>(`/categories/${categoryId}`),
     },
   };
 }
-

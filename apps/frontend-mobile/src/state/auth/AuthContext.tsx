@@ -7,6 +7,7 @@ export interface SessionUser {
   email: string;
   fullName: string;
   role: Role;
+  categoryId: number;
   organizationId: number;
 }
 

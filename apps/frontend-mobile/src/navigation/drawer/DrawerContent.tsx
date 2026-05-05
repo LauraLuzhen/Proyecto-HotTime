@@ -1,6 +1,5 @@
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
-
 import { useAuth } from "../../state/auth/AuthContext";
 
 export function DrawerContent(props: DrawerContentComponentProps) {
