@@ -9,7 +9,7 @@ CREATE TABLE "Communication" (
     "type" "CommunicationType" NOT NULL,
     "senderId" INTEGER NOT NULL,
     "organizationId" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Communication_pkey" PRIMARY KEY ("id")
 );

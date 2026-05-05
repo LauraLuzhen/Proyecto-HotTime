@@ -9,4 +9,4 @@ export interface ApiErrorPayload {
   statusCode: number;
 }
 export type Role = "ADMIN" | "MANAGER" | "EMPLOYEE";
-export type CommunicationType = "GENERAL" | "REQUEST_DAYS" | "VACATION" | "ABSENCE" | "TEMP_LEAVE" | "PERM_LEAVE" | "STAFF_SHORTAGE";
+export type CommunicationType = "GENERAL" | "INFO" | "WARNING" | "URGENT";

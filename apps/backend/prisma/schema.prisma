@@ -54,7 +54,7 @@ model Communication {
   sender         User                @relation("SentCommunications", fields: [senderId], references: [id])
   organizationId Int
   organization   Organization        @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime            @default(now())
+  sentAt         DateTime            @default(now())
 }
 
 enum Role {
@@ -64,8 +64,8 @@ enum Role {
 }
 
 enum CommunicationType {
-  INFO        // gris
-  NORMAL      // azul
-  WARNING     // amarillo
-  URGENT      // rojo
+  INFO        
+  NORMAL      
+  WARNING    
+  URGENT      
 }
