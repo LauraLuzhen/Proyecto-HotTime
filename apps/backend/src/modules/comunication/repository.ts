@@ -43,16 +43,7 @@ const communicationSelect = {
   },
 } satisfies Prisma.CommunicationSelect;
 
-export function findUserById(userId: number) {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      organizationId: true,
-    },
-  });
-}
-
+//#region CREATE
 export async function createForOrganization(data: CreateCommunicationDto, senderId: number, organizationId: number) {
   return prisma.$transaction(async (tx) => {
     const recipients = await tx.user.findMany({
@@ -79,6 +70,18 @@ export async function createForOrganization(data: CreateCommunicationDto, sender
       },
       select: communicationSelect,
     });
+  });
+}
+//#endregion
+
+//#region GET
+export function findUserById(userId: number) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      organizationId: true,
+    },
   });
 }
 
@@ -150,6 +153,7 @@ export function findSentCommunication(communicationId: number, userId: number, o
     select: communicationSelect,
   });
 }
+//#endregion
 
 export function markRecipientAsRead(recipientCommunicationId: number) {
   return prisma.communicationUser.update({

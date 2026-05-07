@@ -30,7 +30,7 @@ Create user by admin POST - /users ✅
     "role": "EMPLOYEE",
     "birthDate": "2000-01-01",
     "phone": "123456789",
-    "categoryId": 1
+    "categoryId": [1]
 }
 Delete user by admin DELETE - /users/:id ✅
 Update me PATCH - /users/me ✅
@@ -48,7 +48,7 @@ Update user by admin PATCH - /users/:id ✅
     "imgProfile": null,
     "role": "MANAGER",
     "initDate": "2025-01-03",
-    "categoryId": null
+    "categoryId": [2]
 }
 
 ## CATEGORY
