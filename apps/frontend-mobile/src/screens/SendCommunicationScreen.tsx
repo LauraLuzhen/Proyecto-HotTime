@@ -52,6 +52,10 @@ export function SendCommunicationScreen() {
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [selectedWithoutCategory, setSelectedWithoutCategory] = useState(false);
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
+  const [withoutCategoryExpanded, setWithoutCategoryExpanded] = useState(false);
+  const [extraCategoryUserIds, setExtraCategoryUserIds] = useState<number[]>([]);
+  const [excludedCategoryUserIds, setExcludedCategoryUserIds] = useState<number[]>([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,6 +73,44 @@ export function SendCommunicationScreen() {
       );
     });
   }, [searchText, users]);
+
+  const usersWithoutCategory = useMemo(() => {
+    return users.filter((user) => user.categories.length === 0);
+  }, [users]);
+
+  const usersByCategoryId = useMemo(() => {
+    const groups = new Map<number, GeneralUserResponse[]>();
+
+    categories.forEach((category) => groups.set(category.id, []));
+    users.forEach((user) => {
+      user.categories.forEach((category) => {
+        groups.get(category.id)?.push(user);
+      });
+    });
+
+    return groups;
+  }, [categories, users]);
+
+  const categoryRecipientIds = useMemo(() => {
+    const recipientIds = new Set<number>();
+    const excludedIds = new Set(excludedCategoryUserIds);
+
+    selectedCategoryIds.forEach((categoryId) => {
+      usersByCategoryId.get(categoryId)?.forEach((user) => {
+        if (!excludedIds.has(user.id)) recipientIds.add(user.id);
+      });
+    });
+
+    if (selectedWithoutCategory) {
+      usersWithoutCategory.forEach((user) => {
+        if (!excludedIds.has(user.id)) recipientIds.add(user.id);
+      });
+    }
+
+    extraCategoryUserIds.forEach((userId) => recipientIds.add(userId));
+
+    return recipientIds;
+  }, [excludedCategoryUserIds, extraCategoryUserIds, selectedCategoryIds, selectedWithoutCategory, usersByCategoryId, usersWithoutCategory]);
 
   useEffect(() => {
     async function loadRecipients() {
@@ -102,10 +144,63 @@ export function SendCommunicationScreen() {
   }
 
   function toggleCategory(categoryId: number) {
+    const groupUserIds = usersByCategoryId.get(categoryId)?.map((user) => user.id) ?? [];
+    if (groupUserIds.length === 0) return;
+
     setSelectedCategoryIds((current) => (
       current.includes(categoryId)
         ? current.filter((id) => id !== categoryId)
         : [...current, categoryId]
+    ));
+    setExtraCategoryUserIds((current) => current.filter((id) => !groupUserIds.includes(id)));
+    setExcludedCategoryUserIds((current) => current.filter((id) => !groupUserIds.includes(id)));
+  }
+
+  function toggleCategoryExpanded(categoryId: number) {
+    setExpandedCategoryIds((current) => (
+      current.includes(categoryId)
+        ? current.filter((id) => id !== categoryId)
+        : [...current, categoryId]
+    ));
+  }
+
+  function toggleWithoutCategory() {
+    const groupUserIds = usersWithoutCategory.map((user) => user.id);
+    if (groupUserIds.length === 0) return;
+
+    setSelectedWithoutCategory((current) => !current);
+    setExtraCategoryUserIds((current) => current.filter((id) => !groupUserIds.includes(id)));
+    setExcludedCategoryUserIds((current) => current.filter((id) => !groupUserIds.includes(id)));
+  }
+
+  function toggleCategoryUser(userId: number, selectedByGroup: boolean, groupUserIds: number[], categoryId?: number) {
+    if (selectedByGroup) {
+      setExcludedCategoryUserIds((current) => {
+        const next = current.includes(userId)
+          ? current.filter((id) => id !== userId)
+          : [...current, userId];
+        const nextExcludedSet = new Set(next);
+        const activeGroupUsers = groupUserIds.filter((id) => !nextExcludedSet.has(id));
+
+        if (activeGroupUsers.length === 0) {
+          if (categoryId === undefined) {
+            setSelectedWithoutCategory(false);
+          } else {
+            setSelectedCategoryIds((selectedCategories) => selectedCategories.filter((id) => id !== categoryId));
+          }
+
+          return next.filter((id) => !groupUserIds.includes(id));
+        }
+
+        return next;
+      });
+      return;
+    }
+
+    setExtraCategoryUserIds((current) => (
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
     ));
   }
 
@@ -131,7 +226,7 @@ export function SendCommunicationScreen() {
       return;
     }
 
-    if (recipientMode === "CATEGORIES" && selectedCategoryIds.length === 0 && !selectedWithoutCategory) {
+    if (recipientMode === "CATEGORIES" && categoryRecipientIds.size === 0) {
       Alert.alert("Sin categorias", "Selecciona al menos una categoria.");
       return;
     }
@@ -148,6 +243,8 @@ export function SendCommunicationScreen() {
         recipientUserIds: recipientMode === "USERS" ? selectedUserIds : [],
         recipientCategoryIds: recipientMode === "CATEGORIES" ? selectedCategoryIds : [],
         recipientWithoutCategory: recipientMode === "CATEGORIES" ? selectedWithoutCategory : false,
+        recipientExtraUserIds: recipientMode === "CATEGORIES" ? extraCategoryUserIds : [],
+        recipientExcludedUserIds: recipientMode === "CATEGORIES" ? excludedCategoryUserIds : [],
       });
 
       setTitle("");
@@ -157,6 +254,10 @@ export function SendCommunicationScreen() {
       setSelectedUserIds([]);
       setSelectedCategoryIds([]);
       setSelectedWithoutCategory(false);
+      setExpandedCategoryIds([]);
+      setWithoutCategoryExpanded(false);
+      setExtraCategoryUserIds([]);
+      setExcludedCategoryUserIds([]);
       setSearchText("");
       setFieldErrors({});
       Alert.alert("Comunicado enviado", "El comunicado se ha enviado correctamente.");
@@ -304,33 +405,122 @@ export function SendCommunicationScreen() {
           ) : (
             <View style={styles.selector}>
               <Text style={styles.selectionCount}>
-                {selectedCategoryIds.length + (selectedWithoutCategory ? 1 : 0)} categorias seleccionadas
+                {categoryRecipientIds.size} usuarios seleccionados por categorias
               </Text>
               <View style={styles.list}>
-                <Pressable
-                  style={[styles.row, selectedWithoutCategory && styles.rowSelected]}
-                  onPress={() => setSelectedWithoutCategory((current) => !current)}
-                >
-                  <View style={styles.checkbox}>
-                    <Text style={styles.checkboxText}>{selectedWithoutCategory ? "x" : ""}</Text>
+                {(() => {
+                  const withoutCategoryIds = usersWithoutCategory.map((user) => user.id);
+                  const activeWithoutCategoryUsers = selectedWithoutCategory
+                    ? usersWithoutCategory.filter((user) => !excludedCategoryUserIds.includes(user.id)).length
+                    : usersWithoutCategory.filter((user) => extraCategoryUserIds.includes(user.id)).length;
+                  const visuallySelected = activeWithoutCategoryUsers > 0;
+
+                  return (
+                    <View style={[styles.categoryBlock, visuallySelected && styles.rowSelected]}>
+                  <View style={styles.categoryHeader}>
+                    <Pressable style={styles.checkbox} onPress={toggleWithoutCategory}>
+                      <Text style={styles.checkboxText}>{selectedWithoutCategory ? "x" : ""}</Text>
+                    </Pressable>
+                    <Pressable style={styles.categoryTitleButton} onPress={() => setWithoutCategoryExpanded((current) => !current)}>
+                      <Text style={styles.rowTitle}>Sin categoria</Text>
+                      <Text style={styles.rowDetail}>
+                        {usersWithoutCategory.length === 0 ? "Sin usuarios" : `${activeWithoutCategoryUsers}/${usersWithoutCategory.length} usuarios`}
+                      </Text>
+                    </Pressable>
                   </View>
-                  <Text style={styles.rowTitle}>Sin categoria</Text>
-                </Pressable>
+
+                  {withoutCategoryExpanded ? (
+                    <View style={styles.categoryUsers}>
+                      {usersWithoutCategory.length === 0 ? (
+                        <Text style={styles.rowDetail}>No hay usuarios sin categoria.</Text>
+                      ) : (
+                        usersWithoutCategory.map((user) => {
+                          const selectedByGroup = selectedWithoutCategory;
+                          const selected = selectedByGroup
+                            ? !excludedCategoryUserIds.includes(user.id)
+                            : extraCategoryUserIds.includes(user.id);
+
+                          return (
+                            <Pressable
+                              key={user.id}
+                              style={[styles.categoryUserRow, selected && styles.categoryUserRowSelected]}
+                              onPress={() => toggleCategoryUser(user.id, selectedByGroup, withoutCategoryIds)}
+                            >
+                              <View style={styles.smallCheckbox}>
+                                <Text style={styles.checkboxText}>{selected ? "x" : ""}</Text>
+                              </View>
+                              <View style={styles.rowText}>
+                                <Text style={styles.rowTitle} numberOfLines={1}>{user.fullName}</Text>
+                                <Text style={styles.rowDetail} numberOfLines={1}>{user.email}</Text>
+                              </View>
+                            </Pressable>
+                          );
+                        })
+                      )}
+                    </View>
+                  ) : null}
+                    </View>
+                  );
+                })()}
 
                 {categories.map((category) => {
                   const selected = selectedCategoryIds.includes(category.id);
+                  const expanded = expandedCategoryIds.includes(category.id);
+                  const categoryUsers = usersByCategoryId.get(category.id) ?? [];
+                  const categoryUserIds = categoryUsers.map((user) => user.id);
+                  const activeCategoryUsers = selected
+                    ? categoryUsers.filter((user) => !excludedCategoryUserIds.includes(user.id)).length
+                    : categoryUsers.filter((user) => extraCategoryUserIds.includes(user.id)).length;
+                  const visuallySelected = activeCategoryUsers > 0;
 
                   return (
-                    <Pressable
+                    <View
                       key={category.id}
-                      style={[styles.row, selected && styles.rowSelected]}
-                      onPress={() => toggleCategory(category.id)}
+                      style={[styles.categoryBlock, visuallySelected && styles.rowSelected]}
                     >
-                      <View style={styles.checkbox}>
-                        <Text style={styles.checkboxText}>{selected ? "x" : ""}</Text>
+                      <View style={styles.categoryHeader}>
+                        <Pressable style={styles.checkbox} onPress={() => toggleCategory(category.id)}>
+                          <Text style={styles.checkboxText}>{selected ? "x" : ""}</Text>
+                        </Pressable>
+                        <Pressable style={styles.categoryTitleButton} onPress={() => toggleCategoryExpanded(category.id)}>
+                          <Text style={styles.rowTitle}>{category.name}</Text>
+                          <Text style={styles.rowDetail}>
+                            {categoryUsers.length === 0 ? "Sin usuarios" : `${activeCategoryUsers}/${categoryUsers.length} usuarios`}
+                          </Text>
+                        </Pressable>
                       </View>
-                      <Text style={styles.rowTitle}>{category.name}</Text>
-                    </Pressable>
+
+                      {expanded ? (
+                        <View style={styles.categoryUsers}>
+                          {categoryUsers.length === 0 ? (
+                            <Text style={styles.rowDetail}>No hay usuarios en esta categoria.</Text>
+                          ) : (
+                            categoryUsers.map((user) => {
+                              const selectedByGroup = selected;
+                              const selectedUser = selectedByGroup
+                                ? !excludedCategoryUserIds.includes(user.id)
+                                : extraCategoryUserIds.includes(user.id);
+
+                              return (
+                                <Pressable
+                                  key={user.id}
+                                  style={[styles.categoryUserRow, selectedUser && styles.categoryUserRowSelected]}
+                                  onPress={() => toggleCategoryUser(user.id, selectedByGroup, categoryUserIds, category.id)}
+                                >
+                                  <View style={styles.smallCheckbox}>
+                                    <Text style={styles.checkboxText}>{selectedUser ? "x" : ""}</Text>
+                                  </View>
+                                  <View style={styles.rowText}>
+                                    <Text style={styles.rowTitle} numberOfLines={1}>{user.fullName}</Text>
+                                    <Text style={styles.rowDetail} numberOfLines={1}>{user.email}</Text>
+                                  </View>
+                                </Pressable>
+                              );
+                            })
+                          )}
+                        </View>
+                      ) : null}
+                    </View>
                   );
                 })}
               </View>
@@ -490,6 +680,41 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 10,
   },
+  categoryBlock: {
+    borderColor: "#eeeeea",
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  categoryHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    padding: 10,
+  },
+  categoryTitleButton: {
+    flex: 1,
+    minWidth: 0,
+  },
+  categoryUsers: {
+    borderTopColor: "#eeeeea",
+    borderTopWidth: 1,
+    gap: 7,
+    padding: 10,
+  },
+  categoryUserRow: {
+    alignItems: "center",
+    borderColor: "#eeeeea",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    padding: 8,
+  },
+  categoryUserRowSelected: {
+    backgroundColor: "#f7fbfa",
+    borderColor: "#b8cec8",
+  },
   rowSelected: {
     backgroundColor: "#f1f6f4",
     borderColor: "#2f5f5b",
@@ -506,6 +731,15 @@ const styles = StyleSheet.create({
   checkboxText: {
     color: "#2f5f5b",
     fontWeight: "700",
+  },
+  smallCheckbox: {
+    alignItems: "center",
+    borderColor: "#bfc9c4",
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
   },
   rowText: {
     flex: 1,

@@ -39,7 +39,12 @@ export const createCommunication: CreateCommunicationFn = async (data, senderId,
   if (recipientMode === "USERS" && !data.recipientUserIds?.length) {
     throw httpError("Select at least one recipient", 400, "NO_RECIPIENTS_SELECTED");
   }
-  if (recipientMode === "CATEGORIES" && !data.recipientCategoryIds?.length && !data.recipientWithoutCategory) {
+  if (
+    recipientMode === "CATEGORIES"
+    && !data.recipientCategoryIds?.length
+    && !data.recipientWithoutCategory
+    && !data.recipientExtraUserIds?.length
+  ) {
     throw httpError("Select at least one category", 400, "NO_CATEGORIES_SELECTED");
   }
 

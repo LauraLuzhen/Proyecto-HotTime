@@ -10,6 +10,8 @@ export interface CreateCommunicationDto {
   recipientUserIds?: number[];
   recipientCategoryIds?: number[];
   recipientWithoutCategory?: boolean;
+  recipientExtraUserIds?: number[];
+  recipientExcludedUserIds?: number[];
 }
 
 // GET

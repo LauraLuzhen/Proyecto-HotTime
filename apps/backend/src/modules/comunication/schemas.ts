@@ -16,6 +16,8 @@ export const createCommunicationSchema = z.object({
   recipientUserIds: z.array(z.coerce.number().int().positive()).default([]),
   recipientCategoryIds: z.array(z.coerce.number().int().positive()).default([]),
   recipientWithoutCategory: z.boolean().default(false),
+  recipientExtraUserIds: z.array(z.coerce.number().int().positive()).default([]),
+  recipientExcludedUserIds: z.array(z.coerce.number().int().positive()).default([]),
 }).strict();
 export type CreateCommunicationInput = CreateCommunicationDto;
 

@@ -96,7 +96,24 @@ export async function resolveRecipientIds(data: CreateCommunicationDto, senderId
     select: { id: true },
   });
 
-  return uniqueIds(recipients.map((recipient) => recipient.id));
+  const recipientIds = new Set(recipients.map((recipient) => recipient.id));
+
+  const extraUserIds = uniqueIds(data.recipientExtraUserIds ?? []);
+  if (extraUserIds.length) {
+    const extraRecipients = await prisma.user.findMany({
+      where: {
+        ...baseWhere,
+        id: { in: extraUserIds },
+      },
+      select: { id: true },
+    });
+
+    extraRecipients.forEach((recipient) => recipientIds.add(recipient.id));
+  }
+
+  uniqueIds(data.recipientExcludedUserIds ?? []).forEach((userId) => recipientIds.delete(userId));
+
+  return [...recipientIds];
 }
 
 export async function createForRecipientIds(data: CreateCommunicationDto, senderId: number, organizationId: number, recipientIds: number[]) {
