@@ -35,7 +35,18 @@ export const createCommunication: CreateCommunicationFn = async (data, senderId,
   const sender = await repo.findUserById(senderId);
   if (!sender) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (sender.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-  const communication = await repo.createForOrganization(data, senderId, organizationId);
+  const recipientMode = data.recipientMode ?? "ALL_USERS";
+  if (recipientMode === "USERS" && !data.recipientUserIds?.length) {
+    throw httpError("Select at least one recipient", 400, "NO_RECIPIENTS_SELECTED");
+  }
+  if (recipientMode === "CATEGORIES" && !data.recipientCategoryIds?.length && !data.recipientWithoutCategory) {
+    throw httpError("Select at least one category", 400, "NO_CATEGORIES_SELECTED");
+  }
+
+  const recipientIds = await repo.resolveRecipientIds(data, senderId, organizationId);
+  if (!recipientIds.length) throw httpError("No valid recipients found", 400, "NO_VALID_RECIPIENTS");
+
+  const communication = await repo.createForRecipientIds(data, senderId, organizationId, recipientIds);
   return toOutboxResponse(communication);
 };
 

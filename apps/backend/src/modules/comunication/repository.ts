@@ -44,32 +44,77 @@ const communicationSelect = {
 } satisfies Prisma.CommunicationSelect;
 
 //#region CREATE
-export async function createForOrganization(data: CreateCommunicationDto, senderId: number, organizationId: number) {
-  return prisma.$transaction(async (tx) => {
-    const recipients = await tx.user.findMany({
-      where: {
-        organizationId,
-        NOT: { id: senderId },
-      },
-      select: { id: true },
-    });
+function uniqueIds(ids: number[]) {
+  return [...new Set(ids)];
+}
 
-    return tx.communication.create({
-      data: {
-        title: data.title,
-        content: data.content,
-        type: data.type,
-        senderId,
-        organizationId,
-        recipients: {
-          create: recipients.map((recipient) => ({
-            userId: recipient.id,
-            read: false,
-          })),
+export async function createForOrganization(data: CreateCommunicationDto, senderId: number, organizationId: number) {
+  const recipientIds = await resolveRecipientIds(data, senderId, organizationId);
+
+  return createForRecipientIds(data, senderId, organizationId, recipientIds);
+}
+
+export async function resolveRecipientIds(data: CreateCommunicationDto, senderId: number, organizationId: number) {
+  const recipientMode = data.recipientMode ?? "ALL_USERS";
+  const categoryIds = uniqueIds(data.recipientCategoryIds ?? []);
+  const categoryRecipientsWhere: Prisma.UserWhereInput[] = [];
+
+  if (categoryIds.length) {
+    categoryRecipientsWhere.push({
+      userCategories: {
+        some: {
+          categoryId: { in: categoryIds },
+          category: { organizationId },
         },
       },
-      select: communicationSelect,
     });
+  }
+
+  if (data.recipientWithoutCategory) {
+    categoryRecipientsWhere.push({
+      userCategories: {
+        none: {},
+      },
+    });
+  }
+
+  const baseWhere: Prisma.UserWhereInput = {
+    organizationId,
+    NOT: { id: senderId },
+  };
+
+  const recipients = await prisma.user.findMany({
+    where: {
+      ...baseWhere,
+      ...(recipientMode === "USERS"
+        ? { id: { in: uniqueIds(data.recipientUserIds ?? []) } }
+        : {}),
+      ...(recipientMode === "CATEGORIES"
+        ? { OR: categoryRecipientsWhere }
+        : {}),
+    },
+    select: { id: true },
+  });
+
+  return uniqueIds(recipients.map((recipient) => recipient.id));
+}
+
+export async function createForRecipientIds(data: CreateCommunicationDto, senderId: number, organizationId: number, recipientIds: number[]) {
+  return prisma.communication.create({
+    data: {
+      title: data.title,
+      content: data.content,
+      type: data.type,
+      senderId,
+      organizationId,
+      recipients: {
+        create: uniqueIds(recipientIds).map((userId) => ({
+          userId,
+          read: false,
+        })),
+      },
+    },
+    select: communicationSelect,
   });
 }
 //#endregion

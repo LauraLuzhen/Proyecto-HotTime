@@ -6,6 +6,10 @@ export interface CreateCommunicationDto {
   title: string;
   content: string;
   type: CommunicationType;
+  recipientMode?: "ALL_USERS" | "USERS" | "CATEGORIES";
+  recipientUserIds?: number[];
+  recipientCategoryIds?: number[];
+  recipientWithoutCategory?: boolean;
 }
 
 // GET

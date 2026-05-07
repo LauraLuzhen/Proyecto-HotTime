@@ -12,6 +12,10 @@ export const createCommunicationSchema = z.object({
   title: z.string().min(3).max(150),
   content: z.string().min(1).max(10000),
   type: z.enum(["GENERAL", "INFO", "WARNING", "URGENT"]),
+  recipientMode: z.enum(["ALL_USERS", "USERS", "CATEGORIES"]).default("ALL_USERS"),
+  recipientUserIds: z.array(z.coerce.number().int().positive()).default([]),
+  recipientCategoryIds: z.array(z.coerce.number().int().positive()).default([]),
+  recipientWithoutCategory: z.boolean().default(false),
 }).strict();
 export type CreateCommunicationInput = CreateCommunicationDto;
 

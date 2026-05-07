@@ -17,6 +17,12 @@ import type {
   UpdateUsersDto,
   CreateUserResponse,
   DeleteUserResponse,
+  CommunicationCountResponse,
+  CommunicationDetailResponse,
+  CommunicationInboxQueryDto,
+  CommunicationInboxResponse,
+  CommunicationOutboxResponse,
+  CreateCommunicationDto,
 } from "@hottime/types";
 
 export interface ApiErrorResponse {
@@ -122,6 +128,16 @@ function buildUserQuery(filters?: GetUsersQueryDto): string {
   return query ? `?${query}` : "";
 }
 
+function buildInboxQuery(filters?: CommunicationInboxQueryDto): string {
+  if (!filters) return "";
+
+  const params = new URLSearchParams();
+  if (filters.read !== undefined) params.set("read", String(filters.read));
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export function createApi(getToken: () => string | null | Promise<string | null>) {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://192.168.1.129:3001";
   const http = new BackendHttpClient(apiBaseUrl, getToken);
@@ -146,6 +162,13 @@ export function createApi(getToken: () => string | null | Promise<string | null>
       createCategory: (data: CreateCategoryDto) => http.post<CategoriesResponse, CreateCategoryDto>("/categories", data),
       updateCategory: (categoryId: number, data: UpdateCategoryDto) => http.patch<CategoriesResponse, UpdateCategoryDto>(`/categories/${categoryId}`, data),
       deleteCategory: (categoryId: number) => http.delete<DeleteCategoryResponse>(`/categories/${categoryId}`),
+    },
+    communication: {
+      createCommunication: (data: CreateCommunicationDto) => http.post<CommunicationOutboxResponse, CreateCommunicationDto>("/communications", data),
+      getInbox: (filters?: CommunicationInboxQueryDto) => http.get<CommunicationInboxResponse[]>(`/communications/inbox${buildInboxQuery(filters)}`),
+      getById: (communicationId: number) => http.get<CommunicationDetailResponse>(`/communications/${communicationId}`),
+      countRead: () => http.get<CommunicationCountResponse>("/communications/inbox/count/read"),
+      countUnread: () => http.get<CommunicationCountResponse>("/communications/inbox/count/unread"),
     },
   };
 }
