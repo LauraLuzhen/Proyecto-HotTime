@@ -15,6 +15,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
       <DrawerItem label="Dashboard" onPress={() => props.navigation.navigate("Dashboard")} />
       <DrawerItem label="Profile" onPress={() => props.navigation.navigate("Profile")} />
       <DrawerItem label="Contacts" onPress={() => props.navigation.navigate("Contacts")} />
+      <DrawerItem label="Bandeja" onPress={() => props.navigation.navigate("Bandeja")} />
 
       {isAdminOrManager && (
         <View style={{ marginTop: 10 }}>
@@ -48,8 +49,8 @@ export function DrawerContent(props: DrawerContentComponentProps) {
               {/* visible para ambos */}
               {isAdminOrManager && (
                 <DrawerItem
-                  label="Shared Panel"
-                  onPress={() => props.navigation.navigate("Employee")}
+                  label="Send communication"
+                  onPress={() => props.navigation.navigate("Communication")}
                 />
               )}
             </View>

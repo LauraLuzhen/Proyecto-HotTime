@@ -2,7 +2,7 @@ import { SafeAreaView, Text } from "react-native";
 
 import { useAuth } from "../state/auth/AuthContext";
 
-export function EmployeeOnlyScreen() {
+export function BandejaScreen() {
   const auth = useAuth();
 
   return (
