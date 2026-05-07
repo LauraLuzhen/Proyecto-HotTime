@@ -21,6 +21,10 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
   );
 }
 
+function categoriesLabel(categories?: { name: string }[]) {
+  return categories?.length ? categories.map((category) => category.name).join(", ") : "Sin categoria";
+}
+
 export function DashboardScreen() {
   const auth = useAuth();
   const u = auth.user;
@@ -39,7 +43,7 @@ export function DashboardScreen() {
           <InfoRow label="Telefono" value={u?.phone} />
           <InfoRow label="Nacimiento" value={formatDate(u?.birthDate)} />
           <InfoRow label="Alta" value={formatDate(u?.initDate)} />
-          <InfoRow label="Categoria" value={u?.category?.name ?? "Sin categoria"} />
+          <InfoRow label="Categorias" value={categoriesLabel(u?.categories)} />
           <InfoRow label="Organizacion" value={u?.organization.name} />
         </View>
       </ScrollView>

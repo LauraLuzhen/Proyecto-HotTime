@@ -20,7 +20,7 @@ model Category {
   name           String       @db.VarChar(100)
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id])
-  users          User[]
+  userCategories UserCategory[]
 
   @@unique([name, organizationId])
 }
@@ -36,14 +36,23 @@ model User {
   phone                   String              @db.VarChar(20)
   imgProfile              String?             @db.VarChar(255)
   organizationId          Int
-  categoryId              Int?
   resetToken              String?             @unique @db.VarChar(255)
   resetTokenExp           DateTime?
-  category                Category?           @relation(fields: [categoryId], references: [id])
   organization            Organization        @relation(fields: [organizationId], references: [id])
+  userCategories          UserCategory[]
 
   sentCommunications      Communication[]     @relation("SentCommunications") 
   receivedCommunications  CommunicationUser[]
+}
+
+model UserCategory {
+  userId     Int
+  categoryId Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, categoryId])
+  @@index([categoryId])
 }
 
 model Communication {

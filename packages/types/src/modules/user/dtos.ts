@@ -1,5 +1,10 @@
 import { Role } from "../../shared/common";
 
+export interface UserCategoryResponse {
+  id: number;
+  name: string;
+}
+
 // CREATE
 export interface CreateUserDto {
   fullName: string;
@@ -8,7 +13,7 @@ export interface CreateUserDto {
   role: Role;
   birthDate: Date;
   phone: string;
-  categoryId: number | null;
+  categoryIds: number[];
 }
 export interface CreateUserResponse {
   id: number;
@@ -17,7 +22,7 @@ export interface CreateUserResponse {
   role: Role;
   birthDate: Date;
   phone: string;
-  categoryId: number | null;
+  categories: UserCategoryResponse[];
   initDate: Date;
   organizationId: number;
 };
@@ -38,7 +43,7 @@ export interface GeneralUserResponse {
   phone: string;
   imgProfile: string | null;
   organizationId: number;
-  categoryId: number | null;
+  categories: UserCategoryResponse[];
 }
 export interface MeResponse {
   id: number;
@@ -49,10 +54,7 @@ export interface MeResponse {
   imgProfile: string | null;
   birthDate: Date;
   initDate: Date;
-  category: {
-    id: number;
-    name: string;
-  } | null;
+  categories: UserCategoryResponse[];
   organization: {
     id: number;
     name: string;
@@ -77,7 +79,7 @@ export interface UpdateUsersDto {
   imgProfile?: string | null;
   role?: Role;
   initDate?: Date;
-  categoryId?: number | null;
+  categoryIds?: number[];
 }
 
 // DELETE

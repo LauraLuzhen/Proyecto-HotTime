@@ -8,13 +8,7 @@ export const createUser: CreateUserFn = async (data, organizationId) => {
   const existingUser = await repo.findByEmailOrNull(data.email);
   if (existingUser) throw httpError("Email already exists", 409, "EMAIL_ALREADY_EXISTS");
 
-  if (data.categoryId !== null) {
-    const category = await repo.findCategoryById(data.categoryId);
-    if (!category) throw httpError("Category not found", 404, "CATEGORY_NOT_FOUND");
-    if (category.organizationId !== organizationId) {
-      throw httpError("Category does not belong to your organization", 403, "CATEGORY_FORBIDDEN");
-    }
-  }
+  await validateCategoryIds(data.categoryIds, organizationId);
 
   const hashedPassword = await hashPassword(data.password);
   const user = await repo.create({
@@ -67,16 +61,12 @@ export const updateUsers: UpdateUsersFn = async (userId, adminOrganizationId, cu
     if (existingUser) throw httpError("Email already exists", 409, "EMAIL_ALREADY_EXISTS");
   }
 
-  const updateData: any = { ...data };
+  const { categoryIds, ...rest } = data;
+  const updateData: any = { ...rest };
   if (data.password) updateData.password = await hashPassword(data.password);
 
-  if (data.categoryId !== undefined && data.categoryId !== null) {
-    const category = await repo.findCategoryById(data.categoryId);
-    if (!category) throw httpError("Category not found", 404, "CATEGORY_NOT_FOUND");
-
-    if (category.organizationId !== adminOrganizationId) throw httpError("Category does not belong to your organization", 403, "CATEGORY_FORBIDDEN");
-  }
-  return repo.updateUser(userId, updateData);
+  if (categoryIds !== undefined) await validateCategoryIds(categoryIds, adminOrganizationId);
+  return repo.updateUser(userId, updateData, categoryIds);
 };
 
 // Delete user
@@ -90,3 +80,13 @@ export const deleteUser: DeleteUserFn = async (userId, organizationId, currentUs
   await repo.deleteById(userId);
   return { success: true };
 };
+
+async function validateCategoryIds(categoryIds: number[], organizationId: number) {
+  const uniqueIds = [...new Set(categoryIds)];
+  if (uniqueIds.length === 0) return;
+
+  const categories = await repo.findCategoriesByIds(uniqueIds, organizationId);
+  if (categories.length !== uniqueIds.length) {
+    throw httpError("One or more categories do not belong to your organization", 403, "CATEGORY_FORBIDDEN");
+  }
+}

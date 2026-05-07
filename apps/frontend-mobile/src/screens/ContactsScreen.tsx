@@ -246,7 +246,9 @@ export function ContactsScreen() {
           <View style={styles.list}>
             {users.map((user) => {
               const expanded = expandedUserId === user.id;
-              const categoryName = user.categoryId ? categoriesById.get(user.categoryId) : null;
+              const categoryName = user.categories.length
+                ? user.categories.map((category) => category.name).join(", ")
+                : null;
 
               return (
                 <Pressable

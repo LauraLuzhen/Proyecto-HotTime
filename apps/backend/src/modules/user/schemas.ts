@@ -15,7 +15,7 @@ export const createUserSchema = z.object({
   role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]),
   birthDate: z.coerce.date().refine((date) => date < new Date()),
   phone: z.string().length(9).regex(/^\d+$/),
-  categoryId: z.number().int().positive().nullable().default(null),
+  categoryIds: z.array(z.number().int().positive()).default([]),
 });
 export type CreateUserInput = CreateUserDto;
 
@@ -61,5 +61,5 @@ export const updateUsersSchema = z.object({
   imgProfile: z.string().nullable().optional(),
   role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]).optional(),
   initDate: z.coerce.date().refine((d) => d < new Date()).optional(),
-  categoryId: z.coerce.number().int().positive().nullable().optional(),
+  categoryIds: z.array(z.coerce.number().int().positive()).optional(),
 });

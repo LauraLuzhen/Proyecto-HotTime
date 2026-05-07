@@ -56,6 +56,10 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
   );
 }
 
+function categoriesLabel(categories?: { name: string }[]) {
+  return categories?.length ? categories.map((category) => category.name).join(", ") : "Sin categoria";
+}
+
 function Field({
   label,
   value,
@@ -184,7 +188,7 @@ export function ProfileScreen() {
           <InfoRow label="Telefono" value={user?.phone} />
           <InfoRow label="Nacimiento" value={formatDate(user?.birthDate)} />
           <InfoRow label="Alta" value={formatDate(user?.initDate)} />
-          <InfoRow label="Categoria" value={user?.category?.name ?? "Sin categoria"} />
+          <InfoRow label="Categorias" value={categoriesLabel(user?.categories)} />
           <InfoRow label="Organizacion" value={user?.organization.name} />
         </View>
       </ScrollView>

@@ -204,6 +204,52 @@ function SelectField<TValue extends string | number>({
   );
 }
 
+function MultiSelectField({
+  label,
+  valueLabel,
+  options,
+  selectedValues,
+  onToggle,
+}: {
+  label: string;
+  valueLabel: string;
+  options: { label: string; value: number }[];
+  selectedValues: number[];
+  onToggle: (value: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Pressable style={styles.selectButton} onPress={() => setOpen(true)}>
+        <Text style={styles.selectButtonText}>{valueLabel}</Text>
+        <Text style={styles.selectArrow}>v</Text>
+      </Pressable>
+
+      <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.optionsOverlay} onPress={() => setOpen(false)}>
+          <View style={styles.optionsBox}>
+            {options.map((option) => {
+              const selected = selectedSet.has(option.value);
+              return (
+                <Pressable
+                  key={`${option.label}-${option.value}`}
+                  style={styles.option}
+                  onPress={() => onToggle(option.value)}
+                >
+                  <Text style={styles.optionText}>{selected ? "x " : ""}{option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
 export function AdministrationScreen() {
   const auth = useAuth();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
@@ -226,7 +272,7 @@ export function AdministrationScreen() {
   const [formInitDate, setFormInitDate] = useState("");
   const [formPassword, setFormPassword] = useState("");
   const [formRole, setFormRole] = useState<Role>("EMPLOYEE");
-  const [formCategoryId, setFormCategoryId] = useState<number | null>(null);
+  const [formCategoryIds, setFormCategoryIds] = useState<number[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [createCategoryName, setCreateCategoryName] = useState("");
@@ -247,15 +293,14 @@ export function AdministrationScreen() {
     groupsById.set(null, { id: null, name: "Sin categoria", users: [] });
 
     users.forEach((user) => {
-      const group = groupsById.get(user.categoryId);
-
-      if (group) {
-        group.users.push(user);
+      if (user.categories.length === 0) {
+        groupsById.get(null)?.users.push(user);
         return;
       }
 
-      const fallback = groupsById.get(null);
-      fallback?.users.push(user);
+      user.categories.forEach((category) => {
+        groupsById.get(category.id)?.users.push(user);
+      });
     });
 
     const categoryGroups = categories.map((category) => groupsById.get(category.id)!);
@@ -264,15 +309,12 @@ export function AdministrationScreen() {
     return [...categoryGroups, noCategoryGroup];
   }, [categories, users]);
 
-  const selectedUserCategory = selectedUser?.categoryId
-    ? categoriesById.get(selectedUser.categoryId)
+  const selectedUserCategories = selectedUser?.categories.length
+    ? selectedUser.categories.map((category) => category.name).join(", ")
     : "Sin categoria";
 
   const categoryOptions = useMemo(
-    () => [
-      { label: "Sin categoria", value: null },
-      ...categories.map((category) => ({ label: category.name, value: category.id })),
-    ],
+    () => categories.map((category) => ({ label: category.name, value: category.id })),
     [categories]
   );
 
@@ -281,7 +323,9 @@ export function AdministrationScreen() {
     []
   );
 
-  const selectedFormCategory = formCategoryId ? categoriesById.get(formCategoryId) ?? "Sin categoria" : "Sin categoria";
+  const selectedFormCategories = formCategoryIds.length
+    ? formCategoryIds.map((id) => categoriesById.get(id)).filter(Boolean).join(", ")
+    : "Sin categoria";
 
   const loadData = useCallback(
     async (filters?: GetUsersQueryDto) => {
@@ -351,7 +395,7 @@ export function AdministrationScreen() {
     setFormInitDate("");
     setFormPassword("");
     setFormRole("EMPLOYEE");
-    setFormCategoryId(null);
+    setFormCategoryIds([]);
   }
 
   function startEditing() {
@@ -364,7 +408,7 @@ export function AdministrationScreen() {
     setFormInitDate(toDateInputValue(selectedUser.initDate));
     setFormPassword("");
     setFormRole(selectedUser.role);
-    setFormCategoryId(selectedUser.categoryId);
+    setFormCategoryIds(selectedUser.categories.map((category) => category.id));
     setFormError(null);
     setFieldErrors({});
     setEditing(true);
@@ -379,7 +423,7 @@ export function AdministrationScreen() {
     setFormBirthDate("");
     setFormPassword("");
     setFormRole("EMPLOYEE");
-    setFormCategoryId(null);
+    setFormCategoryIds([]);
     setFormError(null);
     setFieldErrors({});
   }
@@ -430,7 +474,7 @@ export function AdministrationScreen() {
       birthDate,
       initDate,
       role: formRole,
-      categoryId: formCategoryId,
+      categoryIds: formCategoryIds,
     };
 
     if (formPassword.trim()) data.password = formPassword.trim();
@@ -475,7 +519,7 @@ export function AdministrationScreen() {
         role: formRole,
         birthDate,
         phone: formPhone.trim(),
-        categoryId: formCategoryId,
+        categoryIds: formCategoryIds,
       });
       closeCreateModal();
       await loadData(currentFilters());
@@ -510,6 +554,14 @@ export function AdministrationScreen() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function toggleFormCategory(categoryId: number) {
+    setFormCategoryIds((current) => (
+      current.includes(categoryId)
+        ? current.filter((id) => id !== categoryId)
+        : [...current, categoryId]
+    ));
   }
 
   async function saveCategory() {
@@ -761,11 +813,12 @@ export function AdministrationScreen() {
                         if (value) setFormRole(value);
                       }}
                     />
-                    <SelectField
-                      label="Categoria"
+                    <MultiSelectField
+                      label="Categorias"
                       options={categoryOptions}
-                      valueLabel={selectedFormCategory}
-                      onSelect={setFormCategoryId}
+                      selectedValues={formCategoryIds}
+                      valueLabel={selectedFormCategories}
+                      onToggle={toggleFormCategory}
                     />
 
                     {formError ? <Text style={styles.formError}>{formError}</Text> : null}
@@ -784,7 +837,7 @@ export function AdministrationScreen() {
                     <View style={styles.detailsPanel}>
                       <DetailRow label="Email" value={selectedUser.email} />
                       <DetailRow label="Telefono" value={selectedUser.phone} />
-                      <DetailRow label="Categoria" value={selectedUserCategory} />
+                      <DetailRow label="Categorias" value={selectedUserCategories} />
                       <DetailRow label="Rol" value={roleLabel(selectedUser.role)} />
                       <DetailRow label="Nacimiento" value={formatDate(selectedUser.birthDate)} />
                       <DetailRow label="Alta" value={formatDate(selectedUser.initDate)} />
@@ -912,11 +965,12 @@ export function AdministrationScreen() {
                       if (value) setFormRole(value);
                     }}
                   />
-                  <SelectField
-                    label="Categoria"
+                  <MultiSelectField
+                    label="Categorias"
                     options={categoryOptions}
-                    valueLabel={selectedFormCategory}
-                    onSelect={setFormCategoryId}
+                    selectedValues={formCategoryIds}
+                    valueLabel={selectedFormCategories}
+                    onToggle={toggleFormCategory}
                   />
                 </View>
               ) : (

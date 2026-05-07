@@ -80,3 +80,5 @@ Get comunicados leídos GET - /communications/outbox ✅
 Get comunicado por id GET - /communications/:id ✅
 Get comunicado count leídos GET - /communications/inbox/count/read ✅
 Get comunicado count no leídos GET - /communications/inbox/count/unread ✅
+
+## Horario

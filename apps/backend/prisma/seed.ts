@@ -10,6 +10,7 @@ async function main() {
   const hash = await bcrypt.hash("Password1.", 10);
 
   // Clean BD
+  await prisma.userCategory.deleteMany();
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();
   await prisma.organization.deleteMany();
@@ -43,53 +44,67 @@ async function main() {
   });
 
   // Table Users
-  await prisma.user.createMany({
-    data: [
-      {
-        fullName: "Admin Muerde",
-        email: "laurarm1002@gmail.com",
-        password: hash,
-        role: Role.ADMIN,
-        birthDate: new Date("1990-01-01"),
-        initDate: new Date("2020-01-01"),
-        phone: "600000001",
-        organizationId: muerde.id,
-        categoryId: null,
+  await prisma.user.create({
+    data: {
+      fullName: "Admin Muerde",
+      email: "laurarm1002@gmail.com",
+      password: hash,
+      role: Role.ADMIN,
+      birthDate: new Date("1990-01-01"),
+      initDate: new Date("2020-01-01"),
+      phone: "600000001",
+      organizationId: muerde.id,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      fullName: "Manager Muerde",
+      email: "manager@muerde.com",
+      password: hash,
+      role: Role.MANAGER,
+      birthDate: new Date("1991-02-02"),
+      initDate: new Date("2023-01-01"),
+      phone: "600000002",
+      organizationId: muerde.id,
+      userCategories: {
+        create: [
+          { categoryId: cocina.id },
+          { categoryId: sala.id },
+        ],
       },
-      {
-        fullName: "Manager Muerde",
-        email: "manager@muerde.com",
-        password: hash,
-        role: Role.MANAGER,
-        birthDate: new Date("1991-02-02"),
-        initDate: new Date("2023-01-01"),
-        phone: "600000002",
-        organizationId: muerde.id,
-        categoryId: cocina.id,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      fullName: "Empleado Cocina",
+      email: "cocina@muerde.com",
+      password: hash,
+      role: Role.EMPLOYEE,
+      birthDate: new Date("1995-03-03"),
+      initDate: new Date("2025-01-01"),
+      phone: "600000003",
+      organizationId: muerde.id,
+      userCategories: {
+        create: [
+          { categoryId: cocina.id },
+        ],
       },
-      {
-        fullName: "Empleado Cocina",
-        email: "cocina@muerde.com",
-        password: hash,
-        role: Role.EMPLOYEE,
-        birthDate: new Date("1995-03-03"),
-        initDate: new Date("2025-01-01"),
-        phone: "600000003",
-        organizationId: muerde.id,
-        categoryId: cocina.id,
-      },
-      {
-        fullName: "Empleado Sin Categoria",
-        email: "nocat@muerde.com",
-        password: hash,
-        role: Role.EMPLOYEE,
-        birthDate: new Date("1996-04-04"),
-        initDate: new Date("2025-01-02"),
-        phone: "600000004",
-        organizationId: muerde.id,
-        categoryId: office.id,
-      },
-    ],
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      fullName: "Empleado Sin Categoria",
+      email: "nocat@muerde.com",
+      password: hash,
+      role: Role.EMPLOYEE,
+      birthDate: new Date("1996-04-04"),
+      initDate: new Date("2025-01-02"),
+      phone: "600000004",
+      organizationId: muerde.id
+    },
   });
 
   await prisma.user.create({
@@ -102,7 +117,6 @@ async function main() {
       initDate: new Date("2020-01-01"),
       phone: "600000010",
       organizationId: nervion.id,
-      categoryId: null,
     },
   });
 

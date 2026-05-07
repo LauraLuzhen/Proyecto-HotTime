@@ -4,6 +4,27 @@ import type { CreateUserResponse, GetUsersQueryDto } from "@hottime/types";
 
 const prisma = new PrismaClient();
 
+const categoriesSelect = {
+  category: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.UserCategorySelect;
+
+function mapUserCategories<T extends { userCategories: { category: { id: number; name: string } }[] }>(user: T) {
+  const { userCategories, ...rest } = user;
+  return {
+    ...rest,
+    categories: userCategories.map((item) => item.category),
+  };
+}
+
+function uniqueCategoryIds(categoryIds: number[]) {
+  return [...new Set(categoryIds)];
+}
+
 //#region GET
 // Count users by organization id
 export async function countByOrganization(organizationId: number) {
@@ -35,8 +56,10 @@ export async function findById(id: number) {
       initDate: true,
       phone: true,
       imgProfile: true,
-      categoryId: true,
       organizationId: true,
+      userCategories: {
+        select: categoriesSelect,
+      },
     }
   });
 
@@ -65,6 +88,15 @@ export async function findCategoryById(id: number) {
   return category;
 }
 
+export function findCategoriesByIds(ids: number[], organizationId: number) {
+  return prisma.category.findMany({
+    where: {
+      id: { in: uniqueCategoryIds(ids) },
+      organizationId,
+    },
+  });
+}
+
 // Find all by organization + filters
 export function findAllByOrganization(organizationId: number, filters: GetUsersQueryDto, userId: number) {
   return prisma.user.findMany({
@@ -72,7 +104,13 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
       organizationId,
       NOT: {id: userId},
       role: filters.role,
-      categoryId: filters.categoryId,
+      userCategories: filters.categoryId
+        ? {
+            some: {
+              categoryId: filters.categoryId,
+            },
+          }
+        : undefined,
       fullName: filters.fullName
         ? {
             contains: filters.fullName,
@@ -91,11 +129,18 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
       birthDate: true,
       phone: true,
       imgProfile: true,
-      categoryId: true,
       organizationId: true,
       initDate: true,
+      userCategories: {
+        select: categoriesSelect,
+        orderBy: {
+          category: {
+            name: "asc",
+          },
+        },
+      },
     },
-  });
+  }).then((users) => users.map(mapUserCategories));
 }
 
 // Find user with name category and organization
@@ -111,10 +156,19 @@ export function findMeWithRelations(userId: number) {
       imgProfile: true,
       birthDate: true,
       initDate: true,
-      category: {
+      userCategories: {
         select: {
-          id: true,
-          name: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          category: {
+            name: "asc",
+          },
         },
       },
       organization: {
@@ -124,7 +178,7 @@ export function findMeWithRelations(userId: number) {
         },
       },
     },
-  });
+  }).then((user) => user ? mapUserCategories(user) : null);
 }
 //#endregion
 
@@ -149,31 +203,69 @@ export function setResetToken(userId: number, token: string | null) {
 }
 
 // Update user
-export function updateUser(userId: number, data: any) {
-  return prisma.user.update({
-    where: { id: userId },
-    data,
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      role: true,
-      birthDate: true,
-      initDate: true,
-      phone: true,
-      imgProfile: true,
-      organizationId: true,
-      categoryId: true,
-    },
+export async function updateUser(userId: number, data: any, categoryIds?: number[]) {
+  const user = await prisma.$transaction(async (tx) => {
+    const uniqueIds = categoryIds ? uniqueCategoryIds(categoryIds) : [];
+
+    if (categoryIds !== undefined) {
+      await tx.userCategory.deleteMany({ where: { userId } });
+    }
+
+    return tx.user.update({
+      where: { id: userId },
+      data: {
+        ...data,
+        ...(categoryIds !== undefined
+          && uniqueIds.length
+          ? {
+              userCategories: {
+                create: uniqueIds.map((categoryId) => ({ categoryId })),
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        birthDate: true,
+        initDate: true,
+        phone: true,
+        imgProfile: true,
+        organizationId: true,
+        userCategories: {
+          select: categoriesSelect,
+          orderBy: {
+            category: {
+              name: "asc",
+            },
+          },
+        },
+      },
+    });
   });
+
+  return mapUserCategories(user);
 }
 //#endregion
 
 //#region CREATE
-export type CreateUserInput = Prisma.UserUncheckedCreateInput;
-export function create(data: CreateUserInput): Promise<CreateUserResponse> {
-  return prisma.user.create({
-    data,
+export type CreateUserInput = Omit<Prisma.UserUncheckedCreateInput, "categoryId"> & { categoryIds: number[] };
+export async function create(data: CreateUserInput): Promise<CreateUserResponse> {
+  const { categoryIds, ...userData } = data;
+  const uniqueIds = uniqueCategoryIds(categoryIds);
+  const user = await prisma.user.create({
+    data: {
+      ...userData,
+      ...(uniqueIds.length
+        ? {
+            userCategories: {
+              create: uniqueIds.map((categoryId) => ({ categoryId })),
+            },
+          }
+        : {}),
+    },
     select: {
       id: true,
       fullName: true,
@@ -181,16 +273,25 @@ export function create(data: CreateUserInput): Promise<CreateUserResponse> {
       role: true,
       birthDate: true,
       phone: true,
-      categoryId: true,
       initDate: true,
       organizationId: true,
+      userCategories: {
+        select: categoriesSelect,
+        orderBy: {
+          category: {
+            name: "asc",
+          },
+        },
+      },
     },
   });
+
+  return mapUserCategories(user);
 }
 //#endregion
 
 //#region DELETE
-export function deleteById(id: number): Promise<CreateUserResponse> {
+export function deleteById(id: number) {
   return prisma.user.delete({
     where: { id }
   });

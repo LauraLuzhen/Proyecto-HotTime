@@ -11,7 +11,6 @@ export interface UserEntity {
   phone: string;
   imgProfile: string | null;
   organizationId: number;
-  categoryId: number | null;
   resetToken: string | null;
   resetTokenExp: Date | null;
 }

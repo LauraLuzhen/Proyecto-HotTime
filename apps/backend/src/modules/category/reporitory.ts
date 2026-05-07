@@ -52,7 +52,11 @@ export function findById(id: number) {
 export function findUsersByCategory(categoryId: number) {
   return prisma.user.findMany({
     where: {
-      categoryId,
+      userCategories: {
+        some: {
+          categoryId,
+        },
+      },
     },
     orderBy: {
       fullName: "asc",
@@ -65,11 +69,31 @@ export function findUsersByCategory(categoryId: number) {
       birthDate: true,
       phone: true,
       imgProfile: true,
-      categoryId: true,
       organizationId: true,
       initDate: true,
+      userCategories: {
+        select: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          category: {
+            name: "asc",
+          },
+        },
+      },
     },
-  });
+  }).then((users) => users.map((user) => {
+    const { userCategories, ...rest } = user;
+    return {
+      ...rest,
+      categories: userCategories.map((item) => item.category),
+    };
+  }));
 }
 
 // Find category by name and organization
@@ -100,11 +124,10 @@ export function update(categoryId: number, data: { name?: string }) {
   });
 }
 
-// Update users to categoryId null
+// Delete user-category links
 export function clearUsersCategoryTx(tx: Prisma.TransactionClient, categoryId: number) {
-  return tx.user.updateMany({
+  return tx.userCategory.deleteMany({
     where: { categoryId },
-    data: { categoryId: null },
   });
 }
 //#endregion
