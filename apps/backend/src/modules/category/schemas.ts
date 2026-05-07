@@ -3,7 +3,7 @@ import { CreateCategoryDto, UpdateCategoryDto } from "@hottime/types";
 
 // CREATE
 export const createCategorySchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().min(3).max(50),
 }).strict();
 export type CreateCategoryInput = CreateCategoryDto;
 
@@ -18,7 +18,7 @@ export const updateCategoryParamsSchema = z.object({
 });
 
 export const updateCategorySchema = z.object({
-  name: z.string().min(1).max(50).optional(),
+  name: z.string().min(3).max(50).optional(),
 }).strict();
 export type UpdateCategoryInput = UpdateCategoryDto
 

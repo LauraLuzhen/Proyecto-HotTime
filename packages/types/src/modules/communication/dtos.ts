@@ -1,98 +1,38 @@
-import { CommunicationEntity } from "./entities";
-import { CommunicationType } from "../../shared/common";
+import type { CommunicationType } from "../../shared/common";
+import type { CommunicationBase, CommunicationRecipient, CommunicationSender } from "./entities";
 
-export interface CommunicationWithSender extends CommunicationEntity {
-  sender: {
-    id: number;
-    fullName: string;
-    role: "ADMIN" | "MANAGER" | "EMPLOYEE";
-  };
+export interface CreateCommunicationDto {
+  title: string;
+  content: string;
+  type: CommunicationType;
 }
 
-export interface CommunicationRecipient {
-  userId: number;
+export interface CommunicationInboxQueryDto {
+  read?: boolean;
+}
+
+export interface CommunicationInboxResponse extends CommunicationBase {
+  sender: CommunicationSender;
   read: boolean;
-  createdAt: Date;
-
-  user: {
-    id: number;
-    fullName: string;
-    role: "ADMIN" | "MANAGER" | "EMPLOYEE";
-  };
+  receivedAt: Date;
 }
 
-export interface CommunicationFull extends CommunicationWithSender {
+export interface CommunicationOutboxResponse extends CommunicationBase {
+  sender: CommunicationSender;
   recipients: CommunicationRecipient[];
+  readCount: number;
+  unreadCount: number;
 }
 
-/**
- * CREATE
- */
-export interface CreateCommunicationDTO {
-  title: string;
-  content: string;
-  type: CommunicationType;
-  recipientIds: number[];
+export interface CommunicationDetailResponse extends CommunicationBase {
+  sender: CommunicationSender;
+  read: boolean | null;
+  receivedAt: Date | null;
+  recipients?: CommunicationRecipient[];
+  readCount?: number;
+  unreadCount?: number;
 }
 
-/**
- * RESPONSE CREATE
- */
-export interface CreateCommunicationResponse {
-  id: number;
-  title: string;
-  content: string;
-  type: CommunicationType;
-  createdAt: Date;
-}
-
-/**
- * INBOX ITEM
- */
-export interface InboxItemDTO {
-  communicationId: number;
-  read: boolean;
-  createdAt: Date;
-
-  communication: {
-    id: number;
-    title: string;
-    content: string;
-    type: CommunicationType;
-    createdAt: Date;
-
-    sender: {
-      id: number;
-      fullName: string;
-      role: string;
-    };
-  };
-}
-
-/**
- * OUTBOX ITEM
- */
-export interface OutboxItemDTO {
-  id: number;
-  title: string;
-  content: string;
-  type: CommunicationType;
-  createdAt: Date;
-
-  recipients: {
-    userId: number;
-    read: boolean;
-    user: {
-      id: number;
-      fullName: string;
-      role: string;
-    };
-  }[];
-}
-
-/**
- * COUNT
- */
-export interface UnreadCountDTO {
+export interface CommunicationCountResponse {
   count: number;
 }

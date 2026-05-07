@@ -1,137 +1,101 @@
-import { httpError } from "../../lib/httpError";
-import * as repo from "./repository";
-import * as userRepo from "../user/repository";
+import type {
+  CommunicationDetailResponse,
+  CommunicationInboxResponse,
+  CommunicationOutboxResponse,
+  CountInboxCommunicationsFn,
+  CreateCommunicationFn,
+  GetCommunicationByIdFn,
+  GetInboxCommunicationsFn,
+  GetOutboxCommunicationsFn,
+} from "@hottime/types";
+import { httpError } from "@/lib/httpError";
+import * as repo from "@/modules/comunication/repository";
 
-// 🔐 VALIDAR ROLES
-function validateRecipients(senderRole: string, recipients: any[]) {
-  for (const user of recipients) {
-    if (senderRole === "EMPLOYEE") {
-      if (!["MANAGER", "ADMIN"].includes(user.role)) {
-        throw httpError("Invalid recipient role", 403, "INVALID_ROLE");
-      }
-    }
+function toOutboxResponse(communication: any): CommunicationOutboxResponse {
+  const recipients = communication.recipients.filter((recipient: { user: { id: number } }) => recipient.user.id !== communication.senderId);
+  const readCount = recipients.filter((recipient: { read: boolean }) => recipient.read).length;
+  const unreadCount = recipients.length - readCount;
 
-    if (senderRole === "MANAGER") {
-      if (!["EMPLOYEE", "ADMIN"].includes(user.role)) {
-        throw httpError("Invalid recipient role", 403, "INVALID_ROLE");
-      }
-    }
-
-    if (senderRole === "ADMIN") {
-      if (!["EMPLOYEE", "MANAGER"].includes(user.role)) {
-        throw httpError("Invalid recipient role", 403, "INVALID_ROLE");
-      }
-    }
-  }
+  return {
+    ...communication,
+    recipients,
+    readCount,
+    unreadCount,
+  };
 }
 
-// CREATE
-export async function createCommunication(
-  data: any,
-  senderId: number,
-  organizationId: number,
-  senderRole: string
-) {
-  const recipients = await Promise.all(
-    data.recipientIds.map((id: number) => userRepo.findById(id))
-  );
+function toInboxResponse(item: any): CommunicationInboxResponse {
+  const { recipients, ...communication } = item.communication;
 
-  if (recipients.some((u) => !u)) {
-    throw httpError("Recipient not found", 404, "USER_NOT_FOUND");
-  }
-
-  // 🔒 misma organización
-  recipients.forEach((user) => {
-    if (user!.organizationId !== organizationId) {
-      throw httpError("User not in your organization", 403, "FORBIDDEN");
-    }
-  });
-
-  // 🔥 validar roles
-  validateRecipients(senderRole, recipients);
-
-  const communication = await repo.createCommunication({
-    title: data.title,
-    content: data.content,
-    type: data.type,
-    senderId,
-    organizationId,
-  });
-
-  await repo.createRecipients(
-    data.recipientIds.map((userId: number) => ({
-      userId,
-      communicationId: communication.id,
-    }))
-  );
-
-  return communication;
+  return {
+    ...communication,
+    read: item.read,
+    receivedAt: item.createdAt,
+  };
 }
 
-// INBOX
-export async function getInbox(userId: number) {
-  return repo.getInbox(userId);
+function toDetailFromRecipient(item: any): CommunicationDetailResponse {
+  const { recipients, ...base } = item.communication;
+
+  return {
+    ...base,
+    read: true,
+    receivedAt: item.createdAt,
+  };
 }
 
-// OUTBOX
-export async function getOutbox(userId: number) {
-  return repo.getOutbox(userId);
-}
+export const createCommunication: CreateCommunicationFn = async (data, senderId, organizationId) => {
+  const sender = await repo.findUserById(senderId);
+  if (!sender) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (sender.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
 
-// GET ONE
-export async function getCommunication(
-  id: number,
-  userId: number
-) {
-  const communication = await repo.getById(id);
+  const communication = await repo.createForOrganization(data, senderId, organizationId);
+  return toOutboxResponse(communication);
+};
 
-  if (!communication) {
-    throw httpError("Communication not found", 404, "NOT_FOUND");
+export const getInboxCommunications: GetInboxCommunicationsFn = async (userId, organizationId, filters) => {
+  const user = await repo.findUserById(userId);
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
+
+  const inbox = await repo.findInbox(userId, organizationId, filters);
+  return inbox.map(toInboxResponse);
+};
+
+export const getOutboxCommunications: GetOutboxCommunicationsFn = async (userId, organizationId) => {
+  const user = await repo.findUserById(userId);
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
+
+  const outbox = await repo.findOutbox(userId, organizationId);
+  return outbox.map(toOutboxResponse);
+};
+
+export const getCommunicationById: GetCommunicationByIdFn = async (communicationId, userId, organizationId) => {
+  const sentCommunication = await repo.findSentCommunication(communicationId, userId, organizationId);
+  if (sentCommunication) {
+    return {
+      ...toOutboxResponse(sentCommunication),
+      read: null,
+      receivedAt: null,
+    };
   }
 
-  const isSender = communication.senderId === userId;
-  const isRecipient = communication.recipients.some(
-    (r) => r.userId === userId
-  );
+  const recipientCommunication = await repo.findRecipientCommunication(communicationId, userId, organizationId);
+  if (recipientCommunication) {
+    if (!recipientCommunication.read) await repo.markRecipientAsRead(recipientCommunication.id);
 
-  if (!isSender && !isRecipient) {
-    throw httpError("Forbidden", 403, "FORBIDDEN");
+    return toDetailFromRecipient(recipientCommunication);
   }
 
-  return communication;
-}
+  throw httpError("Communication not found", 404, "COMMUNICATION_NOT_FOUND");
+};
 
-// MARK AS READ
-export async function markAsRead(
-  userId: number,
-  communicationId: number
-) {
-  try {
-    return await repo.markAsRead(userId, communicationId);
-  } catch {
-    throw httpError("Communication not found", 404, "NOT_FOUND");
-  }
-}
+export const countInboxCommunications: CountInboxCommunicationsFn = async (userId, organizationId, read) => {
+  const user = await repo.findUserById(userId);
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
 
-// COUNT UNREAD
-export async function countUnread(userId: number) {
-  return repo.countUnread(userId);
-}
-
-// DELETE
-export async function deleteCommunication(
-  id: number,
-  userId: number
-) {
-  const communication = await repo.getById(id);
-
-  if (!communication) {
-    throw httpError("Not found", 404, "NOT_FOUND");
-  }
-
-  if (communication.senderId !== userId) {
-    throw httpError("Forbidden", 403, "FORBIDDEN");
-  }
-
-  return repo.deleteCommunication(id);
-}
+  const count = await repo.countInbox(userId, organizationId, read);
+  return { count };
+};

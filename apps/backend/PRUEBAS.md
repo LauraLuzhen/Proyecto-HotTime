@@ -64,3 +64,19 @@ Update category by admin PATCH - /categories/:id ✅
   "name": "Cocina nueva"
 }
 Delete category by admin DELETE - /categories/:id ✅
+
+## COMMUNICATION
+LogIn
+Create communication POST - /communications ✅
+{
+    "title": "Aviso importante 1",
+    "content": "Mantenimiento del sistema esta noche",
+    "type": "GENERAL"
+}
+Get comunicados mensajes GET - /communications/inbox ✅
+Get comunicados enviardos GET - /communications/inbox?read=true ✅
+Get comunicados no leídos GET - /communications/inbox?read=false ✅
+Get comunicados leídos GET - /communications/outbox ✅
+Get comunicado por id GET - /communications/:id ✅
+Get comunicado count leídos GET - /communications/inbox/count/read ✅
+Get comunicado count no leídos GET - /communications/inbox/count/unread ✅

@@ -1,25 +1,37 @@
-import {
-  CreateCommunicationDTO,
-  CreateCommunicationResponse,
-  InboxItemDTO,
-  OutboxItemDTO,
-  UnreadCountDTO,
+import type {
+  CommunicationCountResponse,
+  CommunicationDetailResponse,
+  CommunicationInboxQueryDto,
+  CommunicationInboxResponse,
+  CommunicationOutboxResponse,
+  CreateCommunicationDto,
 } from "./dtos";
 
-export interface CommunicationService {
-  createCommunication(
-    data: CreateCommunicationDTO
-  ): Promise<CreateCommunicationResponse>;
+export type CreateCommunicationFn = (
+  data: CreateCommunicationDto,
+  senderId: number,
+  organizationId: number
+) => Promise<CommunicationOutboxResponse>;
 
-  getInbox(): Promise<InboxItemDTO[]>;
+export type GetInboxCommunicationsFn = (
+  userId: number,
+  organizationId: number,
+  filters: CommunicationInboxQueryDto
+) => Promise<CommunicationInboxResponse[]>;
 
-  getOutbox(): Promise<OutboxItemDTO[]>;
+export type GetOutboxCommunicationsFn = (
+  userId: number,
+  organizationId: number
+) => Promise<CommunicationOutboxResponse[]>;
 
-  getCommunication(id: number): Promise<any>;
+export type GetCommunicationByIdFn = (
+  communicationId: number,
+  userId: number,
+  organizationId: number
+) => Promise<CommunicationDetailResponse>;
 
-  markAsRead(id: number): Promise<void>;
-
-  countUnread(): Promise<UnreadCountDTO>;
-
-  deleteCommunication(id: number): Promise<void>;
-}
+export type CountInboxCommunicationsFn = (
+  userId: number,
+  organizationId: number,
+  read: boolean
+) => Promise<CommunicationCountResponse>;

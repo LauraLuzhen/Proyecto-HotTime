@@ -1,99 +1,176 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
+import type { CreateCommunicationDto, CommunicationInboxQueryDto } from "@hottime/types";
 
 const prisma = new PrismaClient();
 
-// CREATE
-export async function createCommunication(data: any) {
-  return prisma.communication.create({
-    data,
+const senderSelect = {
+  id: true,
+  fullName: true,
+  email: true,
+} satisfies Prisma.UserSelect;
+
+const recipientSelect = {
+  id: true,
+  read: true,
+  createdAt: true,
+  user: {
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  },
+} satisfies Prisma.CommunicationUserSelect;
+
+const communicationSelect = {
+  id: true,
+  title: true,
+  content: true,
+  type: true,
+  senderId: true,
+  organizationId: true,
+  sentAt: true,
+  sender: {
+    select: senderSelect,
+  },
+  recipients: {
+    select: recipientSelect,
+    orderBy: {
+      user: {
+        fullName: "asc",
+      },
+    },
+  },
+} satisfies Prisma.CommunicationSelect;
+
+export function findUserById(userId: number) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      organizationId: true,
+    },
   });
 }
 
-export async function createRecipients(data: any[]) {
-  return prisma.communicationUser.createMany({
-    data,
+export async function createForOrganization(data: CreateCommunicationDto, senderId: number, organizationId: number) {
+  return prisma.$transaction(async (tx) => {
+    const recipients = await tx.user.findMany({
+      where: {
+        organizationId,
+        NOT: { id: senderId },
+      },
+      select: { id: true },
+    });
+
+    return tx.communication.create({
+      data: {
+        title: data.title,
+        content: data.content,
+        type: data.type,
+        senderId,
+        organizationId,
+        recipients: {
+          create: recipients.map((recipient) => ({
+            userId: recipient.id,
+            read: false,
+          })),
+        },
+      },
+      select: communicationSelect,
+    });
   });
 }
 
-// GET INBOX
-export function getInbox(userId: number) {
+export function findInbox(userId: number, organizationId: number, filters: CommunicationInboxQueryDto) {
   return prisma.communicationUser.findMany({
-    where: { userId },
-    include: {
-      communication: {
-        include: {
-          sender: true,
-        },
-      },
-    },
-    orderBy: {
-      communication: {
-        createdAt: "desc",
-      },
-    },
-  });
-}
-
-// GET OUTBOX
-export function getOutbox(userId: number) {
-  return prisma.communication.findMany({
-    where: { senderId: userId },
-    include: {
-      recipients: {
-        include: {
-          user: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-}
-
-// GET ONE
-export function getById(id: number) {
-  return prisma.communication.findUnique({
-    where: { id },
-    include: {
-      sender: true,
-      recipients: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
-}
-
-// MARK AS READ
-export function markAsRead(userId: number, communicationId: number) {
-  return prisma.communicationUser.update({
     where: {
-      communicationId_userId: {
-        communicationId,
-        userId,
+      userId,
+      read: filters.read,
+      communication: {
+        organizationId,
+        NOT: { senderId: userId },
       },
     },
-    data: {
-      read: true
+    orderBy: {
+      communication: {
+        sentAt: "desc",
+      },
+    },
+    select: {
+      read: true,
+      createdAt: true,
+      communication: {
+        select: communicationSelect,
+      },
     },
   });
 }
 
-// COUNT UNREAD
-export function countUnread(userId: number) {
+export function findOutbox(userId: number, organizationId: number) {
+  return prisma.communication.findMany({
+    where: {
+      senderId: userId,
+      organizationId,
+    },
+    orderBy: {
+      sentAt: "desc",
+    },
+    select: communicationSelect,
+  });
+}
+
+export function findRecipientCommunication(communicationId: number, userId: number, organizationId: number) {
+  return prisma.communicationUser.findFirst({
+    where: {
+      communicationId,
+      userId,
+      communication: {
+        organizationId,
+      },
+    },
+    select: {
+      id: true,
+      read: true,
+      createdAt: true,
+      communication: {
+        select: communicationSelect,
+      },
+    },
+  });
+}
+
+export function findSentCommunication(communicationId: number, userId: number, organizationId: number) {
+  return prisma.communication.findFirst({
+    where: {
+      id: communicationId,
+      senderId: userId,
+      organizationId,
+    },
+    select: communicationSelect,
+  });
+}
+
+export function markRecipientAsRead(recipientCommunicationId: number) {
+  return prisma.communicationUser.update({
+    where: { id: recipientCommunicationId },
+    data: { read: true },
+    select: {
+      id: true,
+      read: true,
+    },
+  });
+}
+
+export function countInbox(userId: number, organizationId: number, read: boolean) {
   return prisma.communicationUser.count({
     where: {
       userId,
-      read: false,
+      read,
+      communication: {
+        organizationId,
+        NOT: { senderId: userId },
+      },
     },
-  });
-}
-
-// DELETE (solo sender)
-export function deleteCommunication(id: number) {
-  return prisma.communication.delete({
-    where: { id },
   });
 }

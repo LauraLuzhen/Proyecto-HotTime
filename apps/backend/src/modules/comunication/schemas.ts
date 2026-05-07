@@ -1,20 +1,24 @@
 import { z } from "zod";
+import type { CreateCommunicationDto } from "@hottime/types";
+
+const readQueryValue = z.preprocess((value) => {
+  if (value === undefined) return undefined;
+  if (value === "true" || value === true) return true;
+  if (value === "false" || value === false) return false;
+  return value;
+}, z.boolean().optional());
 
 export const createCommunicationSchema = z.object({
-  title: z.string().min(1),
-  content: z.string().min(1),
-  type: z.enum([
-    "GENERAL",
-    "REQUEST_DAYS",
-    "VACATION",
-    "ABSENCE",
-    "TEMP_LEAVE",
-    "PERM_LEAVE",
-    "STAFF_SHORTAGE",
-  ]),
-  recipientIds: z.array(z.number()).min(1),
-});
+  title: z.string().min(3).max(150),
+  content: z.string().min(1).max(10000),
+  type: z.enum(["GENERAL", "INFO", "WARNING", "URGENT"]),
+}).strict();
+export type CreateCommunicationInput = CreateCommunicationDto;
 
-export const communicationIdSchema = z.object({
-  id: z.string().transform((val) => Number(val)),
+export const getInboxSchema = z.object({
+  read: readQueryValue,
+}).strict();
+
+export const getCommunicationIdSchema = z.object({
+  id: z.coerce.number().int().positive(),
 });

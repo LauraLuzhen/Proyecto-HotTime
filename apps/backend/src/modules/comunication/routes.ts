@@ -1,120 +1,65 @@
-import { FastifyInstance } from "fastify";
-import type {
-  CreateCommunicationDTO,
-  InboxItemDTO,
-  OutboxItemDTO,
-  UnreadCountDTO,
-} from "@hottime/types";
-import { httpError } from "../../lib/httpError";
-import { authenticate } from "../../plugins/auth";
-import * as service from "./service";
-import {
-  createCommunicationSchema,
-  communicationIdSchema,
-} from "./schemas";
+import type { FastifyInstance } from "fastify";
+import { httpError } from "@/lib/httpError";
+import { authenticate } from "@/plugins/auth";
+import * as service from "@/modules/comunication/service";
+import { createCommunicationSchema, getCommunicationIdSchema, getInboxSchema } from "./schemas";
 
 export async function communicationRoutes(app: FastifyInstance) {
+  app.post("/", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = createCommunicationSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid communication data", 400, "VALIDATION_ERROR"));
 
-  // CREATE
-  app.post(
-    "/",
-    { preHandler: [authenticate] },
-    async (req: any, reply) => {
-      const parsed = createCommunicationSchema.safeParse(req.body);
+    const communication = await service.createCommunication(
+      parsed.data,
+      req.user.id,
+      req.user.organizationId
+    );
 
-      if (!parsed.success) {
-        return reply
-          .status(400)
-          .send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
-      }
+    return reply.status(201).send(communication);
+  });
 
-      return service.createCommunication(
-        parsed.data,
-        req.user.id,
-        req.user.organizationId,
-        req.user.role
-      );
-    }
-  );
+  app.get("/inbox", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = getInboxSchema.safeParse(req.query);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
 
-  // INBOX
-  app.get(
-    "/inbox",
-    { preHandler: [authenticate] },
-    async (req: any) => {
-      return service.getInbox(req.user.id);
-    }
-  );
+    const communications = await service.getInboxCommunications(
+      req.user.id,
+      req.user.organizationId,
+      parsed.data
+    );
 
-  // OUTBOX
-  app.get(
-    "/outbox",
-    { preHandler: [authenticate] },
-    async (req: any) => {
-      return service.getOutbox(req.user.id);
-    }
-  );
+    return reply.send(communications);
+  });
 
-  // GET ONE
-  app.get(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (req: any, reply) => {
-      const parsed = communicationIdSchema.safeParse(req.params);
+  app.get("/outbox", { preHandler: [authenticate] }, async (req, reply) => {
+    const communications = await service.getOutboxCommunications(
+      req.user.id,
+      req.user.organizationId
+    );
 
-      if (!parsed.success) {
-        return reply
-          .status(400)
-          .send(httpError("Invalid id", 400, "INVALID_ID"));
-      }
+    return reply.send(communications);
+  });
 
-      return service.getCommunication(parsed.data.id, req.user.id);
-    }
-  );
+  app.get("/inbox/count/read", { preHandler: [authenticate] }, async (req, reply) => {
+    const result = await service.countInboxCommunications(req.user.id, req.user.organizationId, true);
+    return reply.send(result);
+  });
 
-  // MARK AS READ
-  app.put(
-    "/:id/read",
-    { preHandler: [authenticate] },
-    async (req: any, reply) => {
-      const parsed = communicationIdSchema.safeParse(req.params);
+  app.get("/inbox/count/unread", { preHandler: [authenticate] }, async (req, reply) => {
+    const result = await service.countInboxCommunications(req.user.id, req.user.organizationId, false);
+    return reply.send(result);
+  });
 
-      if (!parsed.success) {
-        return reply
-          .status(400)
-          .send(httpError("Invalid id", 400, "INVALID_ID"));
-      }
+  app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = getCommunicationIdSchema.safeParse(req.params);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid communication id", 400, "VALIDATION_ERROR"));
 
-      return service.markAsRead(req.user.id, parsed.data.id);
-    }
-  );
+    const communication = await service.getCommunicationById(
+      parsed.data.id,
+      req.user.id,
+      req.user.organizationId
+    );
 
-  // COUNT UNREAD
-  app.get(
-    "/unread/count",
-    { preHandler: [authenticate] },
-    async (req: any) => {
-      return service.countUnread(req.user.id);
-    }
-  );
-
-  // DELETE
-  app.delete(
-    "/:id",
-    { preHandler: [authenticate] },
-    async (req: any, reply) => {
-      const parsed = communicationIdSchema.safeParse(req.params);
-
-      if (!parsed.success) {
-        return reply
-          .status(400)
-          .send(httpError("Invalid id", 400, "INVALID_ID"));
-      }
-
-      return service.deleteCommunication(
-        parsed.data.id,
-        req.user.id
-      );
-    }
-  );
+    return reply.send(communication);
+  });
 }
