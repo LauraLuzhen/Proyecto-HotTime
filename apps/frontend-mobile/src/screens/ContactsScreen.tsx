@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Linking,
   Modal,
   Pressable,
   SafeAreaView,
@@ -186,6 +188,31 @@ export function ContactsScreen() {
     void loadUsers();
   }
 
+  async function openPhone(phone: string) {
+    try {
+      await Linking.openURL(`tel:${phone}`);
+    } catch {
+      Alert.alert("No se puede llamar", "No se ha podido abrir la aplicacion de telefono.");
+    }
+  }
+
+  async function openEmail(email: string) {
+    const encodedEmail = encodeURIComponent(email);
+    const gmailUrl = `googlegmail://co?to=${encodedEmail}`;
+    const mailtoUrl = `mailto:${encodedEmail}`;
+
+    try {
+      if (await Linking.canOpenURL(gmailUrl)) {
+        await Linking.openURL(gmailUrl);
+        return;
+      }
+
+      await Linking.openURL(mailtoUrl);
+    } catch {
+      Alert.alert("No se puede abrir email", "No se ha podido abrir la aplicacion de correo.");
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -272,8 +299,18 @@ export function ContactsScreen() {
 
                   {expanded ? (
                     <View style={styles.userDetails}>
-                      <Text style={styles.detailText}>Telefono: {user.phone}</Text>
-                      <Text style={styles.detailText}>Email: {user.email}</Text>
+                      <View style={styles.detailActionRow}>
+                        <Text style={styles.detailText}>Telefono: {user.phone}</Text>
+                        <Pressable style={styles.detailActionButton} onPress={() => void openPhone(user.phone)}>
+                          <Text style={styles.detailActionText}>+</Text>
+                        </Pressable>
+                      </View>
+                      <View style={styles.detailActionRow}>
+                        <Text style={styles.detailText}>Email: {user.email}</Text>
+                        <Pressable style={styles.detailActionButton} onPress={() => void openEmail(user.email)}>
+                          <Text style={styles.detailActionText}>+</Text>
+                        </Pressable>
+                      </View>
                     </View>
                   ) : null}
                 </Pressable>
@@ -481,8 +518,30 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
   },
+  detailActionRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+  },
   detailText: {
     color: "#3d3d39",
+    flex: 1,
     fontSize: 14,
+    minWidth: 0,
+  },
+  detailActionButton: {
+    alignItems: "center",
+    borderColor: "#cfd6d2",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  detailActionText: {
+    color: "#2f5f5b",
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 22,
   },
 });

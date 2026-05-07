@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -156,6 +158,47 @@ function Field({
         style={styles.editInput}
         value={value}
       />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChangeText,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  error?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedDate = parseDateInput(value) ?? new Date();
+
+  function onChange(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS !== "ios") setOpen(false);
+    if (event.type === "set" && date) onChangeText(toDateInputValue(date));
+  }
+
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Pressable style={styles.dateButton} onPress={() => setOpen(true)}>
+        <Text style={[styles.dateButtonText, !value && styles.datePlaceholder]}>
+          {value || "DD-MM-YYYY"}
+        </Text>
+      </Pressable>
+      {open ? (
+        <DateTimePicker
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          maximumDate={new Date()}
+          mode="date"
+          onChange={onChange}
+          value={selectedDate}
+        />
+      ) : null}
       {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>
   );
@@ -780,18 +823,14 @@ export function AdministrationScreen() {
                       error={fieldErrors.email}
                     />
                     <Field keyboardType="phone-pad" label="Telefono" value={formPhone} onChangeText={setFormPhone} error={fieldErrors.phone} />
-                    <Field
-                      autoCapitalize="none"
+                    <DateField
                       label="Nacimiento"
-                      placeholder="DD-MM-YYYY"
                       value={formBirthDate}
                       onChangeText={setFormBirthDate}
                       error={fieldErrors.birthDate}
                     />
-                    <Field
-                      autoCapitalize="none"
+                    <DateField
                       label="Alta"
-                      placeholder="DD-MM-YYYY"
                       value={formInitDate}
                       onChangeText={setFormInitDate}
                       error={fieldErrors.initDate}
@@ -949,10 +988,8 @@ export function AdministrationScreen() {
                     error={fieldErrors.password}
                   />
                   <Field keyboardType="phone-pad" label="Telefono" value={formPhone} onChangeText={setFormPhone} error={fieldErrors.phone} />
-                  <Field
-                    autoCapitalize="none"
+                  <DateField
                     label="Nacimiento"
-                    placeholder="DD-MM-YYYY"
                     value={formBirthDate}
                     onChangeText={setFormBirthDate}
                     error={fieldErrors.birthDate}
@@ -1274,6 +1311,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 12,
     paddingVertical: 12,
+  },
+  dateButton: {
+    borderColor: "#d7d7d0",
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  dateButtonText: {
+    color: "#1f1f1d",
+    fontSize: 16,
+  },
+  datePlaceholder: {
+    color: "#777",
   },
   selectButton: {
     alignItems: "center",

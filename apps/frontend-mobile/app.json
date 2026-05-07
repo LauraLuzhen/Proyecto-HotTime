@@ -4,16 +4,21 @@
     "slug": "hottime",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": ["ios", "android"],
-    "assetBundlePatterns": ["**/*"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
       [
         "expo-image-picker",
         {
           "photosPermission": "HotTime necesita acceso a tu galeria para que puedas elegir tu foto de perfil."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }
-

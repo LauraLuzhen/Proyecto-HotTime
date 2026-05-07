@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +20,8 @@ import {
 import { ApiClientError } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 
+type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "birthDate" | "password", string>>;
+
 function formatDate(value?: Date) {
   if (!value) return "-";
 
@@ -32,7 +35,54 @@ function formatDate(value?: Date) {
 function toDateInputValue(value?: Date) {
   if (!value) return "";
 
-  return new Date(value).toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value)).replace(/\//g, "-");
+}
+
+function parseDateInput(value: string): Date | null {
+  const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+function validateName(value: string) {
+  return value.trim().length >= 5 ? undefined : "Minimo 5 caracteres.";
+}
+
+function validateEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? undefined : "Formato email: correo@correo.com.";
+}
+
+function validatePhone(value: string) {
+  return /^\d{9}$/.test(value.trim()) ? undefined : "Debe tener 9 digitos.";
+}
+
+function validateDate(value: string) {
+  const parsed = parseDateInput(value);
+  if (!parsed) return "Formato fecha: DD-MM-YYYY.";
+  if (parsed >= new Date()) return "La fecha debe ser anterior a hoy.";
+  return undefined;
+}
+
+function validatePassword(value: string) {
+  const password = value.trim();
+  if (!password) return undefined;
+  if (password.length < 8) return "Minimo 8 caracteres.";
+  if (!/[A-Z]/.test(password)) return "Debe tener 1 mayuscula.";
+  if (!/[a-z]/.test(password)) return "Debe tener 1 minuscula.";
+  if (!/[0-9]/.test(password)) return "Debe tener 1 numero.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Debe tener 1 caracter especial.";
+  return undefined;
 }
 
 function initials(name?: string) {
@@ -68,6 +118,7 @@ function Field({
   autoCapitalize = "sentences",
   keyboardType = "default",
   secureTextEntry,
+  error,
 }: {
   label: string;
   value: string;
@@ -76,6 +127,7 @@ function Field({
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   keyboardType?: "default" | "email-address" | "phone-pad";
   secureTextEntry?: boolean;
+  error?: string;
 }) {
   return (
     <View style={styles.field}>
@@ -89,6 +141,48 @@ function Field({
         style={styles.input}
         value={value}
       />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChangeText,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  error?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedDate = parseDateInput(value) ?? new Date();
+
+  function onChange(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS !== "ios") setOpen(false);
+    if (event.type === "set" && date) onChangeText(toDateInputValue(date));
+  }
+
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Pressable style={styles.dateButton} onPress={() => setOpen(true)}>
+        <Text style={[styles.dateButtonText, !value && styles.datePlaceholder]}>
+          {value || "DD-MM-YYYY"}
+        </Text>
+      </Pressable>
+      {open ? (
+        <DateTimePicker
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          maximumDate={new Date()}
+          mode="date"
+          onChange={onChange}
+          value={selectedDate}
+        />
+      ) : null}
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>
   );
 }
@@ -105,6 +199,7 @@ export function ProfileScreen() {
   const [imgProfile, setImgProfile] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const imageUri = user?.imgProfile || placeholderAvatarUri(user?.fullName);
   const editImageUri = imgProfile || placeholderAvatarUri(fullName);
@@ -124,6 +219,7 @@ export function ProfileScreen() {
     setPassword("");
     setImgProfile(user.imgProfile);
     setError(null);
+    setFieldErrors({});
   }, [isEditing, user]);
 
   async function pickImage() {
@@ -147,10 +243,20 @@ export function ProfileScreen() {
   }
 
   async function saveProfile() {
-    if (!fullName.trim() || !email.trim() || !phone.trim() || !birthDate.trim()) {
-      setError("Completa nombre, email, telefono y fecha de nacimiento.");
+    const errors: FieldErrors = {
+      fullName: validateName(fullName),
+      email: validateEmail(email),
+      phone: validatePhone(phone),
+      birthDate: validateDate(birthDate),
+      password: validatePassword(password),
+    };
+
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
       return;
     }
+
+    const parsedBirthDate = parseDateInput(birthDate)!;
 
     setSaving(true);
     setError(null);
@@ -160,7 +266,7 @@ export function ProfileScreen() {
         fullName: fullName.trim(),
         email: email.trim(),
         phone: phone.trim(),
-        birthDate: new Date(`${birthDate}T00:00:00`),
+        birthDate: parsedBirthDate,
         imgProfile,
         ...(password.trim() ? { password: password.trim() } : {}),
       });
@@ -218,21 +324,21 @@ export function ProfileScreen() {
                 </View>
               </View>
 
-              <Field label="Nombre" value={fullName} onChangeText={setFullName} />
+              <Field label="Nombre" value={fullName} onChangeText={setFullName} error={fieldErrors.fullName} />
               <Field
                 autoCapitalize="none"
                 keyboardType="email-address"
                 label="Email"
                 value={email}
                 onChangeText={setEmail}
+                error={fieldErrors.email}
               />
-              <Field keyboardType="phone-pad" label="Telefono" value={phone} onChangeText={setPhone} />
-              <Field
-                autoCapitalize="none"
+              <Field keyboardType="phone-pad" label="Telefono" value={phone} onChangeText={setPhone} error={fieldErrors.phone} />
+              <DateField
                 label="Fecha nacimiento"
-                placeholder="YYYY-MM-DD"
                 value={birthDate}
                 onChangeText={setBirthDate}
+                error={fieldErrors.birthDate}
               />
               <Field
                 autoCapitalize="none"
@@ -241,12 +347,21 @@ export function ProfileScreen() {
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
+                error={fieldErrors.password}
               />
 
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
               <View style={styles.modalActions}>
-                <Pressable disabled={saving} style={styles.cancelButton} onPress={() => setIsEditing(false)}>
+                <Pressable
+                  disabled={saving}
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setFieldErrors({});
+                    setError(null);
+                    setIsEditing(false);
+                  }}
+                >
                   <Text style={styles.cancelButtonText}>Cancelar</Text>
                 </Pressable>
                 <Pressable disabled={saving} style={styles.saveButton} onPress={saveProfile}>
@@ -403,6 +518,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 12,
     paddingVertical: 12,
+  },
+  dateButton: {
+    borderColor: "#d7d7d0",
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  dateButtonText: {
+    color: "#1f1f1d",
+    fontSize: 16,
+  },
+  datePlaceholder: {
+    color: "#777",
+  },
+  fieldError: {
+    color: "#b42318",
+    fontSize: 12,
   },
   error: {
     color: "#b42318",
