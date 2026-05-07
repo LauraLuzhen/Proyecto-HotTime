@@ -1,5 +1,16 @@
+import { useMemo, useState } from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
 
 import { useAuth } from "../state/auth/AuthContext";
 import { LoginScreen } from "../screens/LoginScreen";
@@ -12,9 +23,168 @@ import { ContactsScreen } from "../screens/ContactsScreen";
 import { DrawerContent } from "./drawer/DrawerContent";
 import { SendCommunicationScreen } from "../screens/SendCommunicationScreen";
 import { BandejaScreen } from "../screens/BandejaScreen";
+import { ApiClientError, createApi } from "../lib/api";
+import { tokenStorage } from "../state/auth/storage";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
+
+function typeLabel(type: CommunicationType) {
+  const labels: Record<CommunicationType, string> = {
+    GENERAL: "General",
+    INFO: "Info",
+    WARNING: "Aviso",
+    URGENT: "Urgente",
+  };
+  return labels[type];
+}
+
+function formatDate(value: Date | string | null) {
+  if (!value) return "-";
+
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+  }).format(new Date(value));
+}
+
+function previewText(value: string) {
+  const clean = value.replace(/\s+/g, " ").trim();
+  return clean.length > 86 ? `${clean.slice(0, 86)}...` : clean;
+}
+
+function HeaderInboxButton({ navigation }: { navigation: any }) {
+  const api = useMemo(() => createApi(() => tokenStorage.get()), []);
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<CommunicationInboxResponse[]>([]);
+  const [detail, setDetail] = useState<CommunicationDetailResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadLatest() {
+    setOpen(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await api.communication.getInbox();
+      setItems(result.slice(0, 5));
+    } catch (err) {
+      const e = err as ApiClientError;
+      setItems([]);
+      setError(e.message ?? "No se han podido cargar los comunicados.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openCommunication(communicationId: number) {
+    setDetailLoading(true);
+    setError(null);
+
+    try {
+      const result = await api.communication.getById(communicationId);
+      setDetail(result);
+      const refreshed = await api.communication.getInbox();
+      setItems(refreshed.slice(0, 5));
+    } catch (err) {
+      const e = err as ApiClientError;
+      setError(e.message ?? "No se ha podido abrir el comunicado.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  function goToInbox() {
+    setOpen(false);
+    setDetail(null);
+    navigation.navigate("Bandeja");
+  }
+
+  return (
+    <>
+      <Pressable style={styles.headerInboxButton} onPress={() => void loadLatest()}>
+        <Text style={styles.headerInboxButtonText}>Inbox</Text>
+      </Pressable>
+
+      <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
+          <Pressable style={styles.inboxPanel}>
+            <View style={styles.panelHeader}>
+              <Text style={styles.panelTitle}>Ultimos comunicados</Text>
+              <Pressable style={styles.closeButton} onPress={() => setOpen(false)}>
+                <Text style={styles.closeButtonText}>X</Text>
+              </Pressable>
+            </View>
+
+            {loading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color="#2f5f5b" />
+                <Text style={styles.loadingText}>Cargando...</Text>
+              </View>
+            ) : error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : items.length === 0 ? (
+              <Text style={styles.emptyText}>No tienes comunicados.</Text>
+            ) : (
+              <View style={styles.latestList}>
+                {items.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.latestItem, !item.read && styles.latestItemUnread]}
+                    onPress={() => void openCommunication(item.id)}
+                  >
+                    <View style={styles.latestTopRow}>
+                      <Text style={styles.latestTitle} numberOfLines={1}>{item.title}</Text>
+                      <Text style={[styles.latestState, !item.read && styles.latestStateUnread]}>
+                        {item.read ? "Leido" : "Nuevo"}
+                      </Text>
+                    </View>
+                    <Text style={styles.latestMeta} numberOfLines={1}>
+                      {item.sender.fullName} - {typeLabel(item.type)} - {formatDate(item.sentAt)}
+                    </Text>
+                    <Text style={styles.latestPreview}>{previewText(item.content)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            <Pressable style={styles.viewAllButton} onPress={goToInbox}>
+              <Text style={styles.viewAllText}>Ver todo</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent animationType="slide" visible={detail !== null} onRequestClose={() => setDetail(null)}>
+        <View style={styles.detailOverlay}>
+          <View style={styles.detailPanel}>
+            {detailLoading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color="#2f5f5b" />
+              </View>
+            ) : detail ? (
+              <ScrollView contentContainerStyle={styles.detailContent}>
+                <Pressable style={styles.closeButton} onPress={() => setDetail(null)}>
+                  <Text style={styles.closeButtonText}>X</Text>
+                </Pressable>
+                <Text style={styles.detailTitle}>{detail.title}</Text>
+                <Text style={styles.detailMeta}>{detail.sender.fullName} - {detail.sender.email}</Text>
+                <Text style={styles.detailMeta}>{typeLabel(detail.type)} - {formatDate(detail.sentAt)}</Text>
+                <View style={styles.detailBody}>
+                  <Text style={styles.detailText}>{detail.content}</Text>
+                </View>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
 
 function AppDrawer() {
   return (
@@ -22,7 +192,13 @@ function AppDrawer() {
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{ headerShown: true }}
     >
-      <Drawer.Screen name="Dashboard" component={DashboardScreen} />
+      <Drawer.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={({ navigation }) => ({
+          headerRight: () => <HeaderInboxButton navigation={navigation} />,
+        })}
+      />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
       <Drawer.Screen name="Contacts" component={ContactsScreen} />
       <Drawer.Screen name="Administration" component={AdministrationScreen} />
@@ -49,4 +225,168 @@ export function RootNavigator() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  headerInboxButton: {
+    alignItems: "center",
+    borderColor: "#cfd6d2",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 12,
+    minHeight: 34,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  headerInboxButtonText: {
+    color: "#2f5f5b",
+    fontWeight: "700",
+  },
+  overlay: {
+    alignItems: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingTop: 72,
+  },
+  inboxPanel: {
+    backgroundColor: "#fff",
+    borderColor: "#deded8",
+    borderRadius: 8,
+    borderWidth: 1,
+    maxHeight: "78%",
+    padding: 12,
+    width: "92%",
+  },
+  panelHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  panelTitle: {
+    color: "#151515",
+    flex: 1,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  closeButton: {
+    alignItems: "center",
+    borderColor: "#d7d7d0",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  closeButtonText: {
+    color: "#2f2f2b",
+    fontWeight: "700",
+  },
+  loadingBox: {
+    alignItems: "center",
+    gap: 8,
+    padding: 22,
+  },
+  loadingText: {
+    color: "#666",
+  },
+  errorText: {
+    color: "#b42318",
+    paddingVertical: 12,
+  },
+  emptyText: {
+    color: "#6a6a64",
+    paddingVertical: 12,
+  },
+  latestList: {
+    gap: 8,
+  },
+  latestItem: {
+    borderColor: "#eeeeea",
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 5,
+    padding: 10,
+  },
+  latestItemUnread: {
+    backgroundColor: "#f1f6f4",
+    borderColor: "#2f5f5b",
+  },
+  latestTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  latestTitle: {
+    color: "#1f1f1d",
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  latestState: {
+    color: "#6a6a64",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  latestStateUnread: {
+    color: "#2f5f5b",
+  },
+  latestMeta: {
+    color: "#64645e",
+    fontSize: 12,
+  },
+  latestPreview: {
+    color: "#393934",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  viewAllButton: {
+    alignItems: "center",
+    backgroundColor: "#2f5f5b",
+    borderRadius: 8,
+    marginTop: 12,
+    paddingVertical: 11,
+  },
+  viewAllText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  detailOverlay: {
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  detailPanel: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    maxHeight: "86%",
+  },
+  detailContent: {
+    gap: 12,
+    padding: 16,
+    paddingBottom: 28,
+  },
+  detailTitle: {
+    color: "#151515",
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  detailMeta: {
+    color: "#62625c",
+    fontSize: 14,
+  },
+  detailBody: {
+    borderColor: "#deded8",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 14,
+  },
+  detailText: {
+    color: "#222",
+    fontSize: 16,
+    lineHeight: 23,
+  },
+});
 

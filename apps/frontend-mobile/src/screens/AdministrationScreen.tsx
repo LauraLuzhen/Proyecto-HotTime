@@ -168,11 +168,13 @@ function DateField({
   value,
   onChangeText,
   error,
+  maximumDate,
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   error?: string;
+  maximumDate?: Date;
 }) {
   const [open, setOpen] = useState(false);
   const selectedDate = parseDateInput(value) ?? new Date();
@@ -193,7 +195,7 @@ function DateField({
       {open ? (
         <DateTimePicker
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          maximumDate={new Date()}
+          maximumDate={maximumDate}
           mode="date"
           onChange={onChange}
           value={selectedDate}
@@ -828,12 +830,14 @@ export function AdministrationScreen() {
                       value={formBirthDate}
                       onChangeText={setFormBirthDate}
                       error={fieldErrors.birthDate}
+                      maximumDate={new Date()}
                     />
                     <DateField
                       label="Alta"
                       value={formInitDate}
                       onChangeText={setFormInitDate}
                       error={fieldErrors.initDate}
+                      maximumDate={new Date()}
                     />
                     <Field
                       autoCapitalize="none"
@@ -993,6 +997,7 @@ export function AdministrationScreen() {
                     value={formBirthDate}
                     onChangeText={setFormBirthDate}
                     error={fieldErrors.birthDate}
+                    maximumDate={new Date()}
                   />
                   <SelectField
                     label="Rol"
