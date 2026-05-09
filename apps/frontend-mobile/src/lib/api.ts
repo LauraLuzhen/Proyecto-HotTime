@@ -23,6 +23,16 @@ import type {
   CommunicationInboxResponse,
   CommunicationOutboxResponse,
   CreateCommunicationDto,
+  ClockDto,
+  AttendanceResponse,
+  OrganizationResponse,
+  CreateManyShiftsDto,
+  CreateShiftDto,
+  DeleteShiftResponse,
+  PlanningRangeQueryDto,
+  ShiftResponse,
+  UpdateShiftDto,
+  UpdateOrganizationDto,
 } from "@hottime/types";
 
 export interface ApiErrorResponse {
@@ -138,6 +148,32 @@ function buildInboxQuery(filters?: CommunicationInboxQueryDto): string {
   return query ? `?${query}` : "";
 }
 
+function buildPlanningUserQuery(filters?: { userId?: number }): string {
+  if (!filters) return "";
+
+  const params = new URLSearchParams();
+  if (filters.userId !== undefined) params.set("userId", String(filters.userId));
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+function buildPlanningRangeQuery(filters?: PlanningRangeQueryDto): string {
+  if (!filters) return "";
+
+  const params = new URLSearchParams();
+  if (filters.from) params.set("from", new Date(filters.from).toISOString());
+  if (filters.to) params.set("to", new Date(filters.to).toISOString());
+  if (filters.userId !== undefined) params.set("userId", String(filters.userId));
+  if (filters.userIds?.length) params.set("userIds", filters.userIds.join(","));
+  if (filters.categoryId !== undefined) params.set("categoryId", filters.categoryId === null ? "none" : String(filters.categoryId));
+  if (filters.status) params.set("status", filters.status);
+  if (filters.published !== undefined) params.set("published", String(filters.published));
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export function createApi(getToken: () => string | null | Promise<string | null>) {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://192.168.1.129:3001";
   const http = new BackendHttpClient(apiBaseUrl, getToken);
@@ -169,6 +205,20 @@ export function createApi(getToken: () => string | null | Promise<string | null>
       getById: (communicationId: number) => http.get<CommunicationDetailResponse>(`/communications/${communicationId}`),
       countRead: () => http.get<CommunicationCountResponse>("/communications/inbox/count/read"),
       countUnread: () => http.get<CommunicationCountResponse>("/communications/inbox/count/unread"),
+    },
+    organization: {
+      get: () => http.get<OrganizationResponse>("/organization"),
+      update: (data: UpdateOrganizationDto) => http.patch<OrganizationResponse, UpdateOrganizationDto>("/organization", data),
+    },
+    planning: {
+      getShifts: (filters?: PlanningRangeQueryDto) => http.get<ShiftResponse[]>(`/planning/shifts${buildPlanningRangeQuery(filters)}`),
+      getNextShift: (filters?: { userId?: number }) => http.get<ShiftResponse | null>(`/planning/shifts/next${buildPlanningUserQuery(filters)}`),
+      createShift: (data: CreateShiftDto) => http.post<ShiftResponse, CreateShiftDto>("/planning/shifts", data),
+      createManyShifts: (data: CreateManyShiftsDto) => http.post<ShiftResponse[], CreateManyShiftsDto>("/planning/shifts/bulk", data),
+      updateShift: (shiftId: number, data: UpdateShiftDto) => http.patch<ShiftResponse, UpdateShiftDto>(`/planning/shifts/${shiftId}`, data),
+      deleteShift: (shiftId: number) => http.delete<DeleteShiftResponse>(`/planning/shifts/${shiftId}`),
+      clockIn: (data: ClockDto) => http.post<AttendanceResponse, ClockDto>("/planning/attendance/clock-in", data),
+      clockOut: (data: ClockDto) => http.post<AttendanceResponse, ClockDto>("/planning/attendance/clock-out", data),
     },
   };
 }

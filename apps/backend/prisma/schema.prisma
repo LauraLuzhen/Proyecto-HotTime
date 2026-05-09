@@ -8,41 +8,53 @@ datasource db {
 }
 
 model Organization {
-  id              Int        @id @default(autoincrement())
-  name            String     @db.VarChar(100)
-  categories      Category[]
-  users           User[]
-  comunications   Communication[]
+  id                  Int             @id @default(autoincrement())
+  name                String          @db.VarChar(100)
+  latitude            Float?
+  longitude           Float?
+  allowedRadiusMeters Int?
+  categories          Category[]
+  users               User[]
+  communications      Communication[]
+  shifts              Shift[]
+  attendances         Attendance[]
 }
 
 model Category {
-  id             Int          @id @default(autoincrement())
-  name           String       @db.VarChar(100)
+  id             Int            @id @default(autoincrement())
+  name           String         @db.VarChar(100)
   organizationId Int
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   userCategories UserCategory[]
+  shifts         Shift[]
 
   @@unique([name, organizationId])
+  @@unique([id, organizationId])
 }
 
 model User {
-  id                      Int                 @id @default(autoincrement())
-  fullName                String              @db.VarChar(100)
-  email                   String              @unique @db.VarChar(150)
-  password                String
-  role                    Role
-  birthDate               DateTime
-  initDate                DateTime
-  phone                   String              @db.VarChar(20)
-  imgProfile              String?             @db.VarChar(255)
-  organizationId          Int
-  resetToken              String?             @unique @db.VarChar(255)
-  resetTokenExp           DateTime?
-  organization            Organization        @relation(fields: [organizationId], references: [id])
-  userCategories          UserCategory[]
+  id             Int          @id @default(autoincrement())
+  fullName       String       @db.VarChar(100)
+  email          String       @unique @db.VarChar(150)
+  password       String
+  role           Role
+  birthDate      DateTime
+  initDate       DateTime
+  phone          String       @db.VarChar(20)
+  imgProfile     String?      @db.VarChar(255)
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  resetToken     String?      @unique @db.VarChar(255)
+  resetTokenExp  DateTime?
 
-  sentCommunications      Communication[]     @relation("SentCommunications") 
-  receivedCommunications  CommunicationUser[]
+  userCategories         UserCategory[]
+  sentCommunications     Communication[]     @relation("SentCommunications")
+  receivedCommunications CommunicationUser[]
+  shifts                 Shift[]             @relation("UserShifts")
+  createdShifts          Shift[]             @relation("CreatedShifts")
+  attendances            Attendance[]
+
+  @@unique([id, organizationId])
 }
 
 model UserCategory {
@@ -59,7 +71,7 @@ model Communication {
   id             Int                 @id @default(autoincrement())
   title          String              @db.VarChar(150)
   content        String              @db.Text
-  type           CommunicationType   
+  type           CommunicationType
   senderId       Int
   sender         User                @relation("SentCommunications", fields: [senderId], references: [id])
   organizationId Int
@@ -69,7 +81,7 @@ model Communication {
 }
 
 model CommunicationUser {
-  id              Int @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   communicationId Int
   userId          Int
   communication   Communication @relation(fields: [communicationId], references: [id])
@@ -81,6 +93,62 @@ model CommunicationUser {
   @@index([userId])
 }
 
+model Shift {
+  id             Int          @id @default(autoincrement())
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userId         Int
+  user           User         @relation("UserShifts", fields: [userId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  createdById    Int
+  createdBy      User         @relation("CreatedShifts", fields: [createdById, organizationId], references: [id, organizationId], onDelete: Restrict)
+  categoryId     Int?
+  category       Category?    @relation(fields: [categoryId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  startsAt       DateTime
+  endsAt         DateTime
+  actualStartsAt DateTime?
+  actualEndsAt   DateTime?
+  status         ShiftStatus  @default(SCHEDULED)
+  published      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  attendances    Attendance[]
+
+  @@unique([id, userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([categoryId])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@index([published])
+  @@index([status])
+  @@index([organizationId, startsAt])
+  @@index([organizationId, userId, startsAt])
+  @@index([organizationId, categoryId, startsAt])
+}
+
+model Attendance {
+  id             Int            @id @default(autoincrement())
+  organizationId Int
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  shiftId        Int
+  userId         Int
+  shift          Shift          @relation(fields: [shiftId, userId, organizationId], references: [id, userId, organizationId], onDelete: Restrict)
+  user           User           @relation(fields: [userId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  type           AttendanceType
+  latitude       Float
+  longitude      Float
+  distanceMeters Float
+  occurredAt     DateTime       @default(now())
+  createdAt      DateTime       @default(now())
+
+  @@unique([shiftId, type])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([shiftId])
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, userId, occurredAt])
+}
+
 enum Role {
   ADMIN
   MANAGER
@@ -88,8 +156,21 @@ enum Role {
 }
 
 enum CommunicationType {
-  INFO        
-  GENERAL      
-  WARNING    
-  URGENT      
+  INFO
+  GENERAL
+  WARNING
+  URGENT
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+enum AttendanceType {
+  CLOCK_IN
+  CLOCK_OUT
 }

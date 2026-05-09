@@ -10,3 +10,5 @@ export interface ApiErrorPayload {
 }
 export type Role = "ADMIN" | "MANAGER" | "EMPLOYEE";
 export type CommunicationType = "GENERAL" | "INFO" | "WARNING" | "URGENT";
+export type ShiftStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "MISSED" | "CANCELLED";
+export type AttendanceType = "CLOCK_IN" | "CLOCK_OUT";

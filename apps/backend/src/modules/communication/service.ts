@@ -1,6 +1,6 @@
 import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationOutboxResponse, CountInboxCommunicationsFn, CreateCommunicationFn, GetCommunicationByIdFn, GetInboxCommunicationsFn, GetOutboxCommunicationsFn, } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
-import * as repo from "@/modules/comunication/repository";
+import * as repo from "@/modules/communication/repository";
 
 function toOutboxResponse(communication: any): CommunicationOutboxResponse {
   const recipients = communication.recipients.filter((recipient: { user: { id: number } }) => recipient.user.id !== communication.senderId);

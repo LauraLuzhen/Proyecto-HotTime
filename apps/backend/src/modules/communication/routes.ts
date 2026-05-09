@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { httpError } from "@/lib/httpError";
 import { authenticate } from "@/plugins/auth";
-import * as service from "@/modules/comunication/service";
+import * as service from "@/modules/communication/service";
 import { createCommunicationSchema, getCommunicationIdSchema, getInboxSchema } from "./schemas";
 
 export async function communicationRoutes(app: FastifyInstance) {

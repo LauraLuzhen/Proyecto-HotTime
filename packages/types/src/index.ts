@@ -15,3 +15,11 @@ export * from "./modules/category/functions";
 export * from "./modules/communication/entities";
 export * from "./modules/communication/dtos";
 export * from "./modules/communication/functions";
+
+export * from "./modules/organization/entities";
+export * from "./modules/organization/dtos";
+export * from "./modules/organization/functions";
+
+export * from "./modules/planning/entities";
+export * from "./modules/planning/dtos";
+export * from "./modules/planning/functions";

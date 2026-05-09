@@ -175,6 +175,9 @@ export function findMeWithRelations(userId: number) {
         select: {
           id: true,
           name: true,
+          latitude: true,
+          longitude: true,
+          allowedRadiusMeters: true,
         },
       },
     },

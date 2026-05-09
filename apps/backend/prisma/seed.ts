@@ -17,10 +17,20 @@ async function main() {
 
   // Table Organizations
   const muerde = await prisma.organization.create({
-    data: { name: "Muerde la Pasta" },
+    data: {
+      name: "Muerde la Pasta",
+      latitude: 37.3890924,
+      longitude: -5.9844589,
+      allowedRadiusMeters: 150,
+    },
   });
   const nervion = await prisma.organization.create({
-    data: { name: "Nervión" },
+    data: {
+      name: "Nervión",
+      latitude: 37.383,
+      longitude: -5.973,
+      allowedRadiusMeters: 150,
+    },
   });
 
   // Table Categories

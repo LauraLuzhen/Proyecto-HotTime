@@ -16,6 +16,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
       <DrawerItem label="Profile" onPress={() => props.navigation.navigate("Profile")} />
       <DrawerItem label="Contacts" onPress={() => props.navigation.navigate("Contacts")} />
       <DrawerItem label="Bandeja" onPress={() => props.navigation.navigate("Bandeja")} />
+      <DrawerItem label="My schedule" onPress={() => props.navigation.navigate("MySchedule")} />
 
       {isAdminOrManager && (
         <View style={{ marginTop: 10 }}>
@@ -53,13 +54,19 @@ export function DrawerContent(props: DrawerContentComponentProps) {
                   onPress={() => props.navigation.navigate("Communication")}
                 />
               )}
+              {isAdminOrManager && (
+                <DrawerItem
+                  label="Plan Schedules"
+                  onPress={() => props.navigation.navigate("PlanSchedules")}
+                />
+              )}
             </View>
           )}
         </View>
       )}
 
       {auth.user?.role === "ADMIN" && (
-        <DrawerItem label="Admin (vacía)" onPress={() => props.navigation.navigate("Admin")} />
+        <DrawerItem label="Organization" onPress={() => props.navigation.navigate("Organization")} />
       )}
       {auth.user?.role === "MANAGER" && (
         <DrawerItem label="Manager (vacía)" onPress={() => props.navigation.navigate("Manager")} />
