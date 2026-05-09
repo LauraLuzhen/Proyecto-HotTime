@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm -r dev",
-    "build": "pnpm -r build"
+    "dev": "pnpm --parallel --filter backend --filter frontend-mobile dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:mobile": "pnpm --filter frontend-mobile dev",
+    "build": "pnpm --filter @hottime/types build && pnpm --filter backend build && pnpm --filter frontend-mobile build"
   },
   "keywords": [],
   "author": "",

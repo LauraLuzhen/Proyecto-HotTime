@@ -9,7 +9,7 @@ const start = async () => {
 
   try {
     await app.listen({ port, host: "0.0.0.0" });
-    console.log(`🚀 Backend running on http://192.168.1.129:${port}`);
+    console.log(`Backend running on http://localhost:${port}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

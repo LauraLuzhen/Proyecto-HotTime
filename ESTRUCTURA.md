@@ -1,5 +1,5 @@
-# ESTRUCTURA BASE E INSTALACIÓN
-Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañeros trabajemos conjunto y la instalacion inicial no se muy coñazo sino q sea poner un par de comandos. en el backend tendremos prisma + seed que serán los datos inicialias. tengrá una carpet src la cual los archivos se dividirán en lib, modules, types, config y dos archivos app.ts y server.ts todo esto con .ts y Fastify. El frontend será con React y Vite. 
+# ESTRUCTURA BASE E INSTALACION
+Instalar dependencias pnpm. El proyecto queda como monorepo para que varios companeros trabajemos juntos y la instalacion inicial sea sencilla. En el backend tendremos Prisma + seed para datos iniciales. La carpeta `src` del backend se divide en `lib`, `modules`, `types`, `config`, y los archivos `app.ts` y `server.ts`, todo en TypeScript y Fastify. El frontend sera mobile con Expo/React Native.
 
 ## 1. Estructura de carpetas
 /proyecto-hottime
@@ -8,7 +8,7 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
             .env
             package.json
             tsconfig.json
-        /frontend
+        /frontend-mobile
             .env
             package.json
             tsconfig.json
@@ -23,10 +23,9 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
 ## 2. Puertos
     BD 5432
     Backend 3001
-    Frontend 5173
+    Mobile 8081
 
-## 3. Instalación
-    corepack enable
+## 3. Instalacion
     corepack prepare pnpm@latest --activate
     docker compose up -d
     backend .env listo
@@ -38,18 +37,18 @@ Instalar dependencias pnpm, quiero que sea un monorepo para que varios compañer
     npx prisma db push
     npx prisma db seed
         prueba: pnpm dev
-        visualización BD: npx prisma studio
+        visualizacion BD: npx prisma studio
         formatear schema: npx prisma format
-    pnpm --filter @hottime/types build: montar types 
-    cntrl + shift + p --> TypeScript: Restart TS Server
+    pnpm --filter @hottime/types build: montar types
+    ctrl + shift + p --> TypeScript: Restart TS Server
 
 pnpm --filter backend dev
-pnpm --filter frontend-web dev
 pnpm --filter frontend-mobile dev
 
-
 puertos
-netstat -ano | findstr :8080
+netstat -ano | findstr :8081
 taskkill /F /PID 1234
 
 
+problemas
+pnpm --filter frontend-mobile exec expo start -c --lan

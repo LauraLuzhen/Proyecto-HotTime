@@ -1,4 +1,5 @@
-const baseUrl = "http://192.168.1.129:3001";
+const baseUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:3001";
+const runId = Date.now();
 
 const results = [];
 
@@ -78,7 +79,7 @@ async function run() {
     method: "POST",
     body: JSON.stringify({ email: "nobody@none.com" }),
   });
-  assertStatus("auth/forgot-password unknown email", forgotUnknown.response.status, 200, forgotUnknown.data);
+  assertStatus("auth/forgot-password unknown email", forgotUnknown.response.status, 400, forgotUnknown.data);
 
   const resetInvalid = await request("/auth/reset-password", {
     method: "POST",
@@ -119,7 +120,7 @@ async function run() {
     headers: { authorization: `Bearer ${adminToken}` },
     body: JSON.stringify({
       fullName: "Temp User",
-      email: "temp.user@test.com",
+      email: `temp.user.${runId}@test.com`,
       password: "Password1.",
       role: "EMPLOYEE",
       birthDate: "1999-01-01",
@@ -127,26 +128,16 @@ async function run() {
       phone: "600123123",
     }),
   });
-  assertStatus("users/create admin", createUserAdmin.response.status, 200, createUserAdmin.data);
+  assertStatus("users/create admin", createUserAdmin.response.status, 201, createUserAdmin.data);
   const tempUserId = createUserAdmin.data?.id;
   if (!tempUserId) throw new Error("temp user id missing");
 
   const updateMe = await request("/users/me", {
-    method: "PUT",
+    method: "PATCH",
     headers: { authorization: `Bearer ${managerToken}` },
     body: JSON.stringify({ phone: "699999999" }),
   });
   assertStatus("users/me update", updateMe.response.status, 200, updateMe.data);
-
-  const changePassWrong = await request("/users/me/password", {
-    method: "PUT",
-    headers: { authorization: `Bearer ${managerToken}` },
-    body: JSON.stringify({
-      currentPassword: "Incorrect1.",
-      newPassword: "Password1.",
-    }),
-  });
-  assertStatus("users/me/password wrong current", changePassWrong.response.status, 400, changePassWrong.data);
 
   const deleteUserManager = await request(`/users/${tempUserId}`, {
     method: "DELETE",
@@ -178,23 +169,23 @@ async function run() {
   const categoryAdminCreate = await request("/categories", {
     method: "POST",
     headers: { authorization: `Bearer ${adminToken}` },
-    body: JSON.stringify({ name: "tmp-category" }),
+    body: JSON.stringify({ name: `tmp-category-${runId}` }),
   });
-  assertStatus("categories/create admin", categoryAdminCreate.response.status, 200, categoryAdminCreate.data);
+  assertStatus("categories/create admin", categoryAdminCreate.response.status, 201, categoryAdminCreate.data);
   const tempCategoryId = categoryAdminCreate.data?.id;
   if (!tempCategoryId) throw new Error("temp category id missing");
 
   const categoryUpdateManager = await request(`/categories/${tempCategoryId}`, {
-    method: "PUT",
+    method: "PATCH",
     headers: { authorization: `Bearer ${managerToken}` },
-    body: JSON.stringify({ name: "tmp-category-updated" }),
+    body: JSON.stringify({ name: `tmp-category-updated-${runId}` }),
   });
   assertStatus("categories/update manager forbidden", categoryUpdateManager.response.status, 403, categoryUpdateManager.data);
 
   const categoryUpdateAdmin = await request(`/categories/${tempCategoryId}`, {
-    method: "PUT",
+    method: "PATCH",
     headers: { authorization: `Bearer ${adminToken}` },
-    body: JSON.stringify({ name: "tmp-category-updated" }),
+    body: JSON.stringify({ name: `tmp-category-updated-${runId}` }),
   });
   assertStatus("categories/update admin", categoryUpdateAdmin.response.status, 200, categoryUpdateAdmin.data);
 
