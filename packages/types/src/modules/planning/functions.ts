@@ -5,6 +5,9 @@ import type {
   CreateShiftForUserDto,
   CreateShiftForUsersDto,
   CreateShiftResponseDto,
+  GetShiftsDto,
+  GetShiftResponseDto,
+  GetShiftsResponseDto,
 } from "./dtos";
 
 
@@ -29,3 +32,17 @@ export type CreateShiftForCategoryFn = (
   organizationId: number,
   createdById: number
 ) => Promise<CreateShiftResponseDto>;
+
+/* =========================
+   GET
+========================= */
+
+export type GetShiftsFn = (
+  filters: GetShiftsDto,
+  organizationId: number
+) => Promise<GetShiftsResponseDto>;
+
+export type GetShiftFn = (
+  shiftId: number,
+  organizationId: number
+) => Promise<GetShiftResponseDto | null>;

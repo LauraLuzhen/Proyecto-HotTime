@@ -1,6 +1,8 @@
 // dtos.ts
 
 import type { ShiftEntity } from "./entities";
+import type { ShiftStatus } from "../../shared/common";
+
 
 /* =========================
    CREATE
@@ -37,6 +39,45 @@ export interface CreateShiftForCategoryDto {
 ========================= */
 
 export interface CreateShiftResponseDto {
+  shifts: ShiftEntity[];
+  total: number;
+}
+
+/* =========================
+   GET SHIFTS (FILTERS)
+========================= */
+
+export interface GetShiftsDto {
+  shiftId?: number;
+
+  userId?: number;
+  userIds?: number[];
+
+  categoryId?: number;
+
+  published?: boolean;
+
+  status?: ShiftStatus;
+
+  startsFrom?: Date;
+  startsTo?: Date;
+
+  endsFrom?: Date;
+  endsTo?: Date;
+
+  limit?: number;
+  offset?: number;
+}
+
+/* =========================
+   RESPONSE
+========================= */
+
+export interface GetShiftResponseDto {
+  shift: ShiftEntity;
+}
+
+export interface GetShiftsResponseDto {
   shifts: ShiftEntity[];
   total: number;
 }

@@ -116,7 +116,13 @@ Create shift POST - /planning/shifts/category  ✅
   "endsAt": "2026-05-14T17:00:00.000Z",
   ("published": true)
 }
-Para crear shift igual a todos los users sin category -> "categoryId": null  
+Para crear shift igual a todos los users sin category -> "categoryId": null 
+Get all GET - /planning/shifts ✅
+Get por id user GET - /planning/shifts?userId=1 ✅
+Get por published - /planning/shifts?published=false ✅
+Get por category - /planning/shifts?categoryId=3 ✅
+Get por startsFrom o endsFrom - /planning/shifts?startsFrom=2026-05-01&startsTo=2026-05-31 ✅
+
 
 
 

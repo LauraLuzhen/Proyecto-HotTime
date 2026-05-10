@@ -7,6 +7,8 @@ import {
   createShiftForUserSchema,
   createShiftForUsersSchema,
   createShiftForCategorySchema,
+  getShiftByIdSchema,
+  getShiftsSchema,
 } from "@/modules/planning/schemas";
 
 import * as service from "@/modules/planning/service";
@@ -117,4 +119,57 @@ export async function planningRoutes(app: FastifyInstance) {
       return reply.status(201).send(result);
     }
   );
+
+app.get(
+  "/shifts/:shiftId",
+  {
+    preHandler: [authenticate],
+  },
+  async (req, reply) => {
+    const parsed = getShiftByIdSchema.safeParse(req.params);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        httpError("Invalid shift id", 400, "VALIDATION_ERROR")
+      );
+    }
+
+    const result = await service.getById(
+      parsed.data.shiftId,
+      req.user.organizationId
+    );
+
+    if (!result) {
+      return reply.status(404).send(
+        httpError("Shift not found", 404, "NOT_FOUND")
+      );
+    }
+
+    return reply.send(result);
+  }
+);
+
+app.get(
+  "/shifts",
+  {
+    preHandler: [authenticate],
+  },
+  async (req, reply) => {
+    const parsed = getShiftsSchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        httpError("Invalid query params", 400, "VALIDATION_ERROR")
+      );
+    }
+
+    const result = await service.getAll(
+      parsed.data,
+      req.user.organizationId
+    );
+
+    return reply.send(result);
+  }
+);
+
 }

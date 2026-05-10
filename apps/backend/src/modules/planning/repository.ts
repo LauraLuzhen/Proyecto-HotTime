@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { httpError } from "@/lib/httpError";
+import type { GetShiftsDto } from "@hottime/types";
 
 const prisma = new PrismaClient();
 
@@ -168,4 +169,126 @@ export async function createShift(
   });
 
   return mapShiftCategories(shift);
+}
+
+/* =========================
+   GET BY ID
+========================= */
+
+export async function getShiftById(
+  shiftId: number,
+  organizationId: number
+) {
+  const shift = await prisma.shift.findFirst({
+    where: {
+      id: shiftId,
+      organizationId,
+    },
+    include: {
+      shiftCategories: {
+        select: {
+          shiftId: true,
+          categoryId: true,
+        },
+      },
+    },
+  });
+
+  if (!shift) return null;
+
+  return mapShiftCategories(shift);
+}
+
+/* =========================
+   GET ALL WITH FILTERS
+========================= */
+
+export async function getShifts(
+  filters: GetShiftsDto,
+  organizationId: number
+) {
+  const {
+    shiftId,
+    userId,
+    userIds,
+    categoryId,
+    published,
+    status,
+    startsFrom,
+    startsTo,
+    endsFrom,
+    endsTo,
+    limit = 50,
+    offset = 0,
+  } = filters;
+
+  const where: any = {
+    organizationId,
+
+    ...(shiftId && { id: shiftId }),
+
+    ...(userId && { userId }),
+
+    ...(userIds?.length && {
+      userId: { in: userIds },
+    }),
+
+    ...(published !== undefined && {
+      published,
+    }),
+
+    ...(status && { status }),
+
+    ...(startsFrom || startsTo
+      ? {
+          startsAt: {
+            ...(startsFrom && { gte: startsFrom }),
+            ...(startsTo && { lte: startsTo }),
+          },
+        }
+      : {}),
+
+    ...(endsFrom || endsTo
+      ? {
+          endsAt: {
+            ...(endsFrom && { gte: endsFrom }),
+            ...(endsTo && { lte: endsTo }),
+          },
+        }
+      : {}),
+
+    ...(categoryId && {
+      shiftCategories: {
+        some: {
+          categoryId,
+        },
+      },
+    }),
+  };
+
+  const [shifts, total] = await Promise.all([
+    prisma.shift.findMany({
+      where,
+      include: {
+        shiftCategories: {
+          select: {
+            shiftId: true,
+            categoryId: true,
+          },
+        },
+      },
+      orderBy: {
+        startsAt: "asc",
+      },
+      take: limit,
+      skip: offset,
+    }),
+
+    prisma.shift.count({ where }),
+  ]);
+
+  return {
+    shifts: shifts.map(mapShiftCategories),
+    total,
+  };
 }

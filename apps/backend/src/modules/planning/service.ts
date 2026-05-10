@@ -4,6 +4,8 @@ import type {
   CreateShiftForCategoryFn,
   CreateShiftForUserFn,
   CreateShiftForUsersFn,
+  GetShiftsFn,
+  GetShiftResponseDto,
 } from "@hottime/types";
 
 import * as repo from "@/modules/planning/repository";
@@ -179,4 +181,40 @@ export const createForCategory: CreateShiftForCategoryFn = async (
     shifts,
     total: shifts.length,
   };
+};
+
+/* =========================
+   GET BY ID
+========================= */
+
+export const getById = async (
+  shiftId: number,
+  organizationId: number
+): Promise<GetShiftResponseDto | null> => {
+  const shift = await repo.getShiftById(
+    shiftId,
+    organizationId
+  );
+
+  if (!shift) return null;
+
+  return {
+    shift,
+  };
+};
+
+/* =========================
+   GET ALL
+========================= */
+
+export const getAll: GetShiftsFn = async (
+  filters,
+  organizationId
+) => {
+  const result = await repo.getShifts(
+    filters,
+    organizationId
+  );
+
+  return result;
 };

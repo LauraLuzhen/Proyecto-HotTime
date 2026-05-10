@@ -52,3 +52,10 @@ taskkill /F /PID 1234
 
 problemas
 pnpm --filter frontend-mobile exec expo start -c --lan
+
+
+Reglas de arquitectura recomendadas:
+- `routes.ts`: solo parseo HTTP, auth/roles y llamada a servicios.
+- `schemas.ts`: Zod de request/response.
+- `service.ts`: logica de negocio.
+- `repository.ts`: Prisma y SQL raw si hace falta.
