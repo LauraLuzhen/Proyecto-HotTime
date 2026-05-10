@@ -9,7 +9,9 @@ import {
   createShiftForCategorySchema,
   getShiftByIdSchema,
   getShiftsSchema,
-  getCalendarShiftsSchema 
+  getCalendarShiftsSchema,
+  shiftIdParamsSchema,
+  updateShiftBodySchema
 } from "@/modules/planning/schemas";
 
 import * as service from "@/modules/planning/service";
@@ -202,6 +204,38 @@ app.get(
         includeMonth: parsed.data.includeMonth,
       },
       req.user.organizationId
+    );
+
+    return reply.send(result);
+  }
+);
+
+app.patch(
+  "/shifts/:shiftId",
+  {
+    preHandler: [
+      authenticate,
+      requireRole(["ADMIN", "MANAGER"]),
+    ],
+  },
+  async (req, reply) => {
+    const params = shiftIdParamsSchema.safeParse(req.params);
+    const body = updateShiftBodySchema.safeParse(req.body);
+
+    if (!params.success || !body.success) {
+      return reply.status(400).send({
+        message: "Invalid shift update data",
+        code: "VALIDATION_ERROR",
+      });
+    }
+
+    const result = await service.updateShift(
+      {
+        shiftId: params.data.shiftId,
+        ...body.data,
+      },
+      req.user.organizationId,
+      req.user.id
     );
 
     return reply.send(result);

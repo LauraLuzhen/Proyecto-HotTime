@@ -101,3 +101,21 @@ export interface GetCalendarShiftsResponseDto {
   week: ShiftEntity[];
   month: ShiftEntity[];
 }
+
+/* =========================
+   UPDATE SHIFT
+========================= */
+
+export interface UpdateShiftDto {
+  shiftId: number;
+
+  startsAt?: Date;
+  endsAt?: Date;
+
+  status?: ShiftStatus;
+
+  published?: boolean;
+}
+export interface UpdateShiftResponseDto {
+  shift: ShiftEntity;
+}

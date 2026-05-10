@@ -10,6 +10,8 @@ import type {
   GetShiftsResponseDto,
     GetCalendarShiftsDto,
   GetCalendarShiftsResponseDto,
+    UpdateShiftDto,
+  UpdateShiftResponseDto,
 } from "./dtos";
 
 
@@ -55,3 +57,13 @@ export type GetCalendarShiftsFn = (
   data: GetCalendarShiftsDto,
   organizationId: number
 ) => Promise<GetCalendarShiftsResponseDto>;
+
+/* =========================
+   UPDATE SHIFT
+========================= */
+
+export type UpdateShiftFn = (
+  data: UpdateShiftDto,
+  organizationId: number,
+  actorUserId: number
+) => Promise<UpdateShiftResponseDto>;

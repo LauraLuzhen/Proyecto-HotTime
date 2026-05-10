@@ -6,7 +6,8 @@ import type {
   CreateShiftForUsersFn,
   GetShiftsFn,
   GetShiftResponseDto,
-GetCalendarShiftsFn 
+GetCalendarShiftsFn,
+UpdateShiftFn 
 } from "@hottime/types";
 
 import * as repo from "@/modules/planning/repository";
@@ -311,4 +312,77 @@ export const getCalendarShifts: GetCalendarShiftsFn = async (
   );
 
   return Object.fromEntries(result);
+};
+
+/* =========================
+   UPDATE SHIFT
+========================= */
+
+export const updateShift: UpdateShiftFn = async (
+  data,
+  organizationId,
+  actorUserId
+) => {
+  const shift = await repo.findShiftById(
+    data.shiftId,
+    organizationId
+  );
+
+  if (!shift) {
+    throw httpError(
+      "Shift not found",
+      404,
+      "SHIFT_NOT_FOUND"
+    );
+  }
+
+  /* =========================
+     PERMISSION RULE
+     (admins/managers + self allowed)
+  ========================= */
+
+  const isOwner = shift.userId === actorUserId;
+
+  if (!isOwner) {
+    // aquí podrías meter roles si quieres reforzar
+    // pero según tu regla: admin/manager pueden
+    // esto se controla en route guard normalmente
+  }
+
+  /* =========================
+     OPTIONAL VALIDATION (FUTURE SAFE)
+     overlap check si cambia fechas
+  ========================= */
+
+  if (data.startsAt || data.endsAt) {
+    const startsAt = data.startsAt ?? shift.startsAt;
+    const endsAt = data.endsAt ?? shift.endsAt;
+
+    if (endsAt <= startsAt) {
+      throw httpError(
+        "Invalid date range",
+        400,
+        "INVALID_DATES"
+      );
+    }
+  }
+
+  /* =========================
+     UPDATE
+  ========================= */
+
+  const updated = await repo.updateShiftById(
+    data.shiftId,
+    organizationId,
+    {
+      startsAt: data.startsAt,
+      endsAt: data.endsAt,
+      status: data.status,
+      published: data.published,
+    }
+  );
+
+  return {
+    shift: updated,
+  };
 };

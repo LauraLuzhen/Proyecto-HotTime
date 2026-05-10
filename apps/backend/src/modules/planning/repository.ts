@@ -393,3 +393,58 @@ export async function getMonthShifts(
 
   return shifts.map(mapShiftCategories);
 }
+
+/* =========================
+   FIND SHIFT
+========================= */
+
+export async function findShiftById(
+  shiftId: number,
+  organizationId: number
+) {
+  return prisma.shift.findFirst({
+    where: {
+      id: shiftId,
+      organizationId,
+    },
+  });
+}
+
+/* =========================
+   UPDATE SHIFT
+========================= */
+
+export async function updateShiftById(
+  shiftId: number,
+  organizationId: number,
+  data: {
+    startsAt?: Date;
+    endsAt?: Date;
+    status?: any;
+    published?: boolean;
+  }
+) {
+  const shift = await prisma.shift.update({
+    where: {
+      id: shiftId,
+    },
+    data: {
+      ...(data.startsAt && { startsAt: data.startsAt }),
+      ...(data.endsAt && { endsAt: data.endsAt }),
+      ...(data.status && { status: data.status }),
+      ...(data.published !== undefined && {
+        published: data.published,
+      }),
+    },
+    include: {
+      shiftCategories: {
+        select: {
+          shiftId: true,
+          categoryId: true,
+        },
+      },
+    },
+  });
+
+  return mapShiftCategories(shift);
+}

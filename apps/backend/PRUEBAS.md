@@ -127,7 +127,13 @@ Get calendar userid GET - /planning/shifts/calendar?userId=4 ✅
 Get solo next shift GET - /planning/shifts/calendar?includeNext=true&includeWeek=false&includeMonth=false ✅
 Get full calendar GET - /planning/shifts/calendar?includeNext=true&includeWeek=true&includeMonth=true ✅
 Get fecha referencia GET - /planning/shifts/calendar?date=2026-05-10 ✅
-
+Update por id un shift PATCH - /planning/shifts/2 ✅
+{
+  "startsAt": "2026-05-14T10:00:00.000Z",
+  "endsAt": "2026-05-14T18:00:00.000Z",
+  "status": "IN_PROGRESS",
+  "published": true
+}
  
 
 
