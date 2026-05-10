@@ -81,3 +81,23 @@ export interface GetShiftsResponseDto {
   shifts: ShiftEntity[];
   total: number;
 }
+
+/* =========================
+   CALENDAR SHIFTS
+========================= */
+
+export interface GetCalendarShiftsDto {
+  userId?: number;
+
+  date?: Date; // referencia (hoy si no viene)
+
+  includeNext?: boolean;
+  includeWeek?: boolean;
+  includeMonth?: boolean;
+}
+
+export interface GetCalendarShiftsResponseDto {
+  next: ShiftEntity | null;
+  week: ShiftEntity[];
+  month: ShiftEntity[];
+}

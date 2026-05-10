@@ -122,9 +122,13 @@ Get por id user GET - /planning/shifts?userId=1 ✅
 Get por published - /planning/shifts?published=false ✅
 Get por category - /planning/shifts?categoryId=3 ✅
 Get por startsFrom o endsFrom - /planning/shifts?startsFrom=2026-05-01&startsTo=2026-05-31 ✅
+Get calendar me GET - /planning/shifts/calendar ✅
+Get calendar userid GET - /planning/shifts/calendar?userId=4 ✅
+Get solo next shift GET - /planning/shifts/calendar?includeNext=true&includeWeek=false&includeMonth=false ✅
+Get full calendar GET - /planning/shifts/calendar?includeNext=true&includeWeek=true&includeMonth=true ✅
+Get fecha referencia GET - /planning/shifts/calendar?date=2026-05-10 ✅
 
-
-
+ 
 
 
 

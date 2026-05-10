@@ -8,6 +8,8 @@ import type {
   GetShiftsDto,
   GetShiftResponseDto,
   GetShiftsResponseDto,
+    GetCalendarShiftsDto,
+  GetCalendarShiftsResponseDto,
 } from "./dtos";
 
 
@@ -46,3 +48,10 @@ export type GetShiftFn = (
   shiftId: number,
   organizationId: number
 ) => Promise<GetShiftResponseDto | null>;
+
+// gets month / week / next
+
+export type GetCalendarShiftsFn = (
+  data: GetCalendarShiftsDto,
+  organizationId: number
+) => Promise<GetCalendarShiftsResponseDto>;

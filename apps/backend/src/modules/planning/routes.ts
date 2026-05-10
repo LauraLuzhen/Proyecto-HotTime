@@ -9,6 +9,7 @@ import {
   createShiftForCategorySchema,
   getShiftByIdSchema,
   getShiftsSchema,
+  getCalendarShiftsSchema 
 } from "@/modules/planning/schemas";
 
 import * as service from "@/modules/planning/service";
@@ -172,4 +173,38 @@ app.get(
   }
 );
 
+app.get(
+  "/shifts/calendar",
+  {
+    preHandler: [authenticate],
+  },
+  async (req, reply) => {
+    const parsed = getCalendarShiftsSchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        httpError("Invalid query params", 400, "VALIDATION_ERROR")
+      );
+    }
+
+    const isAdmin = ["ADMIN", "MANAGER"].includes(req.user.role);
+
+    const result = await service.getCalendarShifts(
+      {
+        userId: isAdmin
+          ? parsed.data.userId
+          : req.user.id, // /me fallback seguro
+
+        date: parsed.data.date,
+
+        includeNext: parsed.data.includeNext,
+        includeWeek: parsed.data.includeWeek,
+        includeMonth: parsed.data.includeMonth,
+      },
+      req.user.organizationId
+    );
+
+    return reply.send(result);
+  }
+);
 }

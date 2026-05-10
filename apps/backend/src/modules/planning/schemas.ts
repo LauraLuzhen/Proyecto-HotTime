@@ -77,3 +77,17 @@ export const getShiftsSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),
 }).strict();
+
+/* =========================
+   CALENDAR SHIFTS
+========================= */
+
+export const getCalendarShiftsSchema = z.object({
+  userId: z.coerce.number().int().positive().optional(),
+
+  date: z.coerce.date().optional(),
+
+  includeNext: z.coerce.boolean().optional(),
+  includeWeek: z.coerce.boolean().optional(),
+  includeMonth: z.coerce.boolean().optional(),
+}).strict();

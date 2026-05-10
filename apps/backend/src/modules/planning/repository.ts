@@ -292,3 +292,104 @@ export async function getShifts(
     total,
   };
 }
+
+/* =========================
+   NEXT SHIFT
+========================= */
+
+export async function getNextShift(
+  organizationId: number,
+  userId: number,
+  now: Date
+) {
+  const shift = await prisma.shift.findFirst({
+    where: {
+      organizationId,
+      userId,
+      startsAt: { gte: now },
+    },
+    orderBy: {
+      startsAt: "asc",
+    },
+    include: {
+      shiftCategories: {
+        select: {
+          shiftId: true,
+          categoryId: true,
+        },
+      },
+    },
+  });
+
+  return shift ? mapShiftCategories(shift) : null;
+}
+
+/* =========================
+   WEEK SHIFTS
+========================= */
+
+export async function getWeekShifts(
+  organizationId: number,
+  userId: number,
+  start: Date,
+  end: Date
+) {
+  const shifts = await prisma.shift.findMany({
+    where: {
+      organizationId,
+      userId,
+      startsAt: {
+        gte: start,
+        lte: end,
+      },
+    },
+    orderBy: {
+      startsAt: "asc",
+    },
+    include: {
+      shiftCategories: {
+        select: {
+          shiftId: true,
+          categoryId: true,
+        },
+      },
+    },
+  });
+
+  return shifts.map(mapShiftCategories);
+}
+
+/* =========================
+   MONTH SHIFTS
+========================= */
+
+export async function getMonthShifts(
+  organizationId: number,
+  userId: number,
+  start: Date,
+  end: Date
+) {
+  const shifts = await prisma.shift.findMany({
+    where: {
+      organizationId,
+      userId,
+      startsAt: {
+        gte: start,
+        lte: end,
+      },
+    },
+    orderBy: {
+      startsAt: "asc",
+    },
+    include: {
+      shiftCategories: {
+        select: {
+          shiftId: true,
+          categoryId: true,
+        },
+      },
+    },
+  });
+
+  return shifts.map(mapShiftCategories);
+}

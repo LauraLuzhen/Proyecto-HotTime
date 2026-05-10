@@ -6,6 +6,7 @@ import type {
   CreateShiftForUsersFn,
   GetShiftsFn,
   GetShiftResponseDto,
+GetCalendarShiftsFn 
 } from "@hottime/types";
 
 import * as repo from "@/modules/planning/repository";
@@ -217,4 +218,97 @@ export const getAll: GetShiftsFn = async (
   );
 
   return result;
+};
+
+function getStartOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+
+  const start = new Date(d.setDate(diff));
+  start.setHours(0, 0, 0, 0);
+
+  return start;
+}
+
+function getEndOfWeek(start: Date) {
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+
+  return end;
+}
+
+function getStartOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function getEndOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+/* =========================
+   SERVICE
+========================= */
+
+export const getCalendarShifts: GetCalendarShiftsFn = async (
+  data,
+  organizationId
+) => {
+  const userId = data.userId!;
+  const baseDate = data.date ?? new Date();
+
+  const includeNext = data.includeNext ?? true;
+  const includeWeek = data.includeWeek ?? true;
+  const includeMonth = data.includeMonth ?? true;
+
+  /* =========================
+     PARALLEL EXECUTION
+  ========================= */
+
+  const promises: any = {};
+
+  /* NEXT */
+  if (includeNext) {
+    promises.next = repo.getNextShift(
+      organizationId,
+      userId,
+      new Date()
+    );
+  }
+
+  /* WEEK */
+  if (includeWeek) {
+    const startWeek = getStartOfWeek(baseDate);
+    const endWeek = getEndOfWeek(startWeek);
+
+    promises.week = repo.getWeekShifts(
+      organizationId,
+      userId,
+      startWeek,
+      endWeek
+    );
+  }
+
+  /* MONTH */
+  if (includeMonth) {
+    const startMonth = getStartOfMonth(baseDate);
+    const endMonth = getEndOfMonth(baseDate);
+
+    promises.month = repo.getMonthShifts(
+      organizationId,
+      userId,
+      startMonth,
+      endMonth
+    );
+  }
+
+  const result = await Promise.all(
+    Object.entries(promises).map(async ([key, fn]) => [
+      key,
+      await fn,
+    ])
+  );
+
+  return Object.fromEntries(result);
 };
