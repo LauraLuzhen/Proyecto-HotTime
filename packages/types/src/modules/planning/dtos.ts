@@ -1,107 +1,42 @@
-import type { AttendanceType, ShiftStatus } from "../../shared/common";
+// dtos.ts
 
-export interface PlanningUserResponse {
-  id: number;
-  fullName: string;
-  email: string;
-}
+import type { ShiftEntity } from "./entities";
 
-export interface PlanningCategoryResponse {
-  id: number;
-  name: string;
-}
+/* =========================
+   CREATE
+========================= */
 
-export interface AttendanceResponse {
-  id: number;
-  organizationId: number;
-  shiftId: number;
+export interface CreateShiftForUserDto {
+  startsAt: Date;
+  endsAt: Date;
+  published?: boolean;
   userId: number;
-  type: AttendanceType;
-  latitude: number;
-  longitude: number;
-  distanceMeters: number;
-  occurredAt: Date;
-  createdAt: Date;
 }
 
-export interface ShiftResponse {
-  id: number;
-  organizationId: number;
-  userId: number;
-  createdById: number;
+export interface CreateShiftForUsersDto {
+  startsAt: Date;
+  endsAt: Date;
+  published?: boolean;
+  userIds: number[];
+}
+
+export interface CreateShiftForCategoryDto {
+  startsAt: Date;
+  endsAt: Date;
+  published?: boolean;
+
+  /**
+   * Users de esta category
+   * null => users sin categories
+   */
   categoryId: number | null;
-  startsAt: Date;
-  endsAt: Date;
-  actualStartsAt: Date | null;
-  actualEndsAt: Date | null;
-  status: ShiftStatus;
-  published: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  user: PlanningUserResponse;
-  createdBy: PlanningUserResponse;
-  category: PlanningCategoryResponse | null;
-  attendances: AttendanceResponse[];
 }
 
-export interface CreateShiftDto {
-  userId: number;
-  categoryId?: number | null;
-  startsAt: Date;
-  endsAt: Date;
-  published?: boolean;
-}
+/* =========================
+   RESPONSE
+========================= */
 
-export interface CreateManyShiftsDto {
-  userIds?: number[];
-  allUsers?: boolean;
-  categoryId?: number | null;
-  startsAt: Date;
-  endsAt: Date;
-  published?: boolean;
-}
-
-export interface UpdateShiftDto {
-  userId?: number;
-  categoryId?: number | null;
-  startsAt?: Date;
-  endsAt?: Date;
-  actualStartsAt?: Date | null;
-  actualEndsAt?: Date | null;
-  status?: ShiftStatus;
-  published?: boolean;
-}
-
-export interface PlanningRangeQueryDto {
-  from?: Date;
-  to?: Date;
-  userId?: number;
-  userIds?: number[];
-  categoryId?: number | null;
-  status?: ShiftStatus;
-  published?: boolean;
-}
-
-export interface PlanningUserQueryDto {
-  userId?: number;
-}
-
-export interface ClockDto {
-  shiftId: number;
-  latitude: number;
-  longitude: number;
-  occurredAt?: Date;
-}
-
-export interface AttendanceQueryDto {
-  from?: Date;
-  to?: Date;
-  userId?: number;
-  userIds?: number[];
-  shiftId?: number;
-  type?: AttendanceType;
-}
-
-export interface DeleteShiftResponse {
-  success: boolean;
+export interface CreateShiftResponseDto {
+  shifts: ShiftEntity[];
+  total: number;
 }

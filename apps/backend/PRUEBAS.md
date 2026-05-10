@@ -82,34 +82,104 @@ Get comunicado count leídos GET - /communications/inbox/count/read ✅
 Get comunicado count no leídos GET - /communications/inbox/count/unread ✅
 
 ## ORGANIZATION
-LogIn
-Get organization GET - /organization
-Permitido: ADMIN, MANAGER, EMPLOYEE
-
-Update organization PATCH - /organization
-Permitido: ADMIN
-Body:
+LogIn 
+Get organization GET - /organization ✅
+Update organization PATCH - /organization ✅
 {
   "name": "Muerde la Pasta",
   "latitude": 37.3890924,
   "longitude": -5.9844589,
   "allowedRadiusMeters": 150
 }
-Notas:
-- latitude entre -90 y 90.
-- longitude entre -180 y 180.
-- allowedRadiusMeters entre 10 y 5000.
-- Para desactivar ubicacion, enviar latitude null, longitude null y allowedRadiusMeters null.
-- Latitud y longitud se actualizan juntas.
 
 ## HORARIO / PLANNING
-LogIn
-Roles:
-- ADMIN y MANAGER: pueden crear, editar, borrar y consultar turnos de usuarios de su organization.
-- EMPLOYEE: solo puede ver su planning/attendance y fichar sus propios turnos.
-- Nunca se permite operar con users/categories/shifts de otra organization.
-
 ### SHIFTS
+LogIn
+Create shift POST - /planning/shifts/user ✅
+{
+  "userId": 2,
+  "startsAt": "2026-05-12T09:00:00.000Z",
+  "endsAt": "2026-05-12T17:00:00.000Z",
+  ("published": true)
+}
+Create shift POST - /planning/shifts/users  ✅
+{
+  "userIds": [2, 3, 4],
+  "startsAt": "2026-05-13T09:00:00.000Z",
+  "endsAt": "2026-05-13T17:00:00.000Z",
+  ("published": true)
+}
+Create shift POST - /planning/shifts/category  ✅
+{
+  "categoryId": 1, 
+  "startsAt": "2026-05-14T09:00:00.000Z",
+  "endsAt": "2026-05-14T17:00:00.000Z",
+  ("published": true)
+}
+Para crear shift igual a todos los users sin category -> "categoryId": null  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Create shift POST - /planning/shifts
 Permitido: ADMIN, MANAGER

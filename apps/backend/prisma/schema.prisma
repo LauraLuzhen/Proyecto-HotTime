@@ -21,12 +21,12 @@ model Organization {
 }
 
 model Category {
-  id             Int            @id @default(autoincrement())
-  name           String         @db.VarChar(100)
-  organizationId Int
-  organization   Organization   @relation(fields: [organizationId], references: [id])
-  userCategories UserCategory[]
-  shifts         Shift[]
+  id              Int              @id @default(autoincrement())
+  name            String           @db.VarChar(100)
+  organizationId  Int
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  userCategories  UserCategory[]
+  shiftCategories ShiftCategory[]
 
   @@unique([name, organizationId])
   @@unique([id, organizationId])
@@ -46,7 +46,6 @@ model User {
   organization   Organization @relation(fields: [organizationId], references: [id])
   resetToken     String?      @unique @db.VarChar(255)
   resetTokenExp  DateTime?
-
   userCategories         UserCategory[]
   sentCommunications     Communication[]     @relation("SentCommunications")
   receivedCommunications CommunicationUser[]
@@ -94,36 +93,43 @@ model CommunicationUser {
 }
 
 model Shift {
-  id             Int          @id @default(autoincrement())
+  id             Int             @id @default(autoincrement())
   organizationId Int
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   userId         Int
-  user           User         @relation("UserShifts", fields: [userId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  user           User            @relation("UserShifts", fields: [userId, organizationId], references: [id, organizationId], onDelete: Restrict)
   createdById    Int
-  createdBy      User         @relation("CreatedShifts", fields: [createdById, organizationId], references: [id, organizationId], onDelete: Restrict)
-  categoryId     Int?
-  category       Category?    @relation(fields: [categoryId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  createdBy      User            @relation("CreatedShifts", fields: [createdById, organizationId], references: [id, organizationId], onDelete: Restrict)
   startsAt       DateTime
   endsAt         DateTime
   actualStartsAt DateTime?
   actualEndsAt   DateTime?
-  status         ShiftStatus  @default(SCHEDULED)
-  published      Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  status         ShiftStatus     @default(SCHEDULED)
+  published      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   attendances    Attendance[]
+  shiftCategories ShiftCategory[]
 
   @@unique([id, userId, organizationId])
   @@index([organizationId])
   @@index([userId])
-  @@index([categoryId])
   @@index([startsAt])
   @@index([endsAt])
   @@index([published])
   @@index([status])
   @@index([organizationId, startsAt])
   @@index([organizationId, userId, startsAt])
-  @@index([organizationId, categoryId, startsAt])
+}
+
+model ShiftCategory {
+  shiftId    Int
+  categoryId Int
+  shift      Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([shiftId, categoryId])
+  @@index([categoryId])
 }
 
 model Attendance {

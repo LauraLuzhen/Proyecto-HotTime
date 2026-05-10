@@ -14,16 +14,29 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// Shared
 __exportStar(require("./shared/common"), exports);
+// Auth
 __exportStar(require("./modules/auth/entities"), exports);
 __exportStar(require("./modules/auth/dtos"), exports);
 __exportStar(require("./modules/auth/functions"), exports);
+// User
 __exportStar(require("./modules/user/entities"), exports);
 __exportStar(require("./modules/user/dtos"), exports);
 __exportStar(require("./modules/user/functions"), exports);
+// Category
 __exportStar(require("./modules/category/entities"), exports);
 __exportStar(require("./modules/category/dtos"), exports);
 __exportStar(require("./modules/category/functions"), exports);
+// Communication
 __exportStar(require("./modules/communication/entities"), exports);
 __exportStar(require("./modules/communication/dtos"), exports);
 __exportStar(require("./modules/communication/functions"), exports);
+// Organization (Los nuevos que añadiste)
+__exportStar(require("./modules/organization/entities"), exports);
+__exportStar(require("./modules/organization/dtos"), exports);
+__exportStar(require("./modules/organization/functions"), exports);
+// Planning (Los nuevos que añadiste)
+__exportStar(require("./modules/planning/entities"), exports);
+__exportStar(require("./modules/planning/dtos"), exports);
+__exportStar(require("./modules/planning/functions"), exports);

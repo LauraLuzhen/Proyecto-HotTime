@@ -22,7 +22,6 @@ CREATE TABLE "Shift" (
     "organizationId" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
     "createdById" INTEGER NOT NULL,
-    "categoryId" INTEGER,
     "startsAt" TIMESTAMP(3) NOT NULL,
     "endsAt" TIMESTAMP(3) NOT NULL,
     "actualStartsAt" TIMESTAMP(3),
@@ -33,6 +32,14 @@ CREATE TABLE "Shift" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Shift_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ShiftCategory" (
+    "shiftId" INTEGER NOT NULL,
+    "categoryId" INTEGER NOT NULL,
+
+    CONSTRAINT "ShiftCategory_pkey" PRIMARY KEY ("shiftId","categoryId")
 );
 
 -- CreateTable
@@ -58,9 +65,6 @@ CREATE INDEX "Shift_organizationId_idx" ON "Shift"("organizationId");
 CREATE INDEX "Shift_userId_idx" ON "Shift"("userId");
 
 -- CreateIndex
-CREATE INDEX "Shift_categoryId_idx" ON "Shift"("categoryId");
-
--- CreateIndex
 CREATE INDEX "Shift_startsAt_idx" ON "Shift"("startsAt");
 
 -- CreateIndex
@@ -79,10 +83,10 @@ CREATE INDEX "Shift_organizationId_startsAt_idx" ON "Shift"("organizationId", "s
 CREATE INDEX "Shift_organizationId_userId_startsAt_idx" ON "Shift"("organizationId", "userId", "startsAt");
 
 -- CreateIndex
-CREATE INDEX "Shift_organizationId_categoryId_startsAt_idx" ON "Shift"("organizationId", "categoryId", "startsAt");
+CREATE UNIQUE INDEX "Shift_id_userId_organizationId_key" ON "Shift"("id", "userId", "organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Shift_id_userId_organizationId_key" ON "Shift"("id", "userId", "organizationId");
+CREATE INDEX "ShiftCategory_categoryId_idx" ON "ShiftCategory"("categoryId");
 
 -- CreateIndex
 CREATE INDEX "Attendance_organizationId_idx" ON "Attendance"("organizationId");
@@ -118,7 +122,10 @@ ALTER TABLE "Shift" ADD CONSTRAINT "Shift_userId_organizationId_fkey" FOREIGN KE
 ALTER TABLE "Shift" ADD CONSTRAINT "Shift_createdById_organizationId_fkey" FOREIGN KEY ("createdById", "organizationId") REFERENCES "User"("id", "organizationId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Shift" ADD CONSTRAINT "Shift_categoryId_organizationId_fkey" FOREIGN KEY ("categoryId", "organizationId") REFERENCES "Category"("id", "organizationId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ShiftCategory" ADD CONSTRAINT "ShiftCategory_shiftId_fkey" FOREIGN KEY ("shiftId") REFERENCES "Shift"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ShiftCategory" ADD CONSTRAINT "ShiftCategory_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

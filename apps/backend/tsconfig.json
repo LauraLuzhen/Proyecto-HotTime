@@ -12,7 +12,8 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@hottime/types": ["../../packages/types/src/index.ts"]
     },
     "ignoreDeprecations": "6.0"
   },
