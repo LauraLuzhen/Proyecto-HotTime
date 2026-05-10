@@ -6,10 +6,15 @@
 
 */
 -- CreateEnum
-CREATE TYPE "ShiftStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'MISSED', 'CANCELLED');
+CREATE TYPE "ShiftStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'MISSED');
 
 -- CreateEnum
 CREATE TYPE "AttendanceType" AS ENUM ('CLOCK_IN', 'CLOCK_OUT');
+
+-- AlterTable
+ALTER TABLE "Organization" ADD COLUMN     "allowedRadiusMeters" INTEGER,
+ADD COLUMN     "latitude" DOUBLE PRECISION,
+ADD COLUMN     "longitude" DOUBLE PRECISION;
 
 -- CreateTable
 CREATE TABLE "Shift" (
@@ -37,6 +42,9 @@ CREATE TABLE "Attendance" (
     "shiftId" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
     "type" "AttendanceType" NOT NULL,
+    "latitude" DOUBLE PRECISION NOT NULL,
+    "longitude" DOUBLE PRECISION NOT NULL,
+    "distanceMeters" DOUBLE PRECISION NOT NULL,
     "occurredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

@@ -167,7 +167,6 @@ enum ShiftStatus {
   IN_PROGRESS
   COMPLETED
   MISSED
-  CANCELLED
 }
 
 enum AttendanceType {

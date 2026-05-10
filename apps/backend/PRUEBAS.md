@@ -101,16 +101,9 @@ Notas:
 - allowedRadiusMeters entre 10 y 5000.
 - Para desactivar ubicacion, enviar latitude null, longitude null y allowedRadiusMeters null.
 - Latitud y longitud se actualizan juntas.
-Errores controlados:
-- 400 VALIDATION_ERROR: body invalido.
-- 400 INVALID_ORGANIZATION_LOCATION: falta latitud/longitud o radio incompatible.
-- 400 INVALID_ORGANIZATION_RADIUS: hay ubicacion pero no radio.
-- 404 ORGANIZATION_NOT_FOUND: organizacion no existe.
 
 ## HORARIO / PLANNING
 LogIn
-Todas las rutas necesitan Bearer token.
-
 Roles:
 - ADMIN y MANAGER: pueden crear, editar, borrar y consultar turnos de usuarios de su organization.
 - EMPLOYEE: solo puede ver su planning/attendance y fichar sus propios turnos.
