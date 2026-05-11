@@ -44,9 +44,6 @@ export function findByEmailOrNull(email: string) {
 }
 
 // Find by id
-// REPOSITORY
-// findById CAMBIALO
-
 export async function findById(id: number) {
   const user = await prisma.user.findUnique({
     where: { id },
@@ -114,6 +111,51 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
     where: {
       organizationId,
       NOT: {id: userId},
+      role: filters.role,
+      userCategories: filters.categoryId
+        ? {
+            some: {
+              categoryId: filters.categoryId,
+            },
+          }
+        : undefined,
+      fullName: filters.fullName
+        ? {
+            contains: filters.fullName,
+            mode: "insensitive",
+          }
+        : undefined,
+    },
+    orderBy: {
+      fullName: "asc",
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      birthDate: true,
+      phone: true,
+      imgProfile: true,
+      organizationId: true,
+      initDate: true,
+      userCategories: {
+        select: categoriesSelect,
+        orderBy: {
+          category: {
+            name: "asc",
+          },
+        },
+      },
+    },
+  }).then((users) => users.map(mapUserCategories));
+}
+
+// Find All + me
+export function findAll(organizationId: number, filters: GetUsersQueryDto, userId: number) {
+  return prisma.user.findMany({
+    where: {
+      organizationId,
       role: filters.role,
       userCategories: filters.categoryId
         ? {

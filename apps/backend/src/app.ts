@@ -7,6 +7,7 @@ import { categoryRoutes } from "@/modules/category/routes";
 import { communicationRoutes } from "@/modules/communication/routes";
 import { planningRoutes } from "@/modules/planning/routes";
 import { organizationRoutes } from "@/modules/organization/routes";
+import { attendanceRoutes } from "@/modules/attendance/routes";
 
 export const buildApp = async () => {
   const app = Fastify({ logger: true });
@@ -19,6 +20,7 @@ export const buildApp = async () => {
   app.register(communicationRoutes, { prefix: "/communications" });
   app.register(organizationRoutes, { prefix: "/organization" });
   app.register(planningRoutes, { prefix: "/planning" });
+  app.register(attendanceRoutes, { prefix: "/planning/attendance" });
 
   app.setErrorHandler((error:any, req, reply) => {
     if (error.statusCode) {

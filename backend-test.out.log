@@ -1,0 +1,7 @@
+
+> backend@1.0.0 start C:\Users\LuZhen\Desktop\Repositorios GitHub\Proyecto-HotTime\apps\backend
+> node -r tsconfig-paths/register dist/server.js
+
+C:\Users\LuZhen\Desktop\Repositorios GitHub\Proyecto-HotTime\apps\backend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  backend@1.0.0 start: `node -r tsconfig-paths/register dist/server.js`
+Exit status 1

@@ -36,6 +36,14 @@ export const getUsers: GetUsersFn = async (organizationId, filters, userId) => {
   return repo.findAllByOrganization(organizationId, filters, userId);
 };
 
+// Get all users
+export const getUsersAll: GetUsersFn = async (organizationId, filters, userId) => {
+  const orgUsers = await repo.countByOrganization(organizationId);
+  if (!orgUsers) throw httpError("Organization not found", 404, "ORGANIZATION_NOT_FOUND");
+
+  return repo.findAll(organizationId, filters, userId);
+};
+
 // SERVICE
 
 export const getUserById: GetUserByIdFn = async (

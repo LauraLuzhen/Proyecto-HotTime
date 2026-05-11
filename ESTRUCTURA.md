@@ -59,3 +59,60 @@ Reglas de arquitectura recomendadas:
 - `schemas.ts`: Zod de request/response.
 - `service.ts`: logica de negocio.
 - `repository.ts`: Prisma y SQL raw si hace falta.
+
+FRONTEND
+Mostrar botón ENTRADA
+now >= shift.startsAt - 30min
+&& now <= shift.endsAt
+&& !clockIn
+&& shift.status !== "MISSED"
+Mostrar botón SALIDA
+clockIn && !clockOut
+
+
+
+
+USER
+POST /attendance/clock-in
+POST /attendance/clock-out
+GET /attendance/calendar
+GET /attendance
+GET /attendance/active
+GET /attendance/today
+
+
+
+
+
+
+ADMIN / MANAGER
+POST /attendance
+
+Crear fichaje manual.
+
+Para corregir errores o añadir fichajes olvidados.
+
+PATCH /attendance/:id
+
+Modificar attendance.
+
+Ejemplos:
+
+cambiar hora
+corregir ubicación
+corregir tipo
+DELETE /attendance/:id
+
+Eliminar attendance manualmente.
+
+GET /attendance/:id
+
+Obtener attendance concreto con toda la información.
+
+AUTOMÁTICO
+AUTO MISSED
+
+Marca turnos como MISSED automáticamente si:
+
+terminó el turno
+nunca fichó entrada

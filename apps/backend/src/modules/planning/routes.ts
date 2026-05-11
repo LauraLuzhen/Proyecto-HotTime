@@ -194,8 +194,8 @@ app.get(
     const result = await service.getCalendarShifts(
       {
         userId: isAdmin
-          ? parsed.data.userId
-          : req.user.id, // /me fallback seguro
+          ? parsed.data.userId ?? req.user.id
+          : req.user.id,
 
         date: parsed.data.date,
 

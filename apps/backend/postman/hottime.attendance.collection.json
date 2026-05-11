@@ -1,0 +1,398 @@
+{
+  "info": {
+    "_postman_id": "d9f6ec4c-4c0e-4b7f-9d5b-7a2f6e1d9b0d",
+    "name": "HotTime Attendance",
+    "description": "Collection for local testing of auth, shifts and attendance endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.environment.set('adminToken', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employee Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employeeEmail}}\",\n  \"password\": \"{{employeePassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.environment.set('employeeToken', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employee Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.environment.set('employeeUserId', String(json.id));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shifts",
+      "item": [
+        {
+          "name": "Create Shift For Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 4,\n  \"startsAt\": \"2026-05-12T09:00:00.000Z\",\n  \"endsAt\": \"2026-05-12T17:00:00.000Z\",\n  \"published\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/planning/shifts/user",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "shifts",
+                "user"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.environment.set('shiftId', String(json.shifts[0].id));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Clock In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftId\": {{shiftId}},\n  \"latitude\": 37.3890924,\n  \"longitude\": -5.9844589\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/clock-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "clock-in"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clock Out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftId\": {{shiftId}},\n  \"latitude\": 37.3890924,\n  \"longitude\": -5.9844589\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/clock-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "clock-out"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Manual Attendance",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('attendanceOccurredAt', new Date().toISOString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftId\": {{shiftId}},\n  \"type\": \"CLOCK_IN\",\n  \"occurredAt\": \"{{attendanceOccurredAt}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.environment.set('attendanceId', String(json.attendance.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Attendances",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance?userId={{employeeUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{employeeUserId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/{{attendanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "{{attendanceId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Attendance",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"occurredAt\": \"{{attendanceOccurredAt}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/{{attendanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "{{attendanceId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Attendance",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/{{attendanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "{{attendanceId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

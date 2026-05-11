@@ -40,3 +40,7 @@ __exportStar(require("./modules/organization/functions"), exports);
 __exportStar(require("./modules/planning/entities"), exports);
 __exportStar(require("./modules/planning/dtos"), exports);
 __exportStar(require("./modules/planning/functions"), exports);
+// Attendance
+__exportStar(require("./modules/attendance/entities"), exports);
+__exportStar(require("./modules/attendance/dtos"), exports);
+__exportStar(require("./modules/attendance/functions"), exports);

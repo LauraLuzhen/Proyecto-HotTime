@@ -34,6 +34,19 @@ export async function userRoutes(app: FastifyInstance) {
     return reply.send(users);
   });
 
+  // Get all
+    app.get("/all", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = getUsersSchema.safeParse(req.query);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
+
+    const users = await service.getUsersAll(
+      req.user.organizationId,
+      parsed.data,
+      req.user.id
+    );
+    return reply.send(users);
+  });
+
 
 app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
   const parsed = getUserIdSchema.safeParse(req.params);

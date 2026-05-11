@@ -30,3 +30,8 @@ export * from "./modules/organization/functions";
 export * from "./modules/planning/entities";
 export * from "./modules/planning/dtos";
 export * from "./modules/planning/functions";
+
+// Attendance
+export * from "./modules/attendance/entities";
+export * from "./modules/attendance/dtos";
+export * from "./modules/attendance/functions";
