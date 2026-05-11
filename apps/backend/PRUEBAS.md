@@ -248,6 +248,31 @@ Estos son los endpoints que puedes probar en Postman, todos bajo el prefijo `/pl
 /planning/attendance?from=2026-05-01T00:00:00.000Z&to=2026-06-01T00:00:00.000Z
 ```
 
+**4.1. Attendance calendar**
+- `GET /planning/attendance/calendar`
+- Requiere `Authorization: Bearer <token>`
+- Ejemplos:
+```text
+/planning/attendance/calendar?userId=2&includeWeek=true&includeMonth=true
+/planning/attendance/calendar?includeWeek=true&includeMonth=false
+```
+
+**4.2. Attendance week**
+- `GET /planning/attendance/week`
+- Requiere `Authorization: Bearer <token>`
+- Ejemplo:
+```text
+/planning/attendance/week?userId=2
+```
+
+**4.3. Attendance month**
+- `GET /planning/attendance/month`
+- Requiere `Authorization: Bearer <token>`
+- Ejemplo:
+```text
+/planning/attendance/month?userId=2
+```
+
 **5. Obtener un attendance por id**
 - `GET /planning/attendance/:attendanceId`
 - Requiere `Authorization: Bearer <token>`
@@ -255,6 +280,7 @@ Estos son los endpoints que puedes probar en Postman, todos bajo el prefijo `/pl
 ```text
 /planning/attendance/15
 ```
+- Un employee no puede ver el attendance de otro user.
 
 **6. Actualizar attendance**
 - `PATCH /planning/attendance/:attendanceId`
@@ -300,3 +326,11 @@ Flujo sugerido:
 4. Ejecuta `Auth > Employee Me`.
 5. Ejecuta `Shifts > Create Shift For Employee`.
 6. Ejecuta los requests de `Attendance`.
+
+### Attendance Rules
+
+- `clock-in` works from 30 minutes before `startsAt` until `endsAt`.
+- If `clock-in` is attempted after `endsAt`, the shift becomes `MISSED`.
+- `clock-out` requires a previous `clock-in`.
+- Both clock endpoints validate organization location and calculate `distanceMeters`.
+- `GET /planning/attendance/:attendanceId` only lets an employee see their own attendance.

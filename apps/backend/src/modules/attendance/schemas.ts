@@ -19,6 +19,13 @@ export const updateAttendanceSchema = z.object({
   occurredAt: z.coerce.date().optional(),
 });
 
+export const attendanceCalendarSchema = z.object({
+  userId: z.coerce.number().int().positive().optional(),
+  date: z.coerce.date().optional(),
+  includeWeek: z.coerce.boolean().optional(),
+  includeMonth: z.coerce.boolean().optional(),
+});
+
 export const attendanceIdParamsSchema = z.object({
   attendanceId: z.coerce.number().int().positive(),
 });

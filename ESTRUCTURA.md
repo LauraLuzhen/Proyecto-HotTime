@@ -51,7 +51,7 @@ taskkill /F /PID 1234
 
 
 problemas
-pnpm --filter frontend-mobile exec expo start -c --lan
+pnpm --filter frontend-mobile exec expo start -c --tunnel
 
 
 Reglas de arquitectura recomendadas:

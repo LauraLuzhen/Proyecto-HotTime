@@ -5,6 +5,28 @@
     "description": "Collection for local testing of auth, shifts and attendance endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3001"
+    },
+    {
+      "key": "adminEmail",
+      "value": "laurarm1002@gmail.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Password1."
+    },
+    {
+      "key": "employeeEmail",
+      "value": "nocat@muerde.com"
+    },
+    {
+      "key": "employeePassword",
+      "value": "Password1."
+    }
+  ],
   "item": [
     {
       "name": "Auth",
@@ -126,6 +148,20 @@
       "item": [
         {
           "name": "Create Shift For Employee",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const startsAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();",
+                  "const endsAt = new Date(Date.now() + 40 * 60 * 1000).toISOString();",
+                  "pm.environment.set('shiftStartsAt', startsAt);",
+                  "pm.environment.set('shiftEndsAt', endsAt);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -140,7 +176,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": 4,\n  \"startsAt\": \"2026-05-12T09:00:00.000Z\",\n  \"endsAt\": \"2026-05-12T17:00:00.000Z\",\n  \"published\": true\n}"
+              "raw": "{\n  \"userId\": {{employeeUserId}},\n  \"startsAt\": \"{{shiftStartsAt}}\",\n  \"endsAt\": \"{{shiftEndsAt}}\",\n  \"published\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/planning/shifts/user",
@@ -305,6 +341,101 @@
               "path": [
                 "planning",
                 "attendance"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{employeeUserId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance Calendar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/calendar?userId={{employeeUserId}}&includeWeek=true&includeMonth=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "calendar"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{employeeUserId}}"
+                },
+                {
+                  "key": "includeWeek",
+                  "value": "true"
+                },
+                {
+                  "key": "includeMonth",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance Week",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/week?userId={{employeeUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "week"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{employeeUserId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance Month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/planning/attendance/month?userId={{employeeUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planning",
+                "attendance",
+                "month"
               ],
               "query": [
                 {

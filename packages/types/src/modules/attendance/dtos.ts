@@ -40,6 +40,13 @@ export interface GetAttendancesDto {
   offset?: number;
 }
 
+export interface GetAttendanceCalendarDto {
+  userId?: number;
+  date?: Date;
+  includeWeek?: boolean;
+  includeMonth?: boolean;
+}
+
 export interface CreateAttendanceResponse {
   attendance: AttendanceEntity;
 }
@@ -51,6 +58,11 @@ export interface GetAttendanceResponse {
 export interface GetAttendancesResponse {
   attendances: AttendanceEntity[];
   total: number;
+}
+
+export interface GetAttendanceCalendarResponse {
+  week: AttendanceEntity[];
+  month: AttendanceEntity[];
 }
 
 export interface UpdateAttendanceResponse {

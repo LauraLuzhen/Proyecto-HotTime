@@ -7,6 +7,7 @@ import { httpError } from "@/lib/httpError";
 import * as service from "./service";
 import {
   attendanceIdParamsSchema,
+  attendanceCalendarSchema,
   clockAttendanceSchema,
   createAttendanceSchema,
   getAttendancesSchema,
@@ -85,6 +86,71 @@ export async function attendanceRoutes(app: FastifyInstance) {
     );
 
     return reply.send(result);
+  });
+
+  app.get("/calendar", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = attendanceCalendarSchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        httpError("Invalid query", 400, "VALIDATION_ERROR")
+      );
+    }
+
+    const result = await service.getAttendanceCalendar(
+      parsed.data,
+      req.user.organizationId,
+      req.user.id,
+      req.user.role
+    );
+
+    return reply.send(result);
+  });
+
+  app.get("/week", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = attendanceCalendarSchema.safeParse({
+      ...(req.query as Record<string, unknown>),
+      includeWeek: true,
+      includeMonth: false,
+    });
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        httpError("Invalid query", 400, "VALIDATION_ERROR")
+      );
+    }
+
+    const result = await service.getAttendanceCalendar(
+      parsed.data,
+      req.user.organizationId,
+      req.user.id,
+      req.user.role
+    );
+
+    return reply.send({ week: result.week });
+  });
+
+  app.get("/month", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = attendanceCalendarSchema.safeParse({
+      ...(req.query as Record<string, unknown>),
+      includeWeek: false,
+      includeMonth: true,
+    });
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        httpError("Invalid query", 400, "VALIDATION_ERROR")
+      );
+    }
+
+    const result = await service.getAttendanceCalendar(
+      parsed.data,
+      req.user.organizationId,
+      req.user.id,
+      req.user.role
+    );
+
+    return reply.send({ month: result.month });
   });
 
   app.get(

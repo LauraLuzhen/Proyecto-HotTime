@@ -5,6 +5,8 @@ import type {
   CreateAttendanceDto,
   CreateAttendanceResponse,
   DeleteAttendanceResponse,
+  GetAttendanceCalendarDto,
+  GetAttendanceCalendarResponse,
   GetAttendanceResponse,
   GetAttendancesDto,
   GetAttendancesResponse,
@@ -43,6 +45,13 @@ export type GetAttendancesFn = (
   actorUserId: number,
   actorRole: string
 ) => Promise<GetAttendancesResponse>;
+
+export type GetAttendanceCalendarFn = (
+  data: GetAttendanceCalendarDto,
+  organizationId: number,
+  actorUserId: number,
+  actorRole: string
+) => Promise<GetAttendanceCalendarResponse>;
 
 export type UpdateAttendanceFn = (
   attendanceId: number,
