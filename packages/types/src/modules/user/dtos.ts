@@ -64,6 +64,19 @@ export interface MeResponse {
   };
 }
 
+export interface GetUserByIdResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  role: Role;
+  birthDate: Date;
+  initDate: Date;
+  phone: string;
+  imgProfile: string | null;
+  organizationId: number;
+  categories: UserCategoryResponse[];
+}
+
 // UPDATE
 export interface UpdateMeDto {
   fullName?: string;

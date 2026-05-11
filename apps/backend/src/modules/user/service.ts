@@ -1,4 +1,4 @@
-import type { CreateUserFn, DeleteUserFn, GetMeFn, GetUsersFn, UpdateMeFn, UpdateUsersFn } from "@hottime/types";
+import type { CreateUserFn, DeleteUserFn, GetMeFn, GetUsersFn, GetUserByIdFn, UpdateMeFn, UpdateUsersFn } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import { hashPassword } from "@/lib/hash";
 import * as repo from "@/modules/user/repository";
@@ -34,6 +34,36 @@ export const getUsers: GetUsersFn = async (organizationId, filters, userId) => {
   if (!orgUsers) throw httpError("Organization not found", 404, "ORGANIZATION_NOT_FOUND");
 
   return repo.findAllByOrganization(organizationId, filters, userId);
+};
+
+// SERVICE
+
+export const getUserById: GetUserByIdFn = async (
+  id,
+  organizationId,
+  currentUserId
+) => {
+  const user = await repo.findById(id);
+
+  if (!user) {
+    throw httpError("User not found", 404, "USER_NOT_FOUND");
+  }
+
+  if (
+    user.organizationId !== organizationId &&
+    id !== currentUserId
+  ) {
+    throw httpError(
+      "User does not belong to your organization",
+      403,
+      "USER_FORBIDDEN"
+    );
+  }
+
+  return {
+    ...user,
+    categories: user.userCategories.map((x) => x.category),
+  };
 };
 
 // Update me

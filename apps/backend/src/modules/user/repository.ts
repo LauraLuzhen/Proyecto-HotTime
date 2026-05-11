@@ -44,8 +44,11 @@ export function findByEmailOrNull(email: string) {
 }
 
 // Find by id
+// REPOSITORY
+// findById CAMBIALO
+
 export async function findById(id: number) {
-  const user = await prisma.user.findUnique({ 
+  const user = await prisma.user.findUnique({
     where: { id },
     select: {
       id: true,
@@ -59,11 +62,19 @@ export async function findById(id: number) {
       organizationId: true,
       userCategories: {
         select: categoriesSelect,
+        orderBy: {
+          category: {
+            name: "asc",
+          },
+        },
       },
-    }
+    },
   });
 
-  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (!user) {
+    throw httpError("User not found", 404, "USER_NOT_FOUND");
+  }
+
   return user;
 }
 

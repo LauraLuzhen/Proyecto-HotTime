@@ -34,6 +34,25 @@ export async function userRoutes(app: FastifyInstance) {
     return reply.send(users);
   });
 
+
+app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
+  const parsed = getUserIdSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return reply
+      .status(400)
+      .send(httpError("Invalid user id", 400, "VALIDATION_ERROR"));
+  }
+
+  const user = await service.getUserById(
+    parsed.data.id,
+    req.user.organizationId,
+    req.user.id
+  );
+
+  return reply.send(user);
+});
+
   // Update me
   app.patch("/me", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = updateMeSchema.safeParse(req.body);
