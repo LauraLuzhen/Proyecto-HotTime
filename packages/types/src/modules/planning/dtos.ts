@@ -34,6 +34,22 @@ export interface CreateShiftForCategoryDto {
   categoryId: number | null;
 }
 
+export interface CreateShiftDto {
+  userId: number;
+  categoryId: number | null;
+  startsAt: Date;
+  endsAt: Date;
+  published?: boolean;
+}
+
+export interface CreateManyShiftsDto {
+  userIds: number[];
+  categoryId: number | null;
+  startsAt: Date;
+  endsAt: Date;
+  published?: boolean;
+}
+
 /* =========================
    RESPONSE
 ========================= */
@@ -53,7 +69,7 @@ export interface GetShiftsDto {
   userId?: number;
   userIds?: number[];
 
-  categoryId?: number;
+  categoryId?: number | null;
 
   published?: boolean;
 
@@ -69,6 +85,11 @@ export interface GetShiftsDto {
   offset?: number;
 }
 
+export interface PlanningRangeQueryDto extends GetShiftsDto {
+  from?: Date;
+  to?: Date;
+}
+
 /* =========================
    RESPONSE
 ========================= */
@@ -76,6 +97,8 @@ export interface GetShiftsDto {
 export interface GetShiftResponseDto {
   shift: ShiftEntity;
 }
+
+export type ShiftResponse = ShiftEntity;
 
 export interface GetShiftsResponseDto {
   shifts: ShiftEntity[];
@@ -118,4 +141,8 @@ export interface UpdateShiftDto {
 }
 export interface UpdateShiftResponseDto {
   shift: ShiftEntity;
+}
+
+export interface DeleteShiftResponse {
+  success: boolean;
 }

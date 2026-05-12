@@ -1,7 +1,7 @@
+import { useState } from "react";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { Alert, View, Text, TouchableOpacity } from "react-native";
-import { useState } from "react";
 
 import { useAuth } from "../../state/auth/AuthContext";
 
@@ -9,79 +9,49 @@ export function DrawerContent(props: DrawerContentComponentProps) {
   const auth = useAuth();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const isAdminOrManager = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
+  const isAdmin = auth.user?.role === "ADMIN";
 
   return (
     <DrawerContentScrollView {...props}>
       <DrawerItem label="Dashboard" onPress={() => props.navigation.navigate("Dashboard")} />
+      <DrawerItem label="Mi horario" onPress={() => props.navigation.navigate("MySchedule")} />
+      <DrawerItem label="Mis fichajes" onPress={() => props.navigation.navigate("MyAttendance")} />
+      <DrawerItem label="Bandeja" onPress={() => props.navigation.navigate("Bandeja")} />
       <DrawerItem label="Profile" onPress={() => props.navigation.navigate("Profile")} />
       <DrawerItem label="Contacts" onPress={() => props.navigation.navigate("Contacts")} />
-      <DrawerItem label="Bandeja" onPress={() => props.navigation.navigate("Bandeja")} />
-      <DrawerItem label="My schedule" onPress={() => props.navigation.navigate("MySchedule")} />
 
-      {isAdminOrManager && (
+      {isAdminOrManager ? (
         <View style={{ marginTop: 10 }}>
           <TouchableOpacity
             onPress={() => setAdvancedOpen((prev) => !prev)}
             style={{ paddingHorizontal: 16, paddingVertical: 12 }}
           >
-            <Text style={{ fontWeight: "700" }}>
-              Advanced Options {advancedOpen ? "▲" : "▼"}
-            </Text>
+            <Text style={{ fontWeight: "700" }}>Gestión {advancedOpen ? "▲" : "▼"}</Text>
           </TouchableOpacity>
 
-          {advancedOpen && (
+          {advancedOpen ? (
             <View style={{ paddingLeft: 20 }}>
-              {/* visible para ADMIN */}
-              {auth.user?.role === "ADMIN" && (
-                <DrawerItem
-                  label="Administration"
-                  onPress={() => props.navigation.navigate("Administration")}
-                />
-              )}
-
-              {/* visible para MANAGER */}
-              {auth.user?.role === "MANAGER" && (
-                <DrawerItem
-                  label="Manager Panel"
-                  onPress={() => props.navigation.navigate("Manager")}
-                />
-              )}
-
-              {/* visible para ambos */}
-              {isAdminOrManager && (
-                <DrawerItem
-                  label="Send communication"
-                  onPress={() => props.navigation.navigate("Communication")}
-                />
-              )}
-              {isAdminOrManager && (
-                <DrawerItem
-                  label="Plan Schedules"
-                  onPress={() => props.navigation.navigate("PlanSchedules")}
-                />
-              )}
+              <DrawerItem label="Plan schedule" onPress={() => props.navigation.navigate("PlanSchedules")} />
+              <DrawerItem label="Plan attendance" onPress={() => props.navigation.navigate("PlanAttendance")} />
+              <DrawerItem label="Send communication" onPress={() => props.navigation.navigate("Communication")} />
+              {isAdmin ? (
+                <DrawerItem label="Administration" onPress={() => props.navigation.navigate("Administration")} />
+              ) : null}
+              {isAdmin ? (
+                <DrawerItem label="Organization" onPress={() => props.navigation.navigate("Organization")} />
+              ) : null}
             </View>
-          )}
+          ) : null}
         </View>
-      )}
-
-      {auth.user?.role === "ADMIN" && (
-        <DrawerItem label="Organization" onPress={() => props.navigation.navigate("Organization")} />
-      )}
-      {auth.user?.role === "MANAGER" && (
-        <DrawerItem label="Manager (vacía)" onPress={() => props.navigation.navigate("Manager")} />
-      )}
-      {auth.user?.role === "EMPLOYEE" && (
-        <DrawerItem label="Employee (vacía)" onPress={() => props.navigation.navigate("Employee")} />
-      )}
+      ) : null}
 
       <DrawerItem
         label="Logout"
         onPress={() => {
-          Alert.alert("Cerrar sesion", "Seguro que quieres cerrar sesion?", [
+          Alert.alert("Cerrar sesión", "Seguro que quieres cerrar sesión?", [
             { text: "No", style: "cancel" },
             {
-              text: "Si",
+              text: "Sí",
               style: "destructive",
               onPress: () => {
                 void auth.logout();
@@ -93,4 +63,3 @@ export function DrawerContent(props: DrawerContentComponentProps) {
     </DrawerContentScrollView>
   );
 }
-

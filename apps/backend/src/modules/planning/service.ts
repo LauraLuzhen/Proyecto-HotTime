@@ -4,6 +4,7 @@ import type {
   CreateShiftForCategoryFn,
   CreateShiftForUserFn,
   CreateShiftForUsersFn,
+  DeleteShiftFn,
   GetShiftsFn,
   GetShiftResponseDto,
 GetCalendarShiftsFn,
@@ -384,5 +385,27 @@ export const updateShift: UpdateShiftFn = async (
 
   return {
     shift: updated,
+  };
+};
+
+export const deleteShift: DeleteShiftFn = async (
+  shiftId,
+  organizationId,
+  actorUserId
+) => {
+  const shift = await repo.findShiftById(shiftId, organizationId);
+
+  if (!shift) {
+    throw httpError(
+      "Shift not found",
+      404,
+      "SHIFT_NOT_FOUND"
+    );
+  }
+
+  await repo.deleteShiftById(shiftId, organizationId);
+
+  return {
+    success: true,
   };
 };

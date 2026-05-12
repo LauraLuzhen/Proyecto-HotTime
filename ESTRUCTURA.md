@@ -60,6 +60,8 @@ Reglas de arquitectura recomendadas:
 - `service.ts`: logica de negocio.
 - `repository.ts`: Prisma y SQL raw si hace falta.
 
+@expo/ngrok
+
 FRONTEND
 Mostrar botón ENTRADA
 now >= shift.startsAt - 30min

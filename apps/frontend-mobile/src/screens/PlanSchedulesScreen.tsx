@@ -4,18 +4,42 @@ import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleShe
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse, ShiftStatus } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
-import { addDays, categoryName, formatDay, formatRange, formatTime, publishedLabel, shiftOverlaps, startOfWeek, statusLabel } from "../lib/schedule";
+import {
+  addDays,
+  buildMonthDays,
+  calendarDayNames,
+  categoryName,
+  endOfDay,
+  formatDateTime,
+  formatDay,
+  formatLongDate,
+  formatMonth,
+  formatRange,
+  formatTime,
+  palette,
+  sameDay,
+  sameMonth,
+  startOfMonth,
+  startOfWeek,
+  statusLabel,
+} from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 
 type CategoryFilter = "all" | "none" | number;
 type PublishedFilter = "all" | "published" | "draft";
 type PickerTarget = "date" | "start" | "end" | null;
+type AssignMode = "user" | "visible" | "category";
 
-const shiftStatuses: ShiftStatus[] = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "MISSED", "CANCELLED"];
+const shiftStatuses: ShiftStatus[] = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "MISSED"];
 
-function sameDay(a: Date | string, b: Date) {
-  return new Date(a).toDateString() === b.toDateString();
+function errorMessage(err: unknown, fallback: string) {
+  const e = err as ApiClientError;
+  if (e.code === "SHIFT_OVERLAP") return "Hay un solapamiento de horarios para ese usuario.";
+  if (e.code === "INVALID_DATES" || e.code === "INVALID_SHIFT_RANGE") return "La hora de inicio debe ser anterior a la de fin.";
+  if (e.code === "SHIFT_HAS_ATTENDANCE") return "Este turno tiene fichajes, mejor cancela o edita antes de borrar.";
+  if (e.code === "SHIFT_NOT_FOUND") return "No se ha encontrado el turno.";
+  return e.message ?? fallback;
 }
 
 function combineDateAndTime(date: Date, time: Date) {
@@ -36,17 +60,40 @@ function defaultEndTime() {
   return value;
 }
 
-function errorMessage(err: unknown, fallback: string) {
-  const e = err as ApiClientError;
-  if (e.code === "SHIFT_OVERLAP") return "Hay un solapamiento de horarios para este usuario.";
-  if (e.code === "INVALID_SHIFT_RANGE") return "La hora de inicio debe ser anterior a la hora de fin.";
-  if (e.code === "SHIFT_HAS_ATTENDANCE") return "No se puede borrar un turno con fichajes. Puedes cancelarlo.";
-  return e.message ?? fallback;
+function getShiftLabel(shift: ShiftResponse, usersById: Record<number, GeneralUserResponse>, categoriesById: Record<number, CategoriesResponse>) {
+  const userName = usersById[shift.userId]?.fullName ?? `Usuario ${shift.userId}`;
+  const categories = shift.categories
+    .map((relation) => categoriesById[relation.categoryId]?.name)
+    .filter(Boolean);
+  const categoryText = categories.length ? categories.join(", ") : "Sin categoria";
+  const creatorName = usersById[shift.createdById]?.fullName ?? `Usuario ${shift.createdById}`;
+  return { userName, categoryText, creatorName };
+}
+
+function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.chip, selected && styles.chipSelected]} onPress={onPress}>
+      <Text style={[styles.chipText, selected && styles.chipTextSelected]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function FieldButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
+  return (
+    <Pressable style={styles.fieldButton} onPress={onPress}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={styles.fieldValue}>{value}</Text>
+    </Pressable>
+  );
 }
 
 export function PlanSchedulesScreen() {
   const auth = useAuth();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
+  const isPlanner = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
+
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [users, setUsers] = useState<GeneralUserResponse[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
@@ -55,21 +102,29 @@ export function PlanSchedulesScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
   const [userFilter, setUserFilter] = useState<"all" | number>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
+
   const [editing, setEditing] = useState<ShiftResponse | null>(null);
-  const [targetMode, setTargetMode] = useState<"one" | "visible">("one");
+  const [assignMode, setAssignMode] = useState<AssignMode>("user");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<"none" | number>("none");
-  const [date, setDate] = useState(() => new Date());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<"none" | number>("none");
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [startTime, setStartTime] = useState(defaultStartTime);
   const [endTime, setEndTime] = useState(defaultEndTime);
   const [published, setPublished] = useState(false);
   const [status, setStatus] = useState<ShiftStatus>("SCHEDULED");
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
 
-  const isPlanner = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
+  const usersById = useMemo(() => Object.fromEntries(users.map((user) => [user.id, user])) as Record<number, GeneralUserResponse>, [users]);
+  const categoriesById = useMemo(() => Object.fromEntries(categories.map((category) => [category.id, category])) as Record<number, CategoriesResponse>, [categories]);
+  const visibleUsers = useMemo(() => users.filter((user) => {
+    if (categoryFilter === "none") return user.categories.length === 0;
+    if (typeof categoryFilter === "number") return user.categories.some((category) => category.id === categoryFilter);
+    return true;
+  }), [users, categoryFilter]);
 
   async function loadData(targetWeek = weekStart) {
     setLoading(true);
@@ -80,16 +135,20 @@ export function PlanSchedulesScreen() {
         api.category.getCategories(),
         api.planning.getShifts({
           from: targetWeek,
-          to: addDays(targetWeek, 7),
+          to: endOfDay(addDays(targetWeek, 6)),
+          userId: userFilter === "all" ? undefined : userFilter,
           categoryId: categoryFilter === "all" ? undefined : categoryFilter === "none" ? null : categoryFilter,
           published: publishedFilter === "all" ? undefined : publishedFilter === "published",
-          userId: userFilter === "all" ? undefined : userFilter,
         }),
       ]);
+
       setUsers(usersResult);
       setCategories(categoriesResult);
       setShifts(shiftsResult);
-      if (!selectedUserId && usersResult.length) setSelectedUserId(usersResult[0].id);
+
+      if (!selectedUserId && usersResult.length) {
+        setSelectedUserId(usersResult[0].id);
+      }
     } catch (err) {
       setError(errorMessage(err, "No se pudo cargar la planificacion."));
     } finally {
@@ -98,15 +157,16 @@ export function PlanSchedulesScreen() {
   }
 
   useEffect(() => {
+    if (!isPlanner) return;
     void loadData(weekStart);
-  }, [weekStart, userFilter, categoryFilter, publishedFilter]);
+  }, [weekStart, userFilter, categoryFilter, publishedFilter, isPlanner]);
 
   function resetForm() {
     setEditing(null);
-    setTargetMode("one");
+    setAssignMode("user");
     setSelectedUserId(users[0]?.id ?? null);
-    setSelectedCategory("none");
-    setDate(new Date());
+    setSelectedCategoryId("none");
+    setSelectedDate(new Date());
     setStartTime(defaultStartTime());
     setEndTime(defaultEndTime());
     setPublished(false);
@@ -117,10 +177,10 @@ export function PlanSchedulesScreen() {
 
   function editShift(shift: ShiftResponse) {
     setEditing(shift);
-    setTargetMode("one");
+    setAssignMode("user");
     setSelectedUserId(shift.userId);
-    setSelectedCategory(shift.categoryId ?? "none");
-    setDate(new Date(shift.startsAt));
+    setSelectedCategoryId(shift.categories[0]?.categoryId ?? "none");
+    setSelectedDate(new Date(shift.startsAt));
     setStartTime(new Date(shift.startsAt));
     setEndTime(new Date(shift.endsAt));
     setPublished(shift.published);
@@ -131,28 +191,22 @@ export function PlanSchedulesScreen() {
 
   function selectedUsers() {
     if (editing) return selectedUserId ? [selectedUserId] : [];
-    if (targetMode === "visible") return visibleUsers.map((user) => user.id);
+    if (assignMode === "visible") return visibleUsers.map((user) => user.id);
     return selectedUserId ? [selectedUserId] : [];
   }
 
   function validateLocal(startsAt: Date, endsAt: Date, targetUserIds: number[]) {
     if (!targetUserIds.length) return "Selecciona al menos un usuario.";
-    if (startsAt >= endsAt) return "La hora de inicio debe ser anterior a la hora de fin.";
-    const overlap = shifts.find((shift) => (
-      targetUserIds.includes(shift.userId)
-      && shift.status !== "CANCELLED"
-      && shift.id !== editing?.id
-      && shiftOverlaps({ startsAt, endsAt }, shift)
-    ));
-    if (overlap) return `Solape detectado: ${overlap.user.fullName} ya tiene ${formatRange(overlap)} el ${formatDay(overlap.startsAt)}.`;
+    if (startsAt >= endsAt) return "La hora de inicio debe ser anterior a la de fin.";
     return null;
   }
 
   async function saveShift() {
-    const startsAt = combineDateAndTime(date, startTime);
-    const endsAt = combineDateAndTime(date, endTime);
+    const startsAt = combineDateAndTime(selectedDate, startTime);
+    const endsAt = combineDateAndTime(selectedDate, endTime);
     const targetUserIds = selectedUsers();
     const localError = validateLocal(startsAt, endsAt, targetUserIds);
+
     if (localError) {
       setError(localError);
       return;
@@ -161,37 +215,44 @@ export function PlanSchedulesScreen() {
     setSaving(true);
     setError(null);
     setMessage(null);
+
     try {
-      const categoryId = selectedCategory === "none" ? null : selectedCategory;
+      const categoryId = selectedCategoryId === "none" ? null : selectedCategoryId;
+
       if (editing) {
         await api.planning.updateShift(editing.id, {
-          userId: targetUserIds[0],
-          categoryId,
+          startsAt,
+          endsAt,
+          status,
+          published,
+        });
+        setMessage("Turno actualizado correctamente.");
+      } else if (assignMode === "category") {
+        await api.planning.createShiftForCategory({
           startsAt,
           endsAt,
           published,
-          status,
-        });
-        setMessage("Turno actualizado correctamente.");
-      } else if (targetUserIds.length === 1) {
-        await api.planning.createShift({
-          userId: targetUserIds[0],
           categoryId,
+        });
+        setMessage("Turnos creados por categoria.");
+      } else if (assignMode === "visible") {
+        await api.planning.createShiftForUsers({
+          startsAt,
+          endsAt,
+          published,
+          userIds: targetUserIds,
+        });
+        setMessage(`Turnos creados para ${targetUserIds.length} usuarios.`);
+      } else {
+        await api.planning.createShiftForUser({
+          userId: targetUserIds[0],
           startsAt,
           endsAt,
           published,
         });
         setMessage("Turno creado correctamente.");
-      } else {
-        await api.planning.createManyShifts({
-          userIds: targetUserIds,
-          categoryId,
-          startsAt,
-          endsAt,
-          published,
-        });
-        setMessage(`Turnos creados para ${targetUserIds.length} usuarios.`);
       }
+
       resetForm();
       await loadData(weekStart);
     } catch (err) {
@@ -221,6 +282,7 @@ export function PlanSchedulesScreen() {
       setMessage("No hay borradores visibles para publicar.");
       return;
     }
+
     setSaving(true);
     setError(null);
     try {
@@ -235,14 +297,19 @@ export function PlanSchedulesScreen() {
   }
 
   function confirmDelete(shift: ShiftResponse) {
-    Alert.alert("Eliminar turno", `Eliminar ${shift.user.fullName} ${formatDay(shift.startsAt)} ${formatRange(shift)}?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: () => void deleteShift(shift),
-      },
-    ]);
+    const info = getShiftLabel(shift, usersById, categoriesById);
+    Alert.alert(
+      "Eliminar turno",
+      `Eliminar ${info.userName} - ${formatLongDate(shift.startsAt)} - ${formatRange(shift)}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => void deleteShift(shift),
+        },
+      ]
+    );
   }
 
   async function deleteShift(shift: ShiftResponse) {
@@ -265,17 +332,12 @@ export function PlanSchedulesScreen() {
       setPickerTarget(null);
       return;
     }
-    if (pickerTarget === "date") setDate(value);
+
+    if (pickerTarget === "date") setSelectedDate(value);
     if (pickerTarget === "start") setStartTime(value);
     if (pickerTarget === "end") setEndTime(value);
     setPickerTarget(null);
   }
-
-  const visibleUsers = users.filter((user) => {
-    if (categoryFilter === "none") return user.categories.length === 0;
-    if (typeof categoryFilter === "number") return user.categories.some((category) => category.id === categoryFilter);
-    return true;
-  });
 
   if (!isPlanner) {
     return (
@@ -288,22 +350,31 @@ export function PlanSchedulesScreen() {
     );
   }
 
+  const days = buildMonthDays(weekStart);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+        <View style={styles.hero}>
+          <Text style={styles.kicker}>Plan schedule</Text>
           <Text style={styles.title}>Planificar horarios</Text>
-          <Text style={styles.subtitle}>Crea, edita, publica y controla solapes por usuario y categoria.</Text>
+          <Text style={styles.subtitle}>Vista semanal tipo calendario para crear, editar, publicar y borrar turnos sin perder contexto.</Text>
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Semana {formatDay(weekStart)} - {formatDay(addDays(weekStart, 6))}</Text>
+          <View style={styles.panelHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Semana {formatDay(weekStart)} - {formatDay(addDays(weekStart, 6))}</Text>
+              <Text style={styles.panelHint}>{formatMonth(weekStart)}</Text>
+            </View>
+            <Pressable style={styles.secondaryButton} onPress={() => setWeekStart(startOfWeek(new Date()))}>
+              <Text style={styles.secondaryButtonText}>Hoy</Text>
+            </Pressable>
+          </View>
+
           <View style={styles.controlsRow}>
             <Pressable style={styles.secondaryButton} onPress={() => setWeekStart((current) => addDays(current, -7))}>
               <Text style={styles.secondaryButtonText}>Anterior</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={() => setWeekStart(startOfWeek(new Date()))}>
-              <Text style={styles.secondaryButtonText}>Hoy</Text>
             </Pressable>
             <Pressable style={styles.secondaryButton} onPress={() => setWeekStart((current) => addDays(current, 7))}>
               <Text style={styles.secondaryButtonText}>Siguiente</Text>
@@ -327,7 +398,7 @@ export function PlanSchedulesScreen() {
             ))}
           </ScrollView>
 
-          <Text style={styles.label}>Estado de publicacion</Text>
+          <Text style={styles.label}>Publicacion</Text>
           <View style={styles.controlsRow}>
             <Chip label="Todos" selected={publishedFilter === "all"} onPress={() => setPublishedFilter("all")} />
             <Chip label="Publicados" selected={publishedFilter === "published"} onPress={() => setPublishedFilter("published")} />
@@ -346,13 +417,14 @@ export function PlanSchedulesScreen() {
             <>
               <Text style={styles.label}>Asignacion</Text>
               <View style={styles.controlsRow}>
-                <Chip label="Un usuario" selected={targetMode === "one"} onPress={() => setTargetMode("one")} />
-                <Chip label={`Usuarios visibles (${visibleUsers.length})`} selected={targetMode === "visible"} onPress={() => setTargetMode("visible")} />
+                <Chip label="Un usuario" selected={assignMode === "user"} onPress={() => setAssignMode("user")} />
+                <Chip label={`Usuarios visibles (${visibleUsers.length})`} selected={assignMode === "visible"} onPress={() => setAssignMode("visible")} />
+                <Chip label="Por categoria" selected={assignMode === "category"} onPress={() => setAssignMode("category")} />
               </View>
             </>
           ) : null}
 
-          {targetMode === "one" || editing ? (
+          {(assignMode === "user" || editing) ? (
             <>
               <Text style={styles.label}>Usuario asignado</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
@@ -363,16 +435,20 @@ export function PlanSchedulesScreen() {
             </>
           ) : null}
 
-          <Text style={styles.label}>Categoria del turno</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            <Chip label="Sin categoria" selected={selectedCategory === "none"} onPress={() => setSelectedCategory("none")} />
-            {categories.map((category) => (
-              <Chip key={category.id} label={category.name} selected={selectedCategory === category.id} onPress={() => setSelectedCategory(category.id)} />
-            ))}
-          </ScrollView>
+          {(assignMode === "category" || editing) ? (
+            <>
+              <Text style={styles.label}>Categoria del turno</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+                <Chip label="Sin categoria" selected={selectedCategoryId === "none"} onPress={() => setSelectedCategoryId("none")} />
+                {categories.map((category) => (
+                  <Chip key={category.id} label={category.name} selected={selectedCategoryId === category.id} onPress={() => setSelectedCategoryId(category.id)} />
+                ))}
+              </ScrollView>
+            </>
+          ) : null}
 
           <View style={styles.formGrid}>
-            <FieldButton label="Fecha" value={formatDay(date)} onPress={() => setPickerTarget("date")} />
+            <FieldButton label="Fecha" value={formatLongDate(selectedDate)} onPress={() => setPickerTarget("date")} />
             <FieldButton label="Inicio" value={formatTime(startTime)} onPress={() => setPickerTarget("start")} />
             <FieldButton label="Fin" value={formatTime(endTime)} onPress={() => setPickerTarget("end")} />
           </View>
@@ -410,42 +486,95 @@ export function PlanSchedulesScreen() {
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Turnos visibles</Text>
+          <View style={styles.panelHeader}>
+            <Text style={styles.sectionTitle}>Calendario de turnos</Text>
+            <Text style={styles.panelHint}>{loading ? "Cargando..." : `${shifts.length} turnos`}</Text>
+          </View>
+
           {loading ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator color="#2f5f5b" />
+              <ActivityIndicator color={palette.accent} />
               <Text style={styles.muted}>Cargando planificacion...</Text>
             </View>
-          ) : shifts.length ? (
-            <View style={styles.daysList}>
+          ) : (
+            <View style={styles.calendarWrap}>
+              <View style={styles.weekRow}>
+                {calendarDayNames.map((day) => (
+                  <Text key={day} style={styles.weekLabel}>{day}</Text>
+                ))}
+              </View>
+              <View style={styles.calendarGrid}>
+                {days.map((day) => {
+                  const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
+                  const inMonth = sameMonth(day, weekStart);
+                  return (
+                    <View key={day.toISOString()} style={[styles.dayCell, !inMonth && styles.dayCellMuted]}>
+                      <Text style={[styles.dayNumber, !inMonth && styles.dayNumberMuted]}>{day.getDate()}</Text>
+                      <Text style={styles.daySubtitle}>{formatDay(day)}</Text>
+                      <View style={styles.cellItems}>
+                        {dayShifts.slice(0, 3).map((shift) => {
+                          const info = getShiftLabel(shift, usersById, categoriesById);
+                          return (
+                            <Pressable key={shift.id} style={[styles.shiftPill, !shift.published && styles.shiftPillDraft]} onPress={() => editShift(shift)}>
+                              <Text style={styles.shiftPillText} numberOfLines={1}>
+                                {formatRange(shift)}
+                              </Text>
+                              <Text style={styles.shiftPillMeta} numberOfLines={1}>
+                                {info.userName}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                        {dayShifts.length > 3 ? <Text style={styles.moreText}>+{dayShifts.length - 3} más</Text> : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.sectionTitle}>Detalle por día</Text>
+            <Text style={styles.panelHint}>Toca un turno para editarlo</Text>
+          </View>
+          {shifts.length ? (
+            <View style={styles.dayList}>
               {Array.from({ length: 7 }).map((_, index) => {
                 const day = addDays(weekStart, index);
                 const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
                 return (
                   <View key={day.toISOString()} style={styles.dayGroup}>
-                    <Text style={styles.dayTitle}>{formatDay(day)}</Text>
-                    {dayShifts.length ? dayShifts.map((shift) => (
-                      <View key={shift.id} style={styles.shiftCard}>
-                        <Pressable style={styles.shiftBody} onPress={() => editShift(shift)}>
-                          <View style={styles.shiftTop}>
-                            <Text style={styles.shiftName}>{shift.user.fullName}</Text>
-                            <Text style={[styles.badge, !shift.published && styles.badgeDraft]}>{publishedLabel(shift.published)}</Text>
-                          </View>
-                          <Text style={styles.shiftTime}>{formatRange(shift)} - {categoryName(shift)}</Text>
-                          <Text style={styles.shiftMeta}>{statusLabel(shift.status)} - creado por {shift.createdBy.fullName}</Text>
-                        </Pressable>
-                        <View style={styles.shiftActions}>
-                          {!shift.published ? (
-                            <Pressable style={styles.miniButton} onPress={() => void publishShift(shift)}>
-                              <Text style={styles.miniButtonText}>Publicar</Text>
-                            </Pressable>
-                          ) : null}
-                          <Pressable style={styles.dangerButton} onPress={() => confirmDelete(shift)}>
-                            <Text style={styles.dangerButtonText}>Eliminar</Text>
+                    <Text style={styles.dayTitle}>{formatLongDate(day)}</Text>
+                    {dayShifts.length ? dayShifts.map((shift) => {
+                      const info = getShiftLabel(shift, usersById, categoriesById);
+                      return (
+                        <View key={shift.id} style={styles.shiftCard}>
+                          <Pressable style={styles.shiftBody} onPress={() => editShift(shift)}>
+                            <View style={styles.shiftTop}>
+                              <Text style={styles.shiftName}>{info.userName}</Text>
+                              <Text style={[styles.badge, !shift.published && styles.badgeDraft]}>{shift.published ? "Publicado" : "Borrador"}</Text>
+                            </View>
+                            <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
+                            <Text style={styles.shiftMeta}>{info.categoryText} · {statusLabel(shift.status)}</Text>
+                            <Text style={styles.shiftMeta}>Creado por {info.creatorName}</Text>
+                            <Text style={styles.shiftMeta}>Inicio exacto {formatDateTime(shift.startsAt)}</Text>
                           </Pressable>
+                          <View style={styles.shiftActions}>
+                            {!shift.published ? (
+                              <Pressable style={styles.miniButton} onPress={() => void publishShift(shift)}>
+                                <Text style={styles.miniButtonText}>Publicar</Text>
+                              </Pressable>
+                            ) : null}
+                            <Pressable style={styles.dangerButton} onPress={() => confirmDelete(shift)}>
+                              <Text style={styles.dangerButtonText}>Eliminar</Text>
+                            </Pressable>
+                          </View>
                         </View>
-                      </View>
-                    )) : (
+                      );
+                    }) : (
                       <Text style={styles.muted}>Sin turnos.</Text>
                     )}
                   </View>
@@ -460,7 +589,7 @@ export function PlanSchedulesScreen() {
 
       {pickerTarget ? (
         <DateTimePicker
-          value={pickerTarget === "date" ? date : pickerTarget === "start" ? startTime : endTime}
+          value={pickerTarget === "date" ? selectedDate : pickerTarget === "start" ? startTime : endTime}
           mode={pickerTarget === "date" ? "date" : "time"}
           is24Hour
           onChange={onPickerChange}
@@ -470,67 +599,72 @@ export function PlanSchedulesScreen() {
   );
 }
 
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.chip, selected && styles.chipSelected]} onPress={onPress}>
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]} numberOfLines={1}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function FieldButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
-  return (
-    <Pressable style={styles.fieldButton} onPress={onPress}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{value}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#f7f7f4",
+    backgroundColor: palette.background,
     flex: 1,
   },
   content: {
     gap: 16,
     padding: 16,
+    paddingBottom: 28,
+  },
+  hero: {
+    backgroundColor: palette.accent,
+    borderRadius: 18,
+    gap: 8,
+    padding: 18,
+  },
+  kicker: {
+    color: "#d8ece7",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.3,
+    textTransform: "uppercase",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "800",
+  },
+  subtitle: {
+    color: "#e6f2ef",
+    fontSize: 14,
+    lineHeight: 20,
   },
   deniedBox: {
     gap: 8,
     padding: 16,
   },
-  header: {
-    gap: 4,
-  },
-  title: {
-    color: "#151515",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  subtitle: {
-    color: "#666",
-    lineHeight: 20,
-  },
   panel: {
-    backgroundColor: "#fff",
-    borderColor: "#deded8",
-    borderRadius: 8,
+    backgroundColor: palette.surfaceElevated,
+    borderColor: palette.border,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 14,
   },
+  panelHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  panelHint: {
+    color: palette.muted,
+    fontSize: 12,
+    marginTop: 4,
+  },
   sectionTitle: {
-    color: "#151515",
-    fontSize: 17,
-    fontWeight: "700",
-    marginBottom: 12,
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "800",
   },
   label: {
-    color: "#6a6a64",
+    color: palette.muted,
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 8,
-    marginTop: 12,
+    marginTop: 14,
     textTransform: "uppercase",
   },
   controlsRow: {
@@ -544,20 +678,20 @@ const styles = StyleSheet.create({
   },
   chip: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
-    borderRadius: 8,
+    borderColor: palette.border,
+    borderRadius: 999,
     borderWidth: 1,
     minHeight: 38,
     justifyContent: "center",
-    maxWidth: 190,
-    paddingHorizontal: 12,
+    maxWidth: 220,
+    paddingHorizontal: 14,
   },
   chipSelected: {
-    backgroundColor: "#2f5f5b",
-    borderColor: "#2f5f5b",
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
   },
   chipText: {
-    color: "#2f5f5b",
+    color: palette.accent,
     fontWeight: "700",
   },
   chipTextSelected: {
@@ -569,24 +703,25 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   fieldButton: {
-    borderColor: "#deded8",
-    borderRadius: 8,
+    borderColor: palette.border,
+    borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     gap: 4,
-    minHeight: 62,
+    minHeight: 68,
     justifyContent: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
+    backgroundColor: palette.backgroundSoft,
   },
   fieldLabel: {
-    color: "#6a6a64",
+    color: palette.muted,
     fontSize: 12,
     fontWeight: "700",
   },
   fieldValue: {
-    color: "#151515",
+    color: palette.text,
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   actionRow: {
     flexDirection: "row",
@@ -596,42 +731,43 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
-    borderRadius: 8,
+    backgroundColor: palette.accent,
+    borderRadius: 14,
     flexGrow: 1,
-    minHeight: 44,
+    minHeight: 46,
     justifyContent: "center",
     paddingHorizontal: 14,
   },
   primaryButtonText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "800",
   },
   secondaryButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
-    borderRadius: 8,
+    borderColor: palette.border,
+    borderRadius: 14,
     borderWidth: 1,
     flexGrow: 1,
-    minHeight: 40,
+    minHeight: 42,
     justifyContent: "center",
     paddingHorizontal: 12,
+    backgroundColor: "#fff",
   },
   secondaryButtonText: {
-    color: "#2f5f5b",
-    fontWeight: "700",
+    color: palette.accent,
+    fontWeight: "800",
   },
   publishButton: {
     alignItems: "center",
-    backgroundColor: "#d86f45",
-    borderRadius: 8,
+    backgroundColor: palette.warning,
+    borderRadius: 14,
     marginTop: 14,
-    minHeight: 42,
+    minHeight: 44,
     justifyContent: "center",
   },
   publishButtonText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "800",
   },
   disabled: {
     opacity: 0.65,
@@ -641,28 +777,119 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 22,
   },
-  daysList: {
+  muted: {
+    color: palette.muted,
+    lineHeight: 20,
+  },
+  successText: {
+    color: palette.success,
+    marginTop: 10,
+    fontWeight: "700",
+  },
+  errorText: {
+    color: palette.danger,
+    marginTop: 10,
+    fontWeight: "700",
+  },
+  calendarWrap: {
+    gap: 8,
+    marginTop: 8,
+  },
+  weekRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  weekLabel: {
+    color: palette.muted,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  dayCell: {
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 6,
+    minHeight: 128,
+    padding: 10,
+    width: "13.4%",
+  },
+  dayCellMuted: {
+    opacity: 0.55,
+  },
+  dayNumber: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  dayNumberMuted: {
+    color: palette.muted,
+  },
+  daySubtitle: {
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  cellItems: {
+    gap: 6,
+  },
+  shiftPill: {
+    backgroundColor: "#eef6f3",
+    borderColor: "#d6e7e2",
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  shiftPillDraft: {
+    backgroundColor: "#fff5e9",
+    borderColor: "#f5d8b8",
+  },
+  shiftPillText: {
+    color: palette.text,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  shiftPillMeta: {
+    color: palette.muted,
+    fontSize: 10,
+  },
+  moreText: {
+    color: palette.warning,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  dayList: {
     gap: 12,
+    marginTop: 12,
   },
   dayGroup: {
-    borderTopColor: "#eeeeea",
+    borderTopColor: palette.border,
     borderTopWidth: 1,
     gap: 8,
     paddingTop: 10,
   },
   dayTitle: {
-    color: "#151515",
-    fontWeight: "700",
+    color: palette.text,
+    fontWeight: "800",
   },
   shiftCard: {
-    backgroundColor: "#f7f7f4",
-    borderColor: "#e5e5df",
-    borderRadius: 8,
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 10,
+    padding: 12,
   },
   shiftBody: {
-    gap: 5,
+    gap: 6,
   },
   shiftTop: {
     alignItems: "center",
@@ -671,32 +898,32 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   shiftName: {
-    color: "#151515",
+    color: palette.text,
     flex: 1,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   shiftTime: {
-    color: "#222",
-    fontWeight: "700",
+    color: palette.text,
+    fontWeight: "800",
   },
   shiftMeta: {
-    color: "#62625c",
+    color: palette.muted,
     lineHeight: 19,
   },
   badge: {
     backgroundColor: "#e6f1ec",
-    borderRadius: 8,
-    color: "#217a3f",
+    borderRadius: 999,
+    color: palette.success,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
     overflow: "hidden",
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
   },
   badgeDraft: {
     backgroundColor: "#fff5df",
-    color: "#8a5a00",
+    color: palette.warning,
   },
   shiftActions: {
     flexDirection: "row",
@@ -705,40 +932,30 @@ const styles = StyleSheet.create({
   },
   miniButton: {
     alignItems: "center",
-    borderColor: "#2f5f5b",
-    borderRadius: 8,
+    borderColor: palette.accent,
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     minHeight: 36,
     justifyContent: "center",
+    backgroundColor: "#fff",
   },
   miniButtonText: {
-    color: "#2f5f5b",
-    fontWeight: "700",
+    color: palette.accent,
+    fontWeight: "800",
   },
   dangerButton: {
     alignItems: "center",
-    borderColor: "#f0b8af",
-    borderRadius: 8,
+    borderColor: "#efc0ba",
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     minHeight: 36,
     justifyContent: "center",
+    backgroundColor: "#fff",
   },
   dangerButtonText: {
-    color: "#b42318",
-    fontWeight: "700",
-  },
-  muted: {
-    color: "#62625c",
-    lineHeight: 20,
-  },
-  successText: {
-    color: "#217a3f",
-    marginTop: 10,
-  },
-  errorText: {
-    color: "#b42318",
-    marginTop: 10,
+    color: palette.danger,
+    fontWeight: "800",
   },
 });

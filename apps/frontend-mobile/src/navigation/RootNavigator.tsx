@@ -25,7 +25,9 @@ import { SendCommunicationScreen } from "../screens/SendCommunicationScreen";
 import { BandejaScreen } from "../screens/BandejaScreen";
 import { OrganizationScreen } from "../screens/OrganizationScreen";
 import { PlanSchedulesScreen } from "../screens/PlanSchedulesScreen";
+import { PlanAttendanceScreen } from "../screens/PlanAttendanceScreen";
 import { MyScheduleScreen } from "../screens/MyScheduleScreen";
+import { MyAttendanceScreen } from "../screens/MyAttendanceScreen";
 import { ApiClientError, createApi } from "../lib/api";
 import { tokenStorage } from "../state/auth/storage";
 
@@ -210,6 +212,8 @@ function AppDrawer() {
       <Drawer.Screen name="Bandeja" component={BandejaScreen} />
       <Drawer.Screen name="Organization" component={OrganizationScreen} />
       <Drawer.Screen name="MySchedule" component={MyScheduleScreen} />
+      <Drawer.Screen name="MyAttendance" component={MyAttendanceScreen} />
+      <Drawer.Screen name="PlanAttendance" component={PlanAttendanceScreen} />
       <Drawer.Screen name="Manager" component={ManagerOnlyScreen} />
       <Drawer.Screen name="Employee" component={EmployeeOnlyScreen} />
     </Drawer.Navigator>

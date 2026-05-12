@@ -448,3 +448,21 @@ export async function updateShiftById(
 
   return mapShiftCategories(shift);
 }
+
+export async function deleteShiftById(shiftId: number, organizationId: number) {
+  await prisma.$transaction([
+    prisma.attendance.deleteMany({
+      where: {
+        shiftId,
+        organizationId,
+      },
+    }),
+    prisma.shift.delete({
+      where: {
+        id: shiftId,
+      },
+    }),
+  ]);
+
+  return true;
+}

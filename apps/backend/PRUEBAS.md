@@ -76,7 +76,7 @@ Create communication POST - /communications ✅
     "type": "GENERAL"
 }
 Get comunicados mensajes GET - /communications/inbox ✅
-Get comunicados enviardos GET - /communications/inbox?read=true ✅
+Get comunicados enviados GET - /communications/inbox?read=true ✅
 Get comunicados no leídos GET - /communications/inbox?read=false ✅
 Get comunicados leídos GET - /communications/outbox ✅
 Get comunicado por id GET - /communications/:id ✅
@@ -84,7 +84,7 @@ Get comunicado count leídos GET - /communications/inbox/count/read ✅
 Get comunicado count no leídos GET - /communications/inbox/count/unread ✅
 
 ## ORGANIZATION
-LogIn 
+LogIn
 Get organization GET - /organization ✅
 Update organization PATCH - /organization ✅
 {
@@ -100,25 +100,25 @@ LogIn
 Create shift POST - /planning/shifts/user ✅
 {
   "userId": 2,
-  "startsAt": "2026-05-12T09:00:00.000Z",
-  "endsAt": "2026-05-12T17:00:00.000Z",
-  ("published": true)
+  "startsAt": "2026-05-11T21:00:00+02:00",
+  "endsAt": "2026-05-11T21:00:00+02:00",
+  "published": true
 }
-Create shift POST - /planning/shifts/users  ✅
+Create shift POST - /planning/shifts/users ✅
 {
   "userIds": [2, 3, 4],
-  "startsAt": "2026-05-13T09:00:00.000Z",
-  "endsAt": "2026-05-13T17:00:00.000Z",
-  ("published": true)
+  "startsAt": "2026-05-11T20:00:00+02:00",
+  "endsAt": "2026-05-11T21:00:00+02:00",
+  "published": true
 }
-Create shift POST - /planning/shifts/category  ✅
+Create shift POST - /planning/shifts/category ✅
 {
-  "categoryId": 1, 
-  "startsAt": "2026-05-14T09:00:00.000Z",
-  "endsAt": "2026-05-14T17:00:00.000Z",
-  ("published": true)
+  "categoryId": 1,
+  "startsAt": "2026-05-11T20:00:00+02:00",
+  "endsAt": "2026-05-11T21:00:00+02:00",
+  "published": true
 }
-Para crear shift igual a todos los users sin category -> "categoryId": null 
+Para crear shift igual a todos los users sin category -> `"categoryId": null`
 Get all GET - /planning/shifts ✅
 Get por id user GET - /planning/shifts?userId=1 ✅
 Get por published - /planning/shifts?published=false ✅
@@ -131,163 +131,56 @@ Get solo next shift by user GET - /planning/shifts/calendar?userId=4&includeNext
 Get full calendar GET - /planning/shifts/calendar?includeNext=true&includeWeek=true&includeMonth=true ✅
 Get fecha referencia GET - /planning/shifts/calendar?date=2026-05-10 ✅
 Update por id un shift PATCH - /planning/shifts/2 ✅
+Delete por id un shift DELETE - /planning/shifts/2 ✅
+  al borrar el shift se eliminan también sus attendances
 {
   "startsAt": "2026-05-11T20:00:00+02:00",
   "endsAt": "2026-05-11T21:00:00+02:00",
   "status": "IN_PROGRESS",
   "published": true
 }
- 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Estos son los endpoints que puedes probar en Postman, todos bajo el prefijo `/planning/attendance`.
-
-**1. Clock in**
-- `POST /planning/attendance/clock-in`
-- Requiere `Authorization: Bearer <token>`
-- Body:
-```json
+### ATTENDANCE
+LogIn
+Create clockin POST - /planning/attendance/clock-in
 {
   "shiftId": 10,
   "latitude": 37.3890924,
   "longitude": -5.9844589
 }
-```
-
-**2. Clock out**
-- `POST /planning/attendance/clock-out`
-- Requiere `Authorization: Bearer <token>`
-- Body:
-```json
+Create clockout POST - /planning/attendance/clock-out
 {
   "shiftId": 10,
   "latitude": 37.3890924,
   "longitude": -5.9844589
 }
-```
-
-**3. Crear attendance manual**
-- `POST /planning/attendance`
-- Solo `ADMIN` y `MANAGER`
-- Requiere `Authorization: Bearer <token>`
-- Body:
-```json
+Create attendance POST - /planning/attendance
 {
   "shiftId": 10,
   "type": "CLOCK_IN",
-  "occurredAt": "2026-05-11T09:00:00.000Z"
+  "occurredAt": "2026-05-11T20:00:00+02:00"
 }
-```
-
-**4. Listar attendances**
-- `GET /planning/attendance`
-- Requiere `Authorization: Bearer <token>`
-- Filtros opcionales por query:
-```text
-/planning/attendance
-/planning/attendance?userId=2
-/planning/attendance?shiftId=10
-/planning/attendance?type=CLOCK_IN
-/planning/attendance?from=2026-05-01T00:00:00.000Z&to=2026-06-01T00:00:00.000Z
-```
-
-**5. Obtener un attendance por id**
-- `GET /planning/attendance/:attendanceId`
-- Requiere `Authorization: Bearer <token>`
-- Ejemplo:
-```text
-/planning/attendance/15
-```
-
-**6. Actualizar attendance**
-- `PATCH /planning/attendance/:attendanceId`
-- Solo `ADMIN` y `MANAGER`
-- Requiere `Authorization: Bearer <token>`
-- Body posible:
-```json
+Get list attendance GET - /planning/attendance
+  /planning/attendance
+  /planning/attendance?userId=2
+  /planning/attendance?shiftId=10
+  /planning/attendance?type=CLOCK_IN
+  /planning/attendance?from=2026-05-11T20:00:00+02:00&to=2026-05-11T21:00:00+02:00
+Get calendar attendance GET - /planning/attendance/calendar
+Get week attendance GET - /planning/attendance/week
+Get month attendance GET - /planning/attendance/month
+Get by id GET - /planning/attendance/:attendanceId
+Update attendance PATCH - /planning/attendance/:attendanceId
 {
   "shiftId": 10,
   "type": "CLOCK_OUT",
-  "occurredAt": "2026-05-11T17:00:00.000Z"
+  "occurredAt": "2026-05-11T20:00:00+02:00"
 }
-```
-
-**7. Eliminar attendance**
-- `DELETE /planning/attendance/:attendanceId`
-- Solo `ADMIN` y `MANAGER`
-- Requiere `Authorization: Bearer <token>`
-- Ejemplo:
-```text
-/planning/attendance/15
-```
+Delete attendance DELETE - /planning/attendance/:attendanceId
 
 **Notas importantes**
 - `shiftId` debe existir.
 - El `userId` no se manda en el body: se toma automáticamente del `shift`.
 - En `clock-in` y `clock-out`, el `shift` tiene que pertenecer al usuario autenticado.
 - En el CRUD manual, `ADMIN` y `MANAGER` pueden trabajar con attendances de su organización.
-
-Si quieres, te preparo también una co
-lección de Postman con todos los requests ya listos.
-
-
-
-
-
+- En planning, `ADMIN` y `MANAGER` gestionan turnos; `EMPLOYEE` ve solo sus calendarios.

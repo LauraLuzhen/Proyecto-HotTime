@@ -25,13 +25,26 @@ import type {
   CreateCommunicationDto,
   ClockDto,
   AttendanceResponse,
+  CreateAttendanceDto,
+  CreateAttendanceResponse,
+  DeleteAttendanceResponse,
   OrganizationResponse,
   CreateManyShiftsDto,
   CreateShiftDto,
+  CreateShiftForCategoryDto,
+  CreateShiftForUserDto,
+  CreateShiftForUsersDto,
   DeleteShiftResponse,
+  GetAttendanceCalendarDto,
+  GetAttendanceResponse,
+  GetAttendancesDto,
+  GetAttendancesResponse,
   PlanningRangeQueryDto,
   ShiftResponse,
+  GetShiftResponseDto,
   UpdateShiftDto,
+  UpdateAttendanceDto,
+  UpdateAttendanceResponse,
   UpdateOrganizationDto,
 } from "@hottime/types";
 
@@ -174,6 +187,37 @@ function buildPlanningRangeQuery(filters?: PlanningRangeQueryDto): string {
   return query ? `?${query}` : "";
 }
 
+function buildDateQuery(filters?: { userId?: number; date?: Date; includeWeek?: boolean; includeMonth?: boolean; includeNext?: boolean }): string {
+  if (!filters) return "";
+
+  const params = new URLSearchParams();
+  if (filters.userId !== undefined) params.set("userId", String(filters.userId));
+  if (filters.date) params.set("date", new Date(filters.date).toISOString());
+  if (filters.includeWeek !== undefined) params.set("includeWeek", String(filters.includeWeek));
+  if (filters.includeMonth !== undefined) params.set("includeMonth", String(filters.includeMonth));
+  if (filters.includeNext !== undefined) params.set("includeNext", String(filters.includeNext));
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+function buildAttendanceQuery(filters?: GetAttendancesDto): string {
+  if (!filters) return "";
+
+  const params = new URLSearchParams();
+  if (filters.attendanceId !== undefined) params.set("attendanceId", String(filters.attendanceId));
+  if (filters.userId !== undefined) params.set("userId", String(filters.userId));
+  if (filters.shiftId !== undefined) params.set("shiftId", String(filters.shiftId));
+  if (filters.type !== undefined) params.set("type", filters.type);
+  if (filters.from) params.set("from", new Date(filters.from).toISOString());
+  if (filters.to) params.set("to", new Date(filters.to).toISOString());
+  if (filters.limit !== undefined) params.set("limit", String(filters.limit));
+  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export function createApi(getToken: () => string | null | Promise<string | null>) {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://192.168.1.129:3001";
   const http = new BackendHttpClient(apiBaseUrl, getToken);
@@ -212,11 +256,28 @@ export function createApi(getToken: () => string | null | Promise<string | null>
     },
     planning: {
       getShifts: (filters?: PlanningRangeQueryDto) => http.get<ShiftResponse[]>(`/planning/shifts${buildPlanningRangeQuery(filters)}`),
-      getNextShift: (filters?: { userId?: number }) => http.get<ShiftResponse | null>(`/planning/shifts/next${buildPlanningUserQuery(filters)}`),
-      createShift: (data: CreateShiftDto) => http.post<ShiftResponse, CreateShiftDto>("/planning/shifts", data),
-      createManyShifts: (data: CreateManyShiftsDto) => http.post<ShiftResponse[], CreateManyShiftsDto>("/planning/shifts/bulk", data),
-      updateShift: (shiftId: number, data: UpdateShiftDto) => http.patch<ShiftResponse, UpdateShiftDto>(`/planning/shifts/${shiftId}`, data),
+      getShiftById: (shiftId: number) => http.get<GetShiftResponseDto>(`/planning/shifts/${shiftId}`),
+      getCalendar: (filters?: { userId?: number; date?: Date; includeWeek?: boolean; includeMonth?: boolean; includeNext?: boolean }) =>
+        http.get<{ next: ShiftResponse | null; week: ShiftResponse[]; month: ShiftResponse[] }>(`/planning/shifts/calendar${buildDateQuery(filters)}`),
+      createShiftForUser: (data: CreateShiftForUserDto) => http.post<{ shifts: ShiftResponse[]; total: number }, CreateShiftForUserDto>("/planning/shifts/user", data),
+      createShiftForUsers: (data: CreateShiftForUsersDto) => http.post<{ shifts: ShiftResponse[]; total: number }, CreateShiftForUsersDto>("/planning/shifts/users", data),
+      createShiftForCategory: (data: CreateShiftForCategoryDto) => http.post<{ shifts: ShiftResponse[]; total: number }, CreateShiftForCategoryDto>("/planning/shifts/category", data),
+      createShift: (data: CreateShiftDto) => http.post<{ shifts: ShiftResponse[]; total: number }, CreateShiftDto>("/planning/shifts/user", data),
+      createManyShifts: (data: CreateManyShiftsDto) => http.post<{ shifts: ShiftResponse[]; total: number }, CreateManyShiftsDto>("/planning/shifts/users", data),
+      updateShift: (shiftId: number, data: Omit<UpdateShiftDto, "shiftId">) => http.patch<{ shift: ShiftResponse }, Omit<UpdateShiftDto, "shiftId">>(`/planning/shifts/${shiftId}`, data),
       deleteShift: (shiftId: number) => http.delete<DeleteShiftResponse>(`/planning/shifts/${shiftId}`),
+      clockIn: (data: ClockDto) => http.post<AttendanceResponse, ClockDto>("/planning/attendance/clock-in", data),
+      clockOut: (data: ClockDto) => http.post<AttendanceResponse, ClockDto>("/planning/attendance/clock-out", data),
+    },
+    attendance: {
+      create: (data: CreateAttendanceDto) => http.post<CreateAttendanceResponse, CreateAttendanceDto>("/planning/attendance", data),
+      getById: (attendanceId: number) => http.get<GetAttendanceResponse>(`/planning/attendance/${attendanceId}`),
+      getAttendances: (filters?: GetAttendancesDto) => http.get<GetAttendancesResponse>(`/planning/attendance${buildAttendanceQuery(filters)}`),
+      getCalendar: (filters?: GetAttendanceCalendarDto) => http.get<{ week: AttendanceResponse[]; month: AttendanceResponse[] }>(`/planning/attendance/calendar${buildDateQuery(filters)}`),
+      getWeek: (filters?: GetAttendanceCalendarDto) => http.get<{ week: AttendanceResponse[] }>(`/planning/attendance/week${buildDateQuery(filters)}`),
+      getMonth: (filters?: GetAttendanceCalendarDto) => http.get<{ month: AttendanceResponse[] }>(`/planning/attendance/month${buildDateQuery(filters)}`),
+      update: (attendanceId: number, data: UpdateAttendanceDto) => http.patch<UpdateAttendanceResponse, UpdateAttendanceDto>(`/planning/attendance/${attendanceId}`, data),
+      delete: (attendanceId: number) => http.delete<DeleteAttendanceResponse>(`/planning/attendance/${attendanceId}`),
       clockIn: (data: ClockDto) => http.post<AttendanceResponse, ClockDto>("/planning/attendance/clock-in", data),
       clockOut: (data: ClockDto) => http.post<AttendanceResponse, ClockDto>("/planning/attendance/clock-out", data),
     },

@@ -1,50 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Location from "expo-location";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
-import type { ShiftResponse } from "@hottime/types";
+import type { AttendanceEntity, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
-import { addDays, formatDay, formatRange, publishedLabel, startOfWeek, statusLabel, categoryName } from "../lib/schedule";
+import {
+  addDays,
+  categoryName,
+  formatDay,
+  formatDateTime,
+  formatRange,
+  palette,
+  sameDay,
+  startOfWeek,
+  statusLabel,
+} from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 
-function formatDate(value?: Date) {
-  if (!value) return "-";
-
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value ?? "-"}</Text>
-    </View>
-  );
-}
-
-function categoriesLabel(categories?: { name: string }[]) {
-  return categories?.length ? categories.map((category) => category.name).join(", ") : "Sin categoria";
-}
-
-function canClockIn(shift: ShiftResponse | null) {
+function canClockIn(shift: ShiftResponse | null, attendances: AttendanceEntity[]) {
   if (!shift) return false;
-  if (shift.attendances.some((attendance) => attendance.type === "CLOCK_IN")) return false;
+  if (attendances.some((attendance) => attendance.type === "CLOCK_IN")) return false;
   const now = Date.now();
   const startsAt = new Date(shift.startsAt).getTime();
   const endsAt = new Date(shift.endsAt).getTime();
   return now >= startsAt - 60 * 60 * 1000 && now <= endsAt;
 }
 
-function canClockOut(shift: ShiftResponse | null) {
+function canClockOut(shift: ShiftResponse | null, attendances: AttendanceEntity[]) {
   if (!shift) return false;
-  const hasClockIn = shift.attendances.some((attendance) => attendance.type === "CLOCK_IN");
-  const hasClockOut = shift.attendances.some((attendance) => attendance.type === "CLOCK_OUT");
+  const hasClockIn = attendances.some((attendance) => attendance.type === "CLOCK_IN");
+  const hasClockOut = attendances.some((attendance) => attendance.type === "CLOCK_OUT");
   return hasClockIn && !hasClockOut;
+}
+
+function shiftSummary(shift: ShiftResponse | null) {
+  if (!shift) return "No hay turno próximo.";
+  return `${formatDay(shift.startsAt)} · ${formatRange(shift)}`;
 }
 
 export function DashboardScreen() {
@@ -52,6 +44,7 @@ export function DashboardScreen() {
   const u = auth.user;
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [nextShift, setNextShift] = useState<ShiftResponse | null>(null);
+  const [nextAttendances, setNextAttendances] = useState<AttendanceEntity[]>([]);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [weekShifts, setWeekShifts] = useState<ShiftResponse[]>([]);
   const [planningLoading, setPlanningLoading] = useState(true);
@@ -60,15 +53,26 @@ export function DashboardScreen() {
   const [planningError, setPlanningError] = useState<string | null>(null);
   const [clockMessage, setClockMessage] = useState<string | null>(null);
 
-  async function loadNextShift() {
+  async function loadPlanning() {
     setPlanningLoading(true);
     setPlanningError(null);
     try {
-      const shift = await api.planning.getNextShift();
-      setNextShift(shift);
+      const calendar = await api.planning.getCalendar({
+        includeNext: true,
+        includeWeek: true,
+        includeMonth: false,
+      });
+      setNextShift(calendar.next);
+      setWeekShifts(calendar.week);
+      if (calendar.next) {
+        const attendances = await api.attendance.getAttendances({ shiftId: calendar.next.id });
+        setNextAttendances(attendances.attendances);
+      } else {
+        setNextAttendances([]);
+      }
     } catch (err) {
       const e = err as ApiClientError;
-      setPlanningError(e.message ?? "No se pudo cargar el proximo turno.");
+      setPlanningError(e.message ?? "No se pudo cargar la planificacion.");
     } finally {
       setPlanningLoading(false);
     }
@@ -78,12 +82,12 @@ export function DashboardScreen() {
     setWeekLoading(true);
     setPlanningError(null);
     try {
-      const shifts = await api.planning.getShifts({
+      const calendar = await api.planning.getShifts({
         from: targetWeek,
         to: addDays(targetWeek, 7),
         published: true,
       });
-      setWeekShifts(shifts);
+      setWeekShifts(calendar);
     } catch (err) {
       const e = err as ApiClientError;
       setPlanningError(e.message ?? "No se pudo cargar el horario semanal.");
@@ -93,7 +97,7 @@ export function DashboardScreen() {
   }
 
   useEffect(() => {
-    void loadNextShift();
+    void loadPlanning();
   }, []);
 
   useEffect(() => {
@@ -116,6 +120,7 @@ export function DashboardScreen() {
       const current = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
+
       const payload = {
         shiftId: nextShift.id,
         latitude: current.coords.latitude,
@@ -127,7 +132,7 @@ export function DashboardScreen() {
         : await api.planning.clockOut(payload);
 
       setClockMessage(`Fichaje registrado a ${Math.round(attendance.distanceMeters)} m del centro.`);
-      await loadNextShift();
+      await loadPlanning();
     } catch (err) {
       const e = err as ApiClientError;
       setPlanningError(e.message ?? "No se pudo registrar el fichaje.");
@@ -136,36 +141,40 @@ export function DashboardScreen() {
     }
   }
 
-  const showClockIn = canClockIn(nextShift);
-  const showClockOut = canClockOut(nextShift);
+  const showClockIn = canClockIn(nextShift, nextAttendances);
+  const showClockOut = canClockOut(nextShift, nextAttendances);
   const weekEnd = addDays(weekStart, 6);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.subtitle}>Informacion de /users/me</Text>
-
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Usuario logueado</Text>
-          <InfoRow label="Nombre" value={u?.fullName} />
-          <InfoRow label="Email" value={u?.email} />
-          <InfoRow label="Rol" value={u?.role} />
-          <InfoRow label="Telefono" value={u?.phone} />
-          <InfoRow label="Nacimiento" value={formatDate(u?.birthDate)} />
-          <InfoRow label="Alta" value={formatDate(u?.initDate)} />
-          <InfoRow label="Categorias" value={categoriesLabel(u?.categories)} />
-          <InfoRow label="Organizacion" value={u?.organization.name} />
+        <View style={styles.hero}>
+          <Text style={styles.kicker}>Dashboard</Text>
+          <Text style={styles.title}>Tu jornada hoy</Text>
+          <Text style={styles.subtitle}>Aquí tienes el próximo fichaje, el calendario semanal y tu información principal.</Text>
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Fichaje</Text>
+          <Text style={styles.panelTitle}>Usuario logueado</Text>
+          <View style={styles.infoGrid}>
+            <InfoCard label="Nombre" value={u?.fullName} />
+            <InfoCard label="Rol" value={u?.role} />
+            <InfoCard label="Email" value={u?.email} />
+            <InfoCard label="Organizacion" value={u?.organization.name} />
+          </View>
+        </View>
+
+        <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.panelTitle}>Fichaje</Text>
+            <Text style={styles.panelHint}>Entrada y salida con control de ubicación</Text>
+          </View>
           {planningLoading ? (
-            <ActivityIndicator color="#2f5f5b" />
+            <ActivityIndicator color={palette.accent} />
           ) : nextShift ? (
             <>
-              <InfoRow label="Proximo turno" value={`${formatDate(nextShift.startsAt)} - ${new Date(nextShift.startsAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`} />
-              <InfoRow label="Radio permitido" value={u?.organization.allowedRadiusMeters ? `${u.organization.allowedRadiusMeters} m` : "Sin configurar"} />
+              <Text style={styles.nextShiftTitle}>{shiftSummary(nextShift)}</Text>
+              <Text style={styles.nextShiftMeta}>{categoryName(nextShift)} · {statusLabel(nextShift.status)}</Text>
               {showClockIn || showClockOut ? (
                 <Pressable
                   style={[styles.clockButton, clockLoading && styles.clockButtonDisabled]}
@@ -177,11 +186,11 @@ export function DashboardScreen() {
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.muted}>El boton aparecera desde 1 hora antes de la entrada. La salida aparece tras fichar entrada.</Text>
+                <Text style={styles.muted}>El botón aparece desde 1 hora antes del turno y la salida tras la entrada.</Text>
               )}
             </>
           ) : (
-            <Text style={styles.muted}>No hay turnos proximos publicados.</Text>
+            <Text style={styles.muted}>No hay turnos próximos publicados.</Text>
           )}
           {clockMessage ? <Text style={styles.successText}>{clockMessage}</Text> : null}
           {planningError ? <Text style={styles.errorText}>{planningError}</Text> : null}
@@ -189,8 +198,8 @@ export function DashboardScreen() {
 
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
-            <Text style={styles.panelTitleNoMargin}>Horario de esta semana</Text>
-            <Text style={styles.weekRange}>{formatDay(weekStart)} - {formatDay(weekEnd)}</Text>
+            <Text style={styles.panelTitle}>Horario semanal</Text>
+            <Text style={styles.panelHint}>{formatDay(weekStart)} - {formatDay(weekEnd)}</Text>
           </View>
           <View style={styles.weekControls}>
             <Pressable style={styles.smallButton} onPress={() => setWeekStart((current) => addDays(current, -7))}>
@@ -205,22 +214,19 @@ export function DashboardScreen() {
           </View>
 
           {weekLoading ? (
-            <ActivityIndicator color="#2f5f5b" />
+            <ActivityIndicator color={palette.accent} />
           ) : weekShifts.length ? (
-            <View style={styles.shiftList}>
+            <View style={styles.weekGrid}>
               {Array.from({ length: 7 }).map((_, index) => {
                 const day = addDays(weekStart, index);
-                const items = weekShifts.filter((shift) => new Date(shift.startsAt).toDateString() === day.toDateString());
+                const items = weekShifts.filter((shift) => sameDay(shift.startsAt, day));
                 return (
                   <View key={day.toISOString()} style={styles.dayBlock}>
                     <Text style={styles.dayTitle}>{formatDay(day)}</Text>
                     {items.length ? items.map((shift) => (
                       <View key={shift.id} style={styles.shiftItem}>
-                        <View style={styles.shiftItemTop}>
-                          <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
-                          <Text style={[styles.shiftBadge, !shift.published && styles.shiftBadgeDraft]}>{publishedLabel(shift.published)}</Text>
-                        </View>
-                        <Text style={styles.shiftMeta}>{categoryName(shift)} - {statusLabel(shift.status)}</Text>
+                        <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
+                        <Text style={styles.shiftMeta}>{statusLabel(shift.status)}</Text>
                       </View>
                     )) : (
                       <Text style={styles.muted}>Sin turno.</Text>
@@ -238,165 +244,182 @@ export function DashboardScreen() {
   );
 }
 
+function InfoCard({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value ?? "-"}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
+    backgroundColor: palette.background,
     flex: 1,
-    backgroundColor: "#f7f7f4",
   },
   content: {
-    padding: 16,
     gap: 16,
+    padding: 16,
+    paddingBottom: 28,
+  },
+  hero: {
+    backgroundColor: palette.accentStrong,
+    borderRadius: 18,
+    gap: 8,
+    padding: 18,
+  },
+  kicker: {
+    color: "#d8ece7",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.3,
+    textTransform: "uppercase",
   },
   title: {
-    color: "#151515",
-    fontSize: 24,
-    fontWeight: "700",
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "800",
   },
   subtitle: {
-    color: "#666",
-    marginTop: -10,
+    color: "#e6f2ef",
+    fontSize: 14,
+    lineHeight: 20,
   },
   panel: {
-    backgroundColor: "#fff",
-    borderColor: "#deded8",
-    borderRadius: 8,
+    backgroundColor: palette.surfaceElevated,
+    borderColor: palette.border,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 16,
-  },
-  panelTitle: {
-    color: "#151515",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
+    padding: 14,
   },
   panelHeader: {
-    alignItems: "flex-start",
     gap: 4,
-    marginBottom: 12,
   },
-  panelTitleNoMargin: {
-    color: "#151515",
+  panelTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  panelHint: {
+    color: palette.muted,
+    fontSize: 12,
+  },
+  infoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  infoCard: {
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexGrow: 1,
+    gap: 4,
+    minWidth: "48%",
+    padding: 12,
+  },
+  infoLabel: {
+    color: palette.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  infoValue: {
+    color: palette.text,
     fontSize: 16,
+    fontWeight: "800",
+  },
+  nextShiftTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "800",
+    marginTop: 8,
+  },
+  nextShiftMeta: {
+    color: palette.muted,
+    marginTop: 4,
+  },
+  clockButton: {
+    alignItems: "center",
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    marginTop: 12,
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  clockButtonDisabled: {
+    opacity: 0.7,
+  },
+  clockButtonText: {
+    color: "#fff",
+    fontWeight: "800",
+  },
+  muted: {
+    color: palette.muted,
+    lineHeight: 20,
+  },
+  successText: {
+    color: palette.success,
+    marginTop: 8,
     fontWeight: "700",
   },
-  weekRange: {
-    color: "#62625c",
-    fontSize: 13,
+  errorText: {
+    color: palette.danger,
+    marginTop: 8,
     fontWeight: "700",
-    textTransform: "capitalize",
   },
   weekControls: {
     flexDirection: "row",
     gap: 8,
     marginBottom: 12,
+    marginTop: 12,
   },
   smallButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
-    borderRadius: 8,
+    borderColor: palette.border,
+    borderRadius: 14,
     borderWidth: 1,
     flex: 1,
-    minHeight: 38,
+    minHeight: 40,
     justifyContent: "center",
+    backgroundColor: "#fff",
   },
   smallButtonText: {
-    color: "#2f5f5b",
+    color: palette.accent,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
   },
-  shiftList: {
+  weekGrid: {
     gap: 10,
   },
   dayBlock: {
-    borderTopColor: "#eeeeea",
-    borderTopWidth: 1,
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 16,
+    borderWidth: 1,
     gap: 8,
-    paddingTop: 10,
+    padding: 12,
   },
   dayTitle: {
-    color: "#151515",
-    fontSize: 14,
-    fontWeight: "700",
+    color: palette.text,
+    fontWeight: "800",
   },
   shiftItem: {
-    backgroundColor: "#f7f7f4",
-    borderColor: "#e5e5df",
-    borderRadius: 8,
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 12,
     borderWidth: 1,
     gap: 4,
     padding: 10,
   },
-  shiftItemTop: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-  },
   shiftTime: {
-    color: "#222",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  shiftBadge: {
-    backgroundColor: "#e6f1ec",
-    borderRadius: 8,
-    color: "#217a3f",
-    fontSize: 12,
-    fontWeight: "700",
-    overflow: "hidden",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  shiftBadgeDraft: {
-    backgroundColor: "#fff5df",
-    color: "#8a5a00",
+    color: palette.text,
+    fontWeight: "800",
   },
   shiftMeta: {
-    color: "#62625c",
-    fontSize: 13,
-  },
-  row: {
-    borderTopColor: "#eeeeea",
-    borderTopWidth: 1,
-    gap: 4,
-    paddingVertical: 10,
-  },
-  label: {
-    color: "#6a6a64",
+    color: palette.muted,
     fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  value: {
-    color: "#222",
-    fontSize: 16,
-  },
-  clockButton: {
-    alignItems: "center",
-    backgroundColor: "#2f5f5b",
-    borderRadius: 8,
-    marginTop: 8,
-    minHeight: 46,
-    justifyContent: "center",
-  },
-  clockButtonDisabled: {
-    opacity: 0.65,
-  },
-  clockButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  muted: {
-    color: "#62625c",
-    lineHeight: 20,
-  },
-  successText: {
-    color: "#217a3f",
-    marginTop: 8,
-  },
-  errorText: {
-    color: "#b42318",
-    marginTop: 8,
   },
 });
-

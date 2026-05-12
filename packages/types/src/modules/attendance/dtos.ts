@@ -72,3 +72,5 @@ export interface UpdateAttendanceResponse {
 export interface DeleteAttendanceResponse {
   success: boolean;
 }
+
+export interface AttendanceCalendarResponse extends GetAttendanceCalendarResponse {}

@@ -241,4 +241,32 @@ app.patch(
     return reply.send(result);
   }
 );
+
+app.delete(
+  "/shifts/:shiftId",
+  {
+    preHandler: [
+      authenticate,
+      requireRole(["ADMIN", "MANAGER"]),
+    ],
+  },
+  async (req, reply) => {
+    const params = shiftIdParamsSchema.safeParse(req.params);
+
+    if (!params.success) {
+      return reply.status(400).send({
+        message: "Invalid shift id",
+        code: "VALIDATION_ERROR",
+      });
+    }
+
+    const result = await service.deleteShift(
+      params.data.shiftId,
+      req.user.organizationId,
+      req.user.id
+    );
+
+    return reply.send(result);
+  }
+);
 }
