@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "expo start --tunnel",
+    "dev": "expo start",
     "dev:tunnel": "expo start --tunnel",
     "dev:lan": "expo start --lan",
     "build": "echo \"Use EAS for builds\""
