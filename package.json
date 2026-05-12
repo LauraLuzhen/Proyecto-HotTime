@@ -12,5 +12,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "react-native-calendars": "^1.1314.0"
+  }
 }

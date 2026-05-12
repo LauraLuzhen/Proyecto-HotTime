@@ -40,6 +40,7 @@ import type {
   GetAttendancesDto,
   GetAttendancesResponse,
   PlanningRangeQueryDto,
+  GetShiftsResponseDto,
   ShiftResponse,
   GetShiftResponseDto,
   UpdateShiftDto,
@@ -161,27 +162,22 @@ function buildInboxQuery(filters?: CommunicationInboxQueryDto): string {
   return query ? `?${query}` : "";
 }
 
-function buildPlanningUserQuery(filters?: { userId?: number }): string {
-  if (!filters) return "";
-
-  const params = new URLSearchParams();
-  if (filters.userId !== undefined) params.set("userId", String(filters.userId));
-
-  const query = params.toString();
-  return query ? `?${query}` : "";
-}
-
 function buildPlanningRangeQuery(filters?: PlanningRangeQueryDto): string {
   if (!filters) return "";
 
   const params = new URLSearchParams();
-  if (filters.from) params.set("from", new Date(filters.from).toISOString());
-  if (filters.to) params.set("to", new Date(filters.to).toISOString());
+  if (filters.shiftId !== undefined) params.set("shiftId", String(filters.shiftId));
   if (filters.userId !== undefined) params.set("userId", String(filters.userId));
   if (filters.userIds?.length) params.set("userIds", filters.userIds.join(","));
   if (filters.categoryId !== undefined) params.set("categoryId", filters.categoryId === null ? "none" : String(filters.categoryId));
-  if (filters.status) params.set("status", filters.status);
   if (filters.published !== undefined) params.set("published", String(filters.published));
+  if (filters.status) params.set("status", filters.status);
+  if (filters.startsFrom) params.set("startsFrom", new Date(filters.startsFrom).toISOString());
+  if (filters.startsTo) params.set("startsTo", new Date(filters.startsTo).toISOString());
+  if (filters.endsFrom) params.set("endsFrom", new Date(filters.endsFrom).toISOString());
+  if (filters.endsTo) params.set("endsTo", new Date(filters.endsTo).toISOString());
+  if (filters.limit !== undefined) params.set("limit", String(filters.limit));
+  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
 
   const query = params.toString();
   return query ? `?${query}` : "";
@@ -255,7 +251,7 @@ export function createApi(getToken: () => string | null | Promise<string | null>
       update: (data: UpdateOrganizationDto) => http.patch<OrganizationResponse, UpdateOrganizationDto>("/organization", data),
     },
     planning: {
-      getShifts: (filters?: PlanningRangeQueryDto) => http.get<ShiftResponse[]>(`/planning/shifts${buildPlanningRangeQuery(filters)}`),
+      getShifts: (filters?: PlanningRangeQueryDto) => http.get<GetShiftsResponseDto>(`/planning/shifts${buildPlanningRangeQuery(filters)}`),
       getShiftById: (shiftId: number) => http.get<GetShiftResponseDto>(`/planning/shifts/${shiftId}`),
       getCalendar: (filters?: { userId?: number; date?: Date; includeWeek?: boolean; includeMonth?: boolean; includeNext?: boolean }) =>
         http.get<{ next: ShiftResponse | null; week: ShiftResponse[]; month: ShiftResponse[] }>(`/planning/shifts/calendar${buildDateQuery(filters)}`),

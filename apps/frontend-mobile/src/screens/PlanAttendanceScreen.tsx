@@ -87,8 +87,8 @@ export function PlanAttendanceScreen() {
         api.user.getUsers(),
         api.category.getCategories(),
         api.planning.getShifts({
-          from: startOfMonth(targetMonth),
-          to: endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0)),
+          startsFrom: startOfMonth(targetMonth),
+          startsTo: endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0)),
         }),
         api.attendance.getCalendar({
           date: targetMonth,
@@ -103,12 +103,12 @@ export function PlanAttendanceScreen() {
 
       setUsers(usersResult);
       setCategories(categoriesResult);
-      setShifts(shiftsResult);
+      setShifts(shiftsResult.shifts);
       setMonthAttendances(attendancesResult.month);
       setSelectedAttendances(selectedResult.attendances);
 
-      if (!selectedShiftId && shiftsResult.length) {
-        setSelectedShiftId(shiftsResult[0].id);
+      if (!selectedShiftId && shiftsResult.shifts.length) {
+        setSelectedShiftId(shiftsResult.shifts[0].id);
       }
     } catch (err) {
       setError(errorMessage(err, "No se pudo cargar el calendario de fichajes."));

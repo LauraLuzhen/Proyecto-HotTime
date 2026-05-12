@@ -83,11 +83,11 @@ export function DashboardScreen() {
     setPlanningError(null);
     try {
       const calendar = await api.planning.getShifts({
-        from: targetWeek,
-        to: addDays(targetWeek, 7),
+        startsFrom: targetWeek,
+        startsTo: addDays(targetWeek, 7),
         published: true,
       });
-      setWeekShifts(calendar);
+      setWeekShifts(calendar.shifts);
     } catch (err) {
       const e = err as ApiClientError;
       setPlanningError(e.message ?? "No se pudo cargar el horario semanal.");

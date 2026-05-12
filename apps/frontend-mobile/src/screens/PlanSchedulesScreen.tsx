@@ -1,86 +1,1238 @@
 import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
-import type { CategoriesResponse, GeneralUserResponse, ShiftResponse, ShiftStatus } from "@hottime/types";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
 import {
-  addDays,
   buildMonthDays,
   calendarDayNames,
-  categoryName,
   endOfDay,
   formatDateTime,
-  formatDay,
   formatLongDate,
   formatMonth,
   formatRange,
-  formatTime,
   palette,
-  sameDay,
   sameMonth,
   startOfMonth,
-  startOfWeek,
-  statusLabel,
 } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 
-type CategoryFilter = "all" | "none" | number;
-type PublishedFilter = "all" | "published" | "draft";
-type PickerTarget = "date" | "start" | "end" | null;
-type AssignMode = "user" | "visible" | "category";
+const PAGE_SIZE = 100;
+const monthLabels = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
 
-const shiftStatuses: ShiftStatus[] = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "MISSED"];
+type CreateMode = "USER" | "USERS" | "CATEGORY";
+type PickerTarget = {
+  owner: "create" | "edit";
+  field: "startsAt" | "endsAt";
+} | null;
 
-function errorMessage(err: unknown, fallback: string) {
-  const e = err as ApiClientError;
-  if (e.code === "SHIFT_OVERLAP") return "Hay un solapamiento de horarios para ese usuario.";
-  if (e.code === "INVALID_DATES" || e.code === "INVALID_SHIFT_RANGE") return "La hora de inicio debe ser anterior a la de fin.";
-  if (e.code === "SHIFT_HAS_ATTENDANCE") return "Este turno tiene fichajes, mejor cancela o edita antes de borrar.";
-  if (e.code === "SHIFT_NOT_FOUND") return "No se ha encontrado el turno.";
-  return e.message ?? fallback;
+function dayKey(value: Date | string) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function combineDateAndTime(date: Date, time: Date) {
-  const result = new Date(date);
-  result.setHours(time.getHours(), time.getMinutes(), 0, 0);
-  return result;
+function addHours(value: Date, hours: number) {
+  const next = new Date(value);
+  next.setHours(next.getHours() + hours);
+  return next;
 }
 
-function defaultStartTime() {
-  const value = new Date();
-  value.setHours(9, 0, 0, 0);
-  return value;
+function formatBackendDateTime(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  const hours = String(value.getHours()).padStart(2, "0");
+  const minutes = String(value.getMinutes()).padStart(2, "0");
+  const seconds = String(value.getSeconds()).padStart(2, "0");
+  const offsetMinutes = -value.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const offsetHours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, "0");
+  const offsetMins = String(Math.abs(offsetMinutes) % 60).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMins}`;
 }
 
-function defaultEndTime() {
-  const value = new Date();
-  value.setHours(17, 0, 0, 0);
-  return value;
+function setHoursMinutes(value: Date, hours: number, minutes = 0) {
+  const next = new Date(value);
+  next.setHours(hours, minutes, 0, 0);
+  return next;
 }
 
-function getShiftLabel(shift: ShiftResponse, usersById: Record<number, GeneralUserResponse>, categoriesById: Record<number, CategoriesResponse>) {
-  const userName = usersById[shift.userId]?.fullName ?? `Usuario ${shift.userId}`;
-  const categories = shift.categories
-    .map((relation) => categoriesById[relation.categoryId]?.name)
-    .filter(Boolean);
-  const categoryText = categories.length ? categories.join(", ") : "Sin categoria";
-  const creatorName = usersById[shift.createdById]?.fullName ?? `Usuario ${shift.createdById}`;
-  return { userName, categoryText, creatorName };
-}
-
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.chip, selected && styles.chipSelected]} onPress={onPress}>
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
+function mergeDate(base: Date, nextDate: Date) {
+  return new Date(
+    nextDate.getFullYear(),
+    nextDate.getMonth(),
+    nextDate.getDate(),
+    base.getHours(),
+    base.getMinutes(),
+    base.getSeconds(),
+    0
   );
 }
 
-function FieldButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
+function mergeTime(base: Date, nextTime: Date) {
+  return new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate(),
+    nextTime.getHours(),
+    nextTime.getMinutes(),
+    nextTime.getSeconds(),
+    0
+  );
+}
+
+function buildDefaultRange(baseDay: Date) {
+  const start = setHoursMinutes(baseDay, 9, 0);
+  const end = setHoursMinutes(baseDay, 17, 0);
+  return { start, end };
+}
+
+function userName(user: GeneralUserResponse | undefined, userId: number) {
+  return user?.fullName ?? `Usuario ${userId}`;
+}
+
+function statusColor(status: ShiftResponse["status"]) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return palette.gold;
+    case "COMPLETED":
+      return palette.success;
+    case "MISSED":
+      return palette.danger;
+    default:
+      return palette.accent;
+  }
+}
+
+function overlaps(left: { startsAt: Date; endsAt: Date }, right: { startsAt: Date | string; endsAt: Date | string }) {
+  return left.startsAt < new Date(right.endsAt) && left.endsAt > new Date(right.startsAt);
+}
+
+function userIdsForCategory(users: GeneralUserResponse[], categoryId: number | null) {
+  return users
+    .filter((user) => (
+      categoryId === null
+        ? user.categories.length === 0
+        : user.categories.some((category) => category.id === categoryId)
+    ))
+    .map((user) => user.id);
+}
+
+function EmptyState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateTitle}>{title}</Text>
+      <Text style={styles.emptyStateDetail}>{detail}</Text>
+    </View>
+  );
+}
+
+export function PlanSchedulesScreen() {
+  const auth = useAuth();
+  const api = useMemo(() => createApi(() => tokenStorage.get()), []);
+
+  const [month, setMonth] = useState(() => startOfMonth(new Date()));
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
+  const [users, setUsers] = useState<GeneralUserResponse[]>([]);
+  const [categories, setCategories] = useState<CategoriesResponse[]>([]);
+  const [shifts, setShifts] = useState<ShiftResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [yearPickerOpen, setYearPickerOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<CreateMode>("USER");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null | undefined>(undefined);
+  const [createStartsAt, setCreateStartsAt] = useState(() => buildDefaultRange(new Date()).start);
+  const [createEndsAt, setCreateEndsAt] = useState(() => buildDefaultRange(new Date()).end);
+  const [createPublished, setCreatePublished] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
+  const [pickerStage, setPickerStage] = useState<"date" | "time" | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [detailShift, setDetailShift] = useState<ShiftResponse | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editShift, setEditShift] = useState<ShiftResponse | null>(null);
+  const [editStartsAt, setEditStartsAt] = useState(() => buildDefaultRange(new Date()).start);
+  const [editEndsAt, setEditEndsAt] = useState(() => buildDefaultRange(new Date()).end);
+  const [editPublished, setEditPublished] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const usersById = useMemo(() => {
+    return new Map(users.map((user) => [user.id, user] as const));
+  }, [users]);
+
+  const usersByCategoryId = useMemo(() => {
+    const groups = new Map<number, GeneralUserResponse[]>();
+    categories.forEach((category) => groups.set(category.id, []));
+
+    users.forEach((user) => {
+      user.categories.forEach((category) => {
+        groups.get(category.id)?.push(user);
+      });
+    });
+
+    return groups;
+  }, [categories, users]);
+
+  const usersWithoutCategory = useMemo(() => {
+    return users.filter((user) => user.categories.length === 0);
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return users;
+
+    return users.filter((user) => (
+      user.fullName.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query)
+    ));
+  }, [searchText, users]);
+
+  const days = useMemo(() => buildMonthDays(month), [month]);
+
+  const shiftsByDay = useMemo(() => {
+    const map = new Map<string, ShiftResponse[]>();
+
+    for (const shift of shifts) {
+      const key = dayKey(shift.startsAt);
+      const bucket = map.get(key);
+
+      if (bucket) {
+        bucket.push(shift);
+      } else {
+        map.set(key, [shift]);
+      }
+    }
+
+    return map;
+  }, [shifts]);
+
+  const selectedShifts = shiftsByDay.get(dayKey(selectedDay)) ?? [];
+
+  const monthSummary = useMemo(() => {
+    const daysWithShifts = new Set<string>();
+
+    for (const shift of shifts) {
+      daysWithShifts.add(dayKey(shift.startsAt));
+    }
+
+    return {
+      totalShifts: shifts.length,
+      daysWithShifts: daysWithShifts.size,
+    };
+  }, [shifts]);
+
+  const dayUnpublishedCount = useMemo(() => {
+    return selectedShifts.filter((shift) => !shift.published).length;
+  }, [selectedShifts]);
+
+  const selectedRecipientIds = useMemo(() => {
+    if (createMode === "USER") {
+      return selectedUserId ? [selectedUserId] : [];
+    }
+
+    if (createMode === "USERS") {
+      return selectedUserIds;
+    }
+
+    if (selectedCategoryId === undefined) {
+      return [];
+    }
+
+    return userIdsForCategory(users, selectedCategoryId);
+  }, [createMode, selectedCategoryId, selectedUserId, selectedUserIds, users]);
+
+  const selectedRecipientUsers = useMemo(() => {
+    return selectedRecipientIds
+      .map((userId) => usersById.get(userId))
+      .filter((user): user is GeneralUserResponse => Boolean(user));
+  }, [selectedRecipientIds, usersById]);
+
+  const overlapUsers = useMemo(() => {
+    const activeIds = new Set(selectedRecipientIds);
+    const conflictingIds = new Set<number>();
+
+    if (createEndsAt <= createStartsAt) {
+      return [];
+    }
+
+    for (const shift of shifts) {
+      if (!activeIds.has(shift.userId)) continue;
+      if (overlaps({ startsAt: createStartsAt, endsAt: createEndsAt }, shift)) {
+        conflictingIds.add(shift.userId);
+      }
+    }
+
+    return [...conflictingIds]
+      .map((userId) => usersById.get(userId))
+      .filter((user): user is GeneralUserResponse => Boolean(user));
+  }, [createEndsAt, createStartsAt, selectedRecipientIds, shifts, usersById]);
+
+  const createValidationError = useMemo(() => {
+    if (!createOpen) return null;
+    if (createEndsAt <= createStartsAt) return "La salida debe ser posterior a la entrada.";
+    if (selectedRecipientIds.length === 0) {
+      if (createMode === "USER") return "Selecciona un usuario.";
+      if (createMode === "USERS") return "Selecciona al menos un usuario.";
+      return "Selecciona una categoría.";
+    }
+    if (overlapUsers.length > 0) {
+      const names = overlapUsers.map((user) => user.fullName).join(", ");
+      return `Solapa con turno existente en: ${names}.`;
+    }
+    return null;
+  }, [createEndsAt, createMode, createOpen, createStartsAt, overlapUsers.length, overlapUsers]);
+
+  const editValidationError = useMemo(() => {
+    if (!editOpen) return null;
+    if (!editShift) return "No se ha seleccionado un turno.";
+    if (editEndsAt <= editStartsAt) return "La salida debe ser posterior a la entrada.";
+
+    const conflict = shifts.find((shift) => (
+      shift.id !== editShift.id &&
+      shift.userId === editShift.userId &&
+      overlaps({ startsAt: editStartsAt, endsAt: editEndsAt }, shift)
+    ));
+
+    if (conflict) {
+      return "Solapa con otro turno del mismo usuario.";
+    }
+
+    return null;
+  }, [editEndsAt, editOpen, editShift, editStartsAt, shifts]);
+
+  const createPreviewLabel = useMemo(() => {
+    if (selectedRecipientUsers.length === 0) return "Sin usuarios";
+    if (selectedRecipientUsers.length <= 3) {
+      return selectedRecipientUsers.map((user) => user.fullName).join(", ");
+    }
+    return `${selectedRecipientUsers.slice(0, 3).map((user) => user.fullName).join(", ")} +${selectedRecipientUsers.length - 3}`;
+  }, [selectedRecipientUsers]);
+
+  async function loadMonth(targetMonth = month) {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const start = startOfMonth(targetMonth);
+      const end = endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0));
+
+      const [usersResult, categoriesResult, firstPage] = await Promise.all([
+        api.user.getUsers(),
+        api.category.getCategories(),
+        api.planning.getShifts({
+          startsFrom: start,
+          startsTo: end,
+          limit: PAGE_SIZE,
+          offset: 0,
+        }),
+      ]);
+
+      let allShifts = [...firstPage.shifts];
+      let offset = firstPage.shifts.length;
+
+      while (offset < firstPage.total) {
+        const page = await api.planning.getShifts({
+          startsFrom: start,
+          startsTo: end,
+          limit: PAGE_SIZE,
+          offset,
+        });
+
+        if (!page.shifts.length) break;
+
+        allShifts = allShifts.concat(page.shifts);
+        offset += page.shifts.length;
+      }
+
+      setUsers(usersResult);
+      setCategories(categoriesResult);
+      setShifts(allShifts);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setUsers([]);
+      setCategories([]);
+      setShifts([]);
+      setError(e.message ?? "No se pudo cargar la planificacion.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadMonth(month);
+  }, [month]);
+
+  function goToMonth(nextMonth: Date) {
+    const normalized = startOfMonth(nextMonth);
+    setMonth(normalized);
+    setSelectedDay(normalized);
+    setMonthPickerOpen(false);
+    setYearPickerOpen(false);
+  }
+
+  function goToToday() {
+    const today = new Date();
+    setMonth(startOfMonth(today));
+    setSelectedDay(today);
+  }
+
+  function openCreateModal() {
+    const defaults = buildDefaultRange(selectedDay);
+    setCreateStartsAt(defaults.start);
+    setCreateEndsAt(defaults.end);
+    setCreatePublished(false);
+    setCreateMode("USER");
+    setSelectedUserId(users[0]?.id ?? null);
+    setSelectedUserIds([]);
+    setSelectedCategoryId(categories[0]?.id ?? undefined);
+    setSearchText("");
+    setSubmitError(null);
+    setPickerTarget(null);
+    setPickerStage(null);
+    setCreateOpen(true);
+  }
+
+  function openDetailModal(shift: ShiftResponse) {
+    setDetailShift(shift);
+  }
+
+  function closeDetailModal() {
+    setDetailShift(null);
+  }
+
+  function openEditModal(shift: ShiftResponse) {
+    setEditShift(shift);
+    setEditStartsAt(new Date(shift.startsAt));
+    setEditEndsAt(new Date(shift.endsAt));
+    setEditPublished(shift.published);
+    setEditError(null);
+    setPickerTarget(null);
+    setPickerStage(null);
+    setEditOpen(true);
+  }
+
+  function closeEditModal() {
+    setEditOpen(false);
+    setEditShift(null);
+    setEditError(null);
+    setPickerTarget(null);
+    setPickerStage(null);
+  }
+
+  function resetCreateModal() {
+    setCreateOpen(false);
+    setCreateMode("USER");
+    setSelectedUserId(null);
+    setSelectedUserIds([]);
+    setSelectedCategoryId(undefined);
+    setCreateStartsAt(buildDefaultRange(selectedDay).start);
+    setCreateEndsAt(buildDefaultRange(selectedDay).end);
+    setCreatePublished(false);
+    setPickerTarget(null);
+    setPickerStage(null);
+    setSubmitError(null);
+    setSearchText("");
+  }
+
+  function toggleSelectedUser(userId: number) {
+    if (createMode === "USER") {
+      setSelectedUserId(userId);
+      return;
+    }
+
+    setSelectedUserIds((current) => (
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
+    ));
+  }
+
+  function selectCategory(categoryId: number | null) {
+    setSelectedCategoryId(categoryId);
+  }
+
+  function onPickerChange(event: DateTimePickerEvent, value?: Date) {
+    if (event.type === "dismissed" || !value) {
+      setPickerTarget(null);
+      setPickerStage(null);
+      return;
+    }
+
+    if (!pickerTarget) {
+      setPickerStage(null);
+      return;
+    }
+
+    const isDateStage = pickerStage !== "time";
+
+    if (pickerTarget.owner === "create") {
+      if (pickerTarget.field === "startsAt") {
+        setCreateStartsAt((current) => (isDateStage ? mergeDate(current, value) : mergeTime(current, value)));
+        if (isDateStage) {
+          setPickerStage("time");
+          return;
+        }
+        if (createEndsAt <= value) {
+          setCreateEndsAt(addHours(value, 8));
+        }
+      }
+
+      if (pickerTarget.field === "endsAt") {
+        setCreateEndsAt((current) => (isDateStage ? mergeDate(current, value) : mergeTime(current, value)));
+        if (isDateStage) {
+          setPickerStage("time");
+          return;
+        }
+      }
+    } else if (pickerTarget.owner === "edit") {
+      if (pickerTarget.field === "startsAt") {
+        setEditStartsAt((current) => (isDateStage ? mergeDate(current, value) : mergeTime(current, value)));
+        if (isDateStage) {
+          setPickerStage("time");
+          return;
+        }
+        if (editEndsAt <= value) {
+          setEditEndsAt(addHours(value, 8));
+        }
+      }
+
+      if (pickerTarget.field === "endsAt") {
+        setEditEndsAt((current) => (isDateStage ? mergeDate(current, value) : mergeTime(current, value)));
+        if (isDateStage) {
+          setPickerStage("time");
+          return;
+        }
+      }
+    }
+
+    setPickerTarget(null);
+    setPickerStage(null);
+    setSubmitError(null);
+    setEditError(null);
+  }
+
+  async function submitCreateShift() {
+    if (createValidationError) {
+      setSubmitError(createValidationError);
+      return;
+    }
+
+    setSaving(true);
+    setSubmitError(null);
+
+    try {
+      if (createMode === "USER") {
+        await api.planning.createShiftForUser({
+          startsAt: formatBackendDateTime(createStartsAt) as unknown as Date,
+          endsAt: formatBackendDateTime(createEndsAt) as unknown as Date,
+          published: createPublished,
+          userId: selectedUserId!,
+        });
+      } else if (createMode === "USERS") {
+        await api.planning.createShiftForUsers({
+          startsAt: formatBackendDateTime(createStartsAt) as unknown as Date,
+          endsAt: formatBackendDateTime(createEndsAt) as unknown as Date,
+          published: createPublished,
+          userIds: selectedUserIds,
+        });
+      } else {
+        await api.planning.createShiftForCategory({
+          startsAt: formatBackendDateTime(createStartsAt) as unknown as Date,
+          endsAt: formatBackendDateTime(createEndsAt) as unknown as Date,
+          published: createPublished,
+          categoryId: selectedCategoryId ?? null,
+        });
+      }
+
+      resetCreateModal();
+      await loadMonth(month);
+    } catch (err) {
+      const e = err as ApiClientError;
+      if (e.code === "SHIFT_OVERLAP" || e.status === 409) {
+        setSubmitError(e.message ?? "El turno solapa con otro existente.");
+      } else {
+        setSubmitError(e.message ?? "No se pudo crear el turno.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitUpdateShift() {
+    if (!editShift) return;
+    if (editValidationError) {
+      setEditError(editValidationError);
+      return;
+    }
+
+    setEditSaving(true);
+    setEditError(null);
+
+    try {
+      await api.planning.updateShift(editShift.id, {
+        startsAt: formatBackendDateTime(editStartsAt) as unknown as Date,
+        endsAt: formatBackendDateTime(editEndsAt) as unknown as Date,
+        published: editPublished,
+      });
+      closeEditModal();
+      await loadMonth(month);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setEditError(e.message ?? "No se pudo actualizar el turno.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  function confirmDeleteShift(shift: ShiftResponse) {
+    Alert.alert("Eliminar turno", "Seguro que quieres eliminar este turno?", [
+      { text: "No", style: "cancel" },
+      {
+        text: "Sí",
+        style: "destructive",
+        onPress: () => {
+          void deleteShift(shift);
+        },
+      },
+    ]);
+  }
+
+  async function deleteShift(shift: ShiftResponse) {
+    setEditSaving(true);
+    setEditError(null);
+
+    try {
+      await api.planning.deleteShift(shift.id);
+      closeDetailModal();
+      closeEditModal();
+      await loadMonth(month);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setEditError(e.message ?? "No se pudo eliminar el turno.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function publishDayShifts() {
+    const targets = selectedShifts.filter((shift) => !shift.published);
+    if (targets.length === 0) return;
+
+    setSaving(true);
+    setSubmitError(null);
+
+    try {
+      await Promise.all(targets.map((shift) => api.planning.updateShift(shift.id, { published: true })));
+      await loadMonth(month);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setSubmitError(e.message ?? "No se pudo publicar el día.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderDayPreview(day: Date, selected: boolean) {
+    const items = shiftsByDay.get(dayKey(day)) ?? [];
+
+    if (!items.length) {
+      return <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>Libre</Text>;
+    }
+
+    return (
+      <View style={styles.dayPreviewRow}>
+        {items.slice(0, 3).map((shift) => (
+          <View key={shift.id} style={[styles.dayPreviewDot, { backgroundColor: statusColor(shift.status) }]} />
+        ))}
+        {items.length > 3 ? <Text style={styles.dayMore}>+{items.length - 3}</Text> : null}
+      </View>
+    );
+  }
+
+  const currentYear = month.getFullYear();
+  const yearOptions = Array.from({ length: 11 }, (_, index) => currentYear - 5 + index);
+
+  if (!auth.user || (auth.user.role !== "ADMIN" && auth.user.role !== "MANAGER")) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.deniedBox}>
+          <Text style={styles.heroTitle}>Acceso denegado</Text>
+          <Text style={styles.muted}>Esta vista solo está disponible para administradores y managers.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.hero}>
+            <Text style={styles.kicker}>Plan schedule</Text>
+            <Text style={styles.heroTitle}>Calendario de turnos</Text>
+            <Text style={styles.heroSubtitle}>
+              Recorre mes y año con rapidez, mira la previsualización de turnos por día y abre el detalle completo con usuario, entrada y salida.
+            </Text>
+          </View>
+
+          <View style={styles.panel}>
+            <View style={styles.headerRow}>
+              <Pressable style={styles.navButton} onPress={() => goToMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>
+                <Text style={styles.navButtonText}>Anterior</Text>
+              </Pressable>
+
+              <View style={styles.headerCenter}>
+                <Pressable style={styles.selectorButton} onPress={() => setMonthPickerOpen(true)}>
+                  <Text style={styles.selectorLabel}>Mes</Text>
+                  <Text style={styles.selectorValue}>{formatMonth(month)}</Text>
+                </Pressable>
+                <Pressable style={styles.selectorButton} onPress={() => setYearPickerOpen(true)}>
+                  <Text style={styles.selectorLabel}>Año</Text>
+                  <Text style={styles.selectorValue}>{month.getFullYear()}</Text>
+                </Pressable>
+              </View>
+
+              <Pressable style={styles.navButton} onPress={() => goToMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>
+                <Text style={styles.navButtonText}>Siguiente</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.quickRow}>
+              <Pressable style={styles.quickButton} onPress={goToToday}>
+                <Text style={styles.quickButtonText}>Hoy</Text>
+              </Pressable>
+              <View style={styles.quickStat}>
+                <Text style={styles.quickStatValue}>{monthSummary.totalShifts}</Text>
+                <Text style={styles.quickStatLabel}>turnos</Text>
+              </View>
+              <View style={styles.quickStat}>
+                <Text style={styles.quickStatValue}>{monthSummary.daysWithShifts}</Text>
+                <Text style={styles.quickStatLabel}>días con turnos</Text>
+              </View>
+            </View>
+
+            {loading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={palette.accent} />
+                <Text style={styles.muted}>Cargando planificación...</Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.weekRow}>
+                  {calendarDayNames.map((day) => (
+                    <Text key={day} style={styles.weekLabel}>
+                      {day}
+                    </Text>
+                  ))}
+                </View>
+
+                <View style={styles.calendarGrid}>
+                  {days.map((day) => {
+                    const inMonth = sameMonth(day, month);
+                    const selected = dayKey(day) === dayKey(selectedDay);
+
+                    return (
+                      <Pressable
+                        key={day.toISOString()}
+                        style={[
+                          styles.dayCell,
+                          !inMonth && styles.dayCellMuted,
+                          selected && styles.dayCellSelected,
+                        ]}
+                        onPress={() => setSelectedDay(day)}
+                      >
+                        <Text
+                          style={[
+                            styles.dayNumber,
+                            !inMonth && styles.dayNumberMuted,
+                            selected && styles.dayNumberSelected,
+                          ]}
+                        >
+                          {day.getDate()}
+                        </Text>
+                        {renderDayPreview(day, selected)}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </View>
+
+          <View style={styles.panel}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Turnos del {formatLongDate(selectedDay)}</Text>
+              <View style={styles.sectionActions}>
+                <Text style={styles.sectionHint}>{selectedShifts.length} turno(s)</Text>
+                <Pressable
+                  disabled={dayUnpublishedCount === 0 || saving}
+                  style={[styles.publishDayButton, (dayUnpublishedCount === 0 || saving) && styles.buttonDisabled]}
+                  onPress={() => void publishDayShifts()}
+                >
+                  <Text style={styles.publishDayButtonText}>
+                    Publicar {dayUnpublishedCount}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {selectedShifts.length ? (
+              <View style={styles.shiftList}>
+                {selectedShifts.map((shift) => {
+                  const user = usersById.get(shift.userId);
+                  const name = userName(user, shift.userId);
+
+                  return (
+                    <Pressable key={shift.id} style={styles.shiftCard} onPress={() => openDetailModal(shift)}>
+                      <View style={styles.shiftHeader}>
+                        <View style={styles.shiftIdentity}>
+                          <Text style={styles.shiftUser}>{name}</Text>
+                          <Text style={styles.shiftMeta}>
+                            Turno #{shift.id} · {shift.status}
+                          </Text>
+                        </View>
+                        <Text style={[styles.statusChip, { backgroundColor: shift.published ? palette.accent : palette.gold }]}>
+                          {shift.published ? "Publicado" : "Borrador"}
+                        </Text>
+                      </View>
+                      <View style={styles.shiftRow}>
+                        <Text style={styles.shiftLabel}>Horario</Text>
+                        <Text style={styles.shiftValue}>{formatRange(shift)}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <EmptyState title="No hay turnos" detail="No hay turnos para este día." />
+            )}
+          </View>
+        </ScrollView>
+
+        <Pressable style={styles.fab} onPress={openCreateModal}>
+          <Text style={styles.fabText}>+ Crear turno</Text>
+        </Pressable>
+      </View>
+
+      <Modal animationType="slide" transparent visible={createOpen} onRequestClose={resetCreateModal}>
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={resetCreateModal} />
+          <View style={styles.sheet}>
+            <ScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetTitleGroup}>
+                  <Text style={styles.sheetTitle}>Crear turno</Text>
+                  <Text style={styles.sheetSubtitle}>Previsualiza el turno antes de guardarlo.</Text>
+                </View>
+                <Pressable style={styles.closeButton} onPress={resetCreateModal}>
+                  <Text style={styles.closeButtonText}>X</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.panelSoft}>
+                <Text style={styles.sectionTitle}>Horario</Text>
+
+                <View style={styles.formRow}>
+                  <FieldButton
+                    label="StartsAt"
+                    value={formatDateTime(createStartsAt)}
+                    onPress={() => {
+                      setPickerTarget({ owner: "create", field: "startsAt" });
+                      setPickerStage("date");
+                    }}
+                  />
+                  <FieldButton
+                    label="EndsAt"
+                    value={formatDateTime(createEndsAt)}
+                    onPress={() => {
+                      setPickerTarget({ owner: "create", field: "endsAt" });
+                      setPickerStage("date");
+                    }}
+                  />
+                </View>
+
+                <Pressable
+                  style={[styles.publishToggle, createPublished && styles.publishToggleActive]}
+                  onPress={() => setCreatePublished((current) => !current)}
+                >
+                  <Text style={[styles.publishToggleText, createPublished && styles.publishToggleTextActive]}>
+                    {createPublished ? "Publicado" : "Borrador"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.panelSoft}>
+                <Text style={styles.sectionTitle}>Asignación</Text>
+
+                <View style={styles.segmentRow}>
+                  <Pressable
+                    style={[styles.segmentButton, createMode === "USER" && styles.segmentButtonActive]}
+                    onPress={() => setCreateMode("USER")}
+                  >
+                    <Text style={[styles.segmentText, createMode === "USER" && styles.segmentTextActive]}>Un usuario</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.segmentButton, createMode === "USERS" && styles.segmentButtonActive]}
+                    onPress={() => setCreateMode("USERS")}
+                  >
+                    <Text style={[styles.segmentText, createMode === "USERS" && styles.segmentTextActive]}>Varios usuarios</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.segmentButton, createMode === "CATEGORY" && styles.segmentButtonActive]}
+                    onPress={() => setCreateMode("CATEGORY")}
+                  >
+                    <Text style={[styles.segmentText, createMode === "CATEGORY" && styles.segmentTextActive]}>Por categoría</Text>
+                  </Pressable>
+                </View>
+
+                {createMode === "USER" || createMode === "USERS" ? (
+                  <View style={styles.selectorBlock}>
+                    <TextInput
+                      autoCapitalize="none"
+                      onChangeText={setSearchText}
+                      placeholder="Buscar por nombre o email"
+                      style={styles.input}
+                      value={searchText}
+                    />
+                    <Text style={styles.selectionCount}>
+                      {createMode === "USER"
+                        ? (selectedUserId ? 1 : 0)
+                        : selectedUserIds.length} usuario(s) seleccionado(s)
+                    </Text>
+
+                    {filteredUsers.length === 0 ? (
+                      <EmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
+                    ) : (
+                      <View style={styles.list}>
+                        {filteredUsers.map((user) => {
+                          const selected = createMode === "USER"
+                            ? selectedUserId === user.id
+                            : selectedUserIds.includes(user.id);
+                          const categoriesLabel = user.categories.length
+                            ? user.categories.map((category) => category.name).join(", ")
+                            : "Sin categoría";
+
+                          return (
+                            <Pressable
+                              key={user.id}
+                              style={[styles.row, selected && styles.rowSelected]}
+                              onPress={() => toggleSelectedUser(user.id)}
+                            >
+                              <View style={styles.checkbox}>
+                                <Text style={styles.checkboxText}>{selected ? "x" : ""}</Text>
+                              </View>
+                              <View style={styles.rowText}>
+                                <Text style={styles.rowTitle} numberOfLines={1}>{user.fullName}</Text>
+                                <Text style={styles.rowDetail} numberOfLines={1}>{user.email}</Text>
+                                <Text style={styles.rowDetail} numberOfLines={1}>{categoriesLabel}</Text>
+                              </View>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.selectorBlock}>
+                    <Text style={styles.selectionCount}>
+                      {selectedCategoryId === undefined
+                        ? "Selecciona una categoría"
+                        : `${selectedCategoryId === null
+                          ? usersWithoutCategory.length
+                          : (usersByCategoryId.get(selectedCategoryId)?.length ?? 0)} usuario(s) en la categoría`}
+                    </Text>
+
+                    <View style={styles.list}>
+                      <Pressable
+                        style={[styles.categoryRow, selectedCategoryId === null && styles.categoryRowSelected]}
+                        onPress={() => selectCategory(null)}
+                      >
+                        <View style={styles.categoryMeta}>
+                          <Text style={styles.rowTitle}>Sin categoría</Text>
+                          <Text style={styles.rowDetail}>
+                            {usersWithoutCategory.length} usuario(s)
+                          </Text>
+                        </View>
+                        <Text style={styles.categoryBadge}>x</Text>
+                      </Pressable>
+
+                      {categories.map((category) => {
+                        const count = usersByCategoryId.get(category.id)?.length ?? 0;
+                        const selected = selectedCategoryId === category.id;
+
+                        return (
+                          <Pressable
+                            key={category.id}
+                            style={[styles.categoryRow, selected && styles.categoryRowSelected]}
+                            onPress={() => selectCategory(category.id)}
+                          >
+                            <View style={styles.categoryMeta}>
+                              <Text style={styles.rowTitle}>{category.name}</Text>
+                              <Text style={styles.rowDetail}>{count} usuario(s)</Text>
+                            </View>
+                            <Text style={styles.categoryBadge}>x</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.panelSoft}>
+                <Text style={styles.sectionTitle}>Vista previa</Text>
+                <Text style={styles.previewRow}>Horario: {formatDateTime(createStartsAt)} - {formatDateTime(createEndsAt)}</Text>
+                <Text style={styles.previewRow}>Estado: {createPublished ? "Publicado" : "Borrador"}</Text>
+                <Text style={styles.previewRow}>Usuarios: {selectedRecipientUsers.length}</Text>
+                <Text style={styles.previewRow}>Asignados: {createPreviewLabel}</Text>
+              </View>
+
+              {pickerTarget?.owner === "create" ? (
+                <View style={styles.panelSoft}>
+                  <Text style={styles.sectionTitle}>Elegir fecha y hora</Text>
+                  <DateTimePicker
+                    mode={pickerStage ?? "date"}
+                    is24Hour
+                    value={pickerTarget.field === "startsAt" ? createStartsAt : createEndsAt}
+                    onChange={onPickerChange}
+                  />
+                </View>
+              ) : null}
+
+              {submitError || createValidationError ? (
+                <Text style={styles.formError}>{submitError ?? createValidationError}</Text>
+              ) : null}
+
+              <Pressable
+                disabled={saving}
+                style={[styles.submitButton, saving && styles.buttonDisabled]}
+                onPress={() => void submitCreateShift()}
+              >
+                {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Crear turno</Text>}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal animationType="slide" transparent visible={detailShift !== null} onRequestClose={closeDetailModal}>
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeDetailModal} />
+          <View style={styles.sheet}>
+            {detailShift ? (
+              <ScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
+                <View style={styles.sheetHeader}>
+                  <View style={styles.sheetTitleGroup}>
+                    <Text style={styles.sheetTitle}>{userName(usersById.get(detailShift.userId), detailShift.userId)}</Text>
+                    <Text style={styles.sheetSubtitle}>Vista previa completa del turno #{detailShift.id}</Text>
+                  </View>
+                  <Pressable style={styles.closeButton} onPress={closeDetailModal}>
+                    <Text style={styles.closeButtonText}>X</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.panelSoft}>
+                  <Text style={styles.sectionTitle}>Información</Text>
+                  <DetailRow label="Usuario" value={userName(usersById.get(detailShift.userId), detailShift.userId)} />
+                  <DetailRow label="Turno ID" value={`#${detailShift.id}`} />
+                  <DetailRow label="Organización" value={String(detailShift.organizationId)} />
+                  <DetailRow label="Creado por" value={String(detailShift.createdById)} />
+                  <DetailRow label="Estado" value={detailShift.status} />
+                  <DetailRow label="Publicado" value={detailShift.published ? "Sí" : "No"} />
+                  <DetailRow label="Entrada" value={formatDateTime(detailShift.startsAt)} />
+                  <DetailRow label="Salida" value={formatDateTime(detailShift.endsAt)} />
+                  <DetailRow label="Horario" value={formatRange(detailShift)} />
+                  <DetailRow label="Entrada real" value={detailShift.actualStartsAt ? formatDateTime(detailShift.actualStartsAt) : "Sin registrar"} />
+                  <DetailRow label="Salida real" value={detailShift.actualEndsAt ? formatDateTime(detailShift.actualEndsAt) : "Sin registrar"} />
+                  <DetailRow
+                    label="Categorías"
+                    value={
+                      detailShift.categories.length
+                        ? detailShift.categories.map((relation) => (
+                            categories.find((category) => category.id === relation.categoryId)?.name ?? `#${relation.categoryId}`
+                          )).join(", ")
+                        : "Sin categorías"
+                    }
+                  />
+                  <DetailRow label="Creado" value={formatDateTime(detailShift.createdAt)} />
+                  <DetailRow label="Actualizado" value={formatDateTime(detailShift.updatedAt)} />
+                </View>
+
+                {detailShift ? (
+                  <View style={styles.actionRow}>
+                    <Pressable
+                      style={styles.secondaryButton}
+                      onPress={() => {
+                        const shift = detailShift;
+                        if (!shift) return;
+                        closeDetailModal();
+                        openEditModal(shift);
+                      }}
+                    >
+                      <Text style={styles.secondaryButtonText}>Update</Text>
+                    </Pressable>
+                    <Pressable style={styles.dangerButton} onPress={() => confirmDeleteShift(detailShift)}>
+                      <Text style={styles.dangerButtonText}>Delete</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal animationType="slide" transparent visible={editOpen} onRequestClose={closeEditModal}>
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeEditModal} />
+          <View style={styles.sheet}>
+            <ScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetTitleGroup}>
+                  <Text style={styles.sheetTitle}>Update turno</Text>
+                  <Text style={styles.sheetSubtitle}>
+                    Cambia horario y publicación con el mismo formato que el backend espera.
+                  </Text>
+                </View>
+                <Pressable style={styles.closeButton} onPress={closeEditModal}>
+                  <Text style={styles.closeButtonText}>X</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.panelSoft}>
+                <Text style={styles.sectionTitle}>Horario</Text>
+
+                <View style={styles.formRow}>
+                  <FieldButton
+                    label="StartsAt"
+                    value={formatDateTime(editStartsAt)}
+                    onPress={() => {
+                      setPickerTarget({ owner: "edit", field: "startsAt" });
+                      setPickerStage("date");
+                    }}
+                  />
+                  <FieldButton
+                    label="EndsAt"
+                    value={formatDateTime(editEndsAt)}
+                    onPress={() => {
+                      setPickerTarget({ owner: "edit", field: "endsAt" });
+                      setPickerStage("date");
+                    }}
+                  />
+                </View>
+
+                <Pressable
+                  style={[styles.publishToggle, editPublished && styles.publishToggleActive]}
+                  onPress={() => setEditPublished((current) => !current)}
+                >
+                  <Text style={[styles.publishToggleText, editPublished && styles.publishToggleTextActive]}>
+                    {editPublished ? "Publicado" : "Borrador"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {pickerTarget?.owner === "edit" ? (
+                <View style={styles.panelSoft}>
+                  <Text style={styles.sectionTitle}>Elegir fecha y hora</Text>
+                  <DateTimePicker
+                    mode={pickerStage ?? "date"}
+                    is24Hour
+                    value={pickerTarget.field === "startsAt" ? editStartsAt : editEndsAt}
+                    onChange={onPickerChange}
+                  />
+                </View>
+              ) : null}
+
+              {editError || editValidationError ? (
+                <Text style={styles.formError}>{editError ?? editValidationError}</Text>
+              ) : null}
+
+              <View style={styles.actionRow}>
+                <Pressable
+                  disabled={editSaving}
+                  style={[styles.submitButton, editSaving && styles.buttonDisabled]}
+                  onPress={() => void submitUpdateShift()}
+                >
+                  {editSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Guardar update</Text>}
+                </Pressable>
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={() => editShift ? confirmDeleteShift(editShift) : null}
+                >
+                  <Text style={styles.secondaryButtonText}>Delete</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <MonthPickerModal
+        currentMonth={month}
+        visible={monthPickerOpen}
+        onClose={() => setMonthPickerOpen(false)}
+        onSelect={(monthIndex) => goToMonth(new Date(month.getFullYear(), monthIndex, 1))}
+      />
+
+      <YearPickerModal
+        currentMonth={month}
+        visible={yearPickerOpen}
+        onClose={() => setYearPickerOpen(false)}
+        onSelect={(year) => goToMonth(new Date(year, month.getMonth(), 1))}
+        options={yearOptions}
+      />
+    </SafeAreaView>
+  );
+}
+
+function FieldButton({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable style={styles.fieldButton} onPress={onPress}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -89,513 +1241,88 @@ function FieldButton({ label, value, onPress }: { label: string; value: string; 
   );
 }
 
-export function PlanSchedulesScreen() {
-  const auth = useAuth();
-  const api = useMemo(() => createApi(() => tokenStorage.get()), []);
-  const isPlanner = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
-
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [users, setUsers] = useState<GeneralUserResponse[]>([]);
-  const [categories, setCategories] = useState<CategoriesResponse[]>([]);
-  const [shifts, setShifts] = useState<ShiftResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const [userFilter, setUserFilter] = useState<"all" | number>("all");
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [publishedFilter, setPublishedFilter] = useState<PublishedFilter>("all");
-
-  const [editing, setEditing] = useState<ShiftResponse | null>(null);
-  const [assignMode, setAssignMode] = useState<AssignMode>("user");
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<"none" | number>("none");
-  const [selectedDate, setSelectedDate] = useState(() => new Date());
-  const [startTime, setStartTime] = useState(defaultStartTime);
-  const [endTime, setEndTime] = useState(defaultEndTime);
-  const [published, setPublished] = useState(false);
-  const [status, setStatus] = useState<ShiftStatus>("SCHEDULED");
-  const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
-
-  const usersById = useMemo(() => Object.fromEntries(users.map((user) => [user.id, user])) as Record<number, GeneralUserResponse>, [users]);
-  const categoriesById = useMemo(() => Object.fromEntries(categories.map((category) => [category.id, category])) as Record<number, CategoriesResponse>, [categories]);
-  const visibleUsers = useMemo(() => users.filter((user) => {
-    if (categoryFilter === "none") return user.categories.length === 0;
-    if (typeof categoryFilter === "number") return user.categories.some((category) => category.id === categoryFilter);
-    return true;
-  }), [users, categoryFilter]);
-
-  async function loadData(targetWeek = weekStart) {
-    setLoading(true);
-    setError(null);
-    try {
-      const [usersResult, categoriesResult, shiftsResult] = await Promise.all([
-        api.user.getUsers(),
-        api.category.getCategories(),
-        api.planning.getShifts({
-          from: targetWeek,
-          to: endOfDay(addDays(targetWeek, 6)),
-          userId: userFilter === "all" ? undefined : userFilter,
-          categoryId: categoryFilter === "all" ? undefined : categoryFilter === "none" ? null : categoryFilter,
-          published: publishedFilter === "all" ? undefined : publishedFilter === "published",
-        }),
-      ]);
-
-      setUsers(usersResult);
-      setCategories(categoriesResult);
-      setShifts(shiftsResult);
-
-      if (!selectedUserId && usersResult.length) {
-        setSelectedUserId(usersResult[0].id);
-      }
-    } catch (err) {
-      setError(errorMessage(err, "No se pudo cargar la planificacion."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!isPlanner) return;
-    void loadData(weekStart);
-  }, [weekStart, userFilter, categoryFilter, publishedFilter, isPlanner]);
-
-  function resetForm() {
-    setEditing(null);
-    setAssignMode("user");
-    setSelectedUserId(users[0]?.id ?? null);
-    setSelectedCategoryId("none");
-    setSelectedDate(new Date());
-    setStartTime(defaultStartTime());
-    setEndTime(defaultEndTime());
-    setPublished(false);
-    setStatus("SCHEDULED");
-    setMessage(null);
-    setError(null);
-  }
-
-  function editShift(shift: ShiftResponse) {
-    setEditing(shift);
-    setAssignMode("user");
-    setSelectedUserId(shift.userId);
-    setSelectedCategoryId(shift.categories[0]?.categoryId ?? "none");
-    setSelectedDate(new Date(shift.startsAt));
-    setStartTime(new Date(shift.startsAt));
-    setEndTime(new Date(shift.endsAt));
-    setPublished(shift.published);
-    setStatus(shift.status);
-    setMessage(null);
-    setError(null);
-  }
-
-  function selectedUsers() {
-    if (editing) return selectedUserId ? [selectedUserId] : [];
-    if (assignMode === "visible") return visibleUsers.map((user) => user.id);
-    return selectedUserId ? [selectedUserId] : [];
-  }
-
-  function validateLocal(startsAt: Date, endsAt: Date, targetUserIds: number[]) {
-    if (!targetUserIds.length) return "Selecciona al menos un usuario.";
-    if (startsAt >= endsAt) return "La hora de inicio debe ser anterior a la de fin.";
-    return null;
-  }
-
-  async function saveShift() {
-    const startsAt = combineDateAndTime(selectedDate, startTime);
-    const endsAt = combineDateAndTime(selectedDate, endTime);
-    const targetUserIds = selectedUsers();
-    const localError = validateLocal(startsAt, endsAt, targetUserIds);
-
-    if (localError) {
-      setError(localError);
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-
-    try {
-      const categoryId = selectedCategoryId === "none" ? null : selectedCategoryId;
-
-      if (editing) {
-        await api.planning.updateShift(editing.id, {
-          startsAt,
-          endsAt,
-          status,
-          published,
-        });
-        setMessage("Turno actualizado correctamente.");
-      } else if (assignMode === "category") {
-        await api.planning.createShiftForCategory({
-          startsAt,
-          endsAt,
-          published,
-          categoryId,
-        });
-        setMessage("Turnos creados por categoria.");
-      } else if (assignMode === "visible") {
-        await api.planning.createShiftForUsers({
-          startsAt,
-          endsAt,
-          published,
-          userIds: targetUserIds,
-        });
-        setMessage(`Turnos creados para ${targetUserIds.length} usuarios.`);
-      } else {
-        await api.planning.createShiftForUser({
-          userId: targetUserIds[0],
-          startsAt,
-          endsAt,
-          published,
-        });
-        setMessage("Turno creado correctamente.");
-      }
-
-      resetForm();
-      await loadData(weekStart);
-    } catch (err) {
-      setError(errorMessage(err, "No se pudo guardar el turno."));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function publishShift(shift: ShiftResponse) {
-    setSaving(true);
-    setError(null);
-    try {
-      await api.planning.updateShift(shift.id, { published: true });
-      setMessage("Turno publicado.");
-      await loadData(weekStart);
-    } catch (err) {
-      setError(errorMessage(err, "No se pudo publicar el turno."));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function publishVisibleDrafts() {
-    const drafts = shifts.filter((shift) => !shift.published);
-    if (!drafts.length) {
-      setMessage("No hay borradores visibles para publicar.");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    try {
-      await Promise.all(drafts.map((shift) => api.planning.updateShift(shift.id, { published: true })));
-      setMessage(`Publicados ${drafts.length} turnos visibles.`);
-      await loadData(weekStart);
-    } catch (err) {
-      setError(errorMessage(err, "No se pudieron publicar todos los turnos."));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function confirmDelete(shift: ShiftResponse) {
-    const info = getShiftLabel(shift, usersById, categoriesById);
-    Alert.alert(
-      "Eliminar turno",
-      `Eliminar ${info.userName} - ${formatLongDate(shift.startsAt)} - ${formatRange(shift)}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: () => void deleteShift(shift),
-        },
-      ]
-    );
-  }
-
-  async function deleteShift(shift: ShiftResponse) {
-    setSaving(true);
-    setError(null);
-    try {
-      await api.planning.deleteShift(shift.id);
-      if (editing?.id === shift.id) resetForm();
-      setMessage("Turno eliminado.");
-      await loadData(weekStart);
-    } catch (err) {
-      setError(errorMessage(err, "No se pudo eliminar el turno."));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function onPickerChange(event: DateTimePickerEvent, value?: Date) {
-    if (event.type === "dismissed" || !value) {
-      setPickerTarget(null);
-      return;
-    }
-
-    if (pickerTarget === "date") setSelectedDate(value);
-    if (pickerTarget === "start") setStartTime(value);
-    if (pickerTarget === "end") setEndTime(value);
-    setPickerTarget(null);
-  }
-
-  if (!isPlanner) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.deniedBox}>
-          <Text style={styles.title}>Acceso denegado</Text>
-          <Text style={styles.muted}>Solo administradores y managers pueden planificar horarios.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const days = buildMonthDays(weekStart);
-
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
-          <Text style={styles.kicker}>Plan schedule</Text>
-          <Text style={styles.title}>Planificar horarios</Text>
-          <Text style={styles.subtitle}>Vista semanal tipo calendario para crear, editar, publicar y borrar turnos sin perder contexto.</Text>
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function MonthPickerModal({
+  currentMonth,
+  visible,
+  onClose,
+  onSelect,
+}: {
+  currentMonth: Date;
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (monthIndex: number) => void;
+}) {
+  return (
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Cambiar mes</Text>
+          <View style={styles.monthGrid}>
+            {monthLabels.map((label, index) => {
+              const selected = index === currentMonth.getMonth();
+              return (
+                <Pressable
+                  key={label}
+                  style={[styles.monthChip, selected && styles.monthChipSelected]}
+                  onPress={() => onSelect(index)}
+                >
+                  <Text style={[styles.monthChipText, selected && styles.monthChipTextSelected]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
+      </View>
+    </Modal>
+  );
+}
 
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Semana {formatDay(weekStart)} - {formatDay(addDays(weekStart, 6))}</Text>
-              <Text style={styles.panelHint}>{formatMonth(weekStart)}</Text>
-            </View>
-            <Pressable style={styles.secondaryButton} onPress={() => setWeekStart(startOfWeek(new Date()))}>
-              <Text style={styles.secondaryButtonText}>Hoy</Text>
-            </Pressable>
+function YearPickerModal({
+  currentMonth,
+  visible,
+  onClose,
+  onSelect,
+  options,
+}: {
+  currentMonth: Date;
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (year: number) => void;
+  options: number[];
+}) {
+  return (
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Cambiar año</Text>
+          <View style={styles.yearList}>
+            {options.map((year) => {
+              const selected = year === currentMonth.getFullYear();
+              return (
+                <Pressable
+                  key={year}
+                  style={[styles.yearRow, selected && styles.yearRowSelected]}
+                  onPress={() => onSelect(year)}
+                >
+                  <Text style={[styles.yearRowText, selected && styles.yearRowTextSelected]}>{year}</Text>
+                </Pressable>
+              );
+            })}
           </View>
-
-          <View style={styles.controlsRow}>
-            <Pressable style={styles.secondaryButton} onPress={() => setWeekStart((current) => addDays(current, -7))}>
-              <Text style={styles.secondaryButtonText}>Anterior</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={() => setWeekStart((current) => addDays(current, 7))}>
-              <Text style={styles.secondaryButtonText}>Siguiente</Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.label}>Usuario</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            <Chip label="Todos" selected={userFilter === "all"} onPress={() => setUserFilter("all")} />
-            {users.map((user) => (
-              <Chip key={user.id} label={user.fullName} selected={userFilter === user.id} onPress={() => setUserFilter(user.id)} />
-            ))}
-          </ScrollView>
-
-          <Text style={styles.label}>Categoria</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            <Chip label="Todas" selected={categoryFilter === "all"} onPress={() => setCategoryFilter("all")} />
-            <Chip label="Sin categoria" selected={categoryFilter === "none"} onPress={() => setCategoryFilter("none")} />
-            {categories.map((category) => (
-              <Chip key={category.id} label={category.name} selected={categoryFilter === category.id} onPress={() => setCategoryFilter(category.id)} />
-            ))}
-          </ScrollView>
-
-          <Text style={styles.label}>Publicacion</Text>
-          <View style={styles.controlsRow}>
-            <Chip label="Todos" selected={publishedFilter === "all"} onPress={() => setPublishedFilter("all")} />
-            <Chip label="Publicados" selected={publishedFilter === "published"} onPress={() => setPublishedFilter("published")} />
-            <Chip label="Borradores" selected={publishedFilter === "draft"} onPress={() => setPublishedFilter("draft")} />
-          </View>
-
-          <Pressable style={[styles.publishButton, saving && styles.disabled]} disabled={saving} onPress={() => void publishVisibleDrafts()}>
-            <Text style={styles.publishButtonText}>{saving ? "Guardando..." : "Publicar borradores visibles"}</Text>
-          </Pressable>
         </View>
-
-        <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>{editing ? "Editar turno" : "Nuevo turno"}</Text>
-
-          {!editing ? (
-            <>
-              <Text style={styles.label}>Asignacion</Text>
-              <View style={styles.controlsRow}>
-                <Chip label="Un usuario" selected={assignMode === "user"} onPress={() => setAssignMode("user")} />
-                <Chip label={`Usuarios visibles (${visibleUsers.length})`} selected={assignMode === "visible"} onPress={() => setAssignMode("visible")} />
-                <Chip label="Por categoria" selected={assignMode === "category"} onPress={() => setAssignMode("category")} />
-              </View>
-            </>
-          ) : null}
-
-          {(assignMode === "user" || editing) ? (
-            <>
-              <Text style={styles.label}>Usuario asignado</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-                {visibleUsers.map((user) => (
-                  <Chip key={user.id} label={user.fullName} selected={selectedUserId === user.id} onPress={() => setSelectedUserId(user.id)} />
-                ))}
-              </ScrollView>
-            </>
-          ) : null}
-
-          {(assignMode === "category" || editing) ? (
-            <>
-              <Text style={styles.label}>Categoria del turno</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-                <Chip label="Sin categoria" selected={selectedCategoryId === "none"} onPress={() => setSelectedCategoryId("none")} />
-                {categories.map((category) => (
-                  <Chip key={category.id} label={category.name} selected={selectedCategoryId === category.id} onPress={() => setSelectedCategoryId(category.id)} />
-                ))}
-              </ScrollView>
-            </>
-          ) : null}
-
-          <View style={styles.formGrid}>
-            <FieldButton label="Fecha" value={formatLongDate(selectedDate)} onPress={() => setPickerTarget("date")} />
-            <FieldButton label="Inicio" value={formatTime(startTime)} onPress={() => setPickerTarget("start")} />
-            <FieldButton label="Fin" value={formatTime(endTime)} onPress={() => setPickerTarget("end")} />
-          </View>
-
-          <Text style={styles.label}>Publicacion</Text>
-          <View style={styles.controlsRow}>
-            <Chip label="Borrador" selected={!published} onPress={() => setPublished(false)} />
-            <Chip label="Publicado" selected={published} onPress={() => setPublished(true)} />
-          </View>
-
-          {editing ? (
-            <>
-              <Text style={styles.label}>Estado</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-                {shiftStatuses.map((item) => (
-                  <Chip key={item} label={statusLabel(item)} selected={status === item} onPress={() => setStatus(item)} />
-                ))}
-              </ScrollView>
-            </>
-          ) : null}
-
-          <View style={styles.actionRow}>
-            <Pressable style={[styles.primaryButton, saving && styles.disabled]} disabled={saving} onPress={() => void saveShift()}>
-              <Text style={styles.primaryButtonText}>{saving ? "Guardando..." : editing ? "Actualizar turno" : "Crear turno"}</Text>
-            </Pressable>
-            {editing ? (
-              <Pressable style={styles.secondaryButton} onPress={resetForm}>
-                <Text style={styles.secondaryButtonText}>Cancelar</Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          {message ? <Text style={styles.successText}>{message}</Text> : null}
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        </View>
-
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.sectionTitle}>Calendario de turnos</Text>
-            <Text style={styles.panelHint}>{loading ? "Cargando..." : `${shifts.length} turnos`}</Text>
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={palette.accent} />
-              <Text style={styles.muted}>Cargando planificacion...</Text>
-            </View>
-          ) : (
-            <View style={styles.calendarWrap}>
-              <View style={styles.weekRow}>
-                {calendarDayNames.map((day) => (
-                  <Text key={day} style={styles.weekLabel}>{day}</Text>
-                ))}
-              </View>
-              <View style={styles.calendarGrid}>
-                {days.map((day) => {
-                  const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
-                  const inMonth = sameMonth(day, weekStart);
-                  return (
-                    <View key={day.toISOString()} style={[styles.dayCell, !inMonth && styles.dayCellMuted]}>
-                      <Text style={[styles.dayNumber, !inMonth && styles.dayNumberMuted]}>{day.getDate()}</Text>
-                      <Text style={styles.daySubtitle}>{formatDay(day)}</Text>
-                      <View style={styles.cellItems}>
-                        {dayShifts.slice(0, 3).map((shift) => {
-                          const info = getShiftLabel(shift, usersById, categoriesById);
-                          return (
-                            <Pressable key={shift.id} style={[styles.shiftPill, !shift.published && styles.shiftPillDraft]} onPress={() => editShift(shift)}>
-                              <Text style={styles.shiftPillText} numberOfLines={1}>
-                                {formatRange(shift)}
-                              </Text>
-                              <Text style={styles.shiftPillMeta} numberOfLines={1}>
-                                {info.userName}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                        {dayShifts.length > 3 ? <Text style={styles.moreText}>+{dayShifts.length - 3} más</Text> : null}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.sectionTitle}>Detalle por día</Text>
-            <Text style={styles.panelHint}>Toca un turno para editarlo</Text>
-          </View>
-          {shifts.length ? (
-            <View style={styles.dayList}>
-              {Array.from({ length: 7 }).map((_, index) => {
-                const day = addDays(weekStart, index);
-                const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
-                return (
-                  <View key={day.toISOString()} style={styles.dayGroup}>
-                    <Text style={styles.dayTitle}>{formatLongDate(day)}</Text>
-                    {dayShifts.length ? dayShifts.map((shift) => {
-                      const info = getShiftLabel(shift, usersById, categoriesById);
-                      return (
-                        <View key={shift.id} style={styles.shiftCard}>
-                          <Pressable style={styles.shiftBody} onPress={() => editShift(shift)}>
-                            <View style={styles.shiftTop}>
-                              <Text style={styles.shiftName}>{info.userName}</Text>
-                              <Text style={[styles.badge, !shift.published && styles.badgeDraft]}>{shift.published ? "Publicado" : "Borrador"}</Text>
-                            </View>
-                            <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
-                            <Text style={styles.shiftMeta}>{info.categoryText} · {statusLabel(shift.status)}</Text>
-                            <Text style={styles.shiftMeta}>Creado por {info.creatorName}</Text>
-                            <Text style={styles.shiftMeta}>Inicio exacto {formatDateTime(shift.startsAt)}</Text>
-                          </Pressable>
-                          <View style={styles.shiftActions}>
-                            {!shift.published ? (
-                              <Pressable style={styles.miniButton} onPress={() => void publishShift(shift)}>
-                                <Text style={styles.miniButtonText}>Publicar</Text>
-                              </Pressable>
-                            ) : null}
-                            <Pressable style={styles.dangerButton} onPress={() => confirmDelete(shift)}>
-                              <Text style={styles.dangerButtonText}>Eliminar</Text>
-                            </Pressable>
-                          </View>
-                        </View>
-                      );
-                    }) : (
-                      <Text style={styles.muted}>Sin turnos.</Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          ) : (
-            <Text style={styles.muted}>No hay turnos con estos filtros.</Text>
-          )}
-        </View>
-      </ScrollView>
-
-      {pickerTarget ? (
-        <DateTimePicker
-          value={pickerTarget === "date" ? selectedDate : pickerTarget === "start" ? startTime : endTime}
-          mode={pickerTarget === "date" ? "date" : "time"}
-          is24Hour
-          onChange={onPickerChange}
-        />
-      ) : null}
-    </SafeAreaView>
+      </View>
+    </Modal>
   );
 }
 
@@ -604,13 +1331,16 @@ const styles = StyleSheet.create({
     backgroundColor: palette.background,
     flex: 1,
   },
+  screen: {
+    flex: 1,
+  },
   content: {
     gap: 16,
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 110,
   },
   hero: {
-    backgroundColor: palette.accent,
+    backgroundColor: palette.accentStrong,
     borderRadius: 18,
     gap: 8,
     padding: 18,
@@ -622,19 +1352,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1.3,
     textTransform: "uppercase",
   },
-  title: {
+  heroTitle: {
     color: "#fff",
     fontSize: 28,
     fontWeight: "800",
   },
-  subtitle: {
+  heroSubtitle: {
     color: "#e6f2ef",
     fontSize: 14,
     lineHeight: 20,
-  },
-  deniedBox: {
-    gap: 8,
-    padding: 16,
   },
   panel: {
     backgroundColor: palette.surfaceElevated,
@@ -643,161 +1369,108 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
   },
-  panelHeader: {
+  panelSoft: {
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+  },
+  headerRow: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
     gap: 8,
+    justifyContent: "space-between",
   },
-  panelHint: {
+  headerCenter: {
+    flex: 1,
+    gap: 8,
+    marginHorizontal: 8,
+  },
+  selectorButton: {
+    alignItems: "center",
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  selectorLabel: {
     color: palette.muted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  sectionTitle: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  label: {
-    color: palette.muted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 14,
     textTransform: "uppercase",
   },
-  controlsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  selectorValue: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: "800",
+    textTransform: "capitalize",
   },
-  chipsRow: {
-    gap: 8,
-    paddingRight: 12,
-  },
-  chip: {
+  navButton: {
     alignItems: "center",
+    backgroundColor: "#fff",
     borderColor: palette.border,
-    borderRadius: 999,
+    borderRadius: 14,
     borderWidth: 1,
-    minHeight: 38,
     justifyContent: "center",
-    maxWidth: 220,
-    paddingHorizontal: 14,
+    minHeight: 42,
+    minWidth: 82,
+    paddingHorizontal: 12,
   },
-  chipSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-  chipText: {
+  navButtonText: {
     color: palette.accent,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "800",
   },
-  chipTextSelected: {
-    color: "#fff",
-  },
-  formGrid: {
+  quickRow: {
     flexDirection: "row",
     gap: 8,
     marginTop: 12,
   },
-  fieldButton: {
+  quickButton: {
+    alignItems: "center",
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: 14,
+  },
+  quickButtonText: {
+    color: "#fff",
+    fontWeight: "800",
+  },
+  quickStat: {
+    backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
     borderRadius: 14,
     borderWidth: 1,
     flex: 1,
-    gap: 4,
-    minHeight: 68,
+    gap: 2,
     justifyContent: "center",
-    paddingHorizontal: 12,
-    backgroundColor: palette.backgroundSoft,
-  },
-  fieldLabel: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  fieldValue: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  actionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 16,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: palette.accent,
-    borderRadius: 14,
-    flexGrow: 1,
-    minHeight: 46,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "800",
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexGrow: 1,
-    minHeight: 42,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
-  },
-  secondaryButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-  publishButton: {
-    alignItems: "center",
-    backgroundColor: palette.warning,
-    borderRadius: 14,
-    marginTop: 14,
     minHeight: 44,
-    justifyContent: "center",
+    paddingHorizontal: 12,
   },
-  publishButtonText: {
-    color: "#fff",
+  quickStatValue: {
+    color: palette.text,
+    fontSize: 16,
     fontWeight: "800",
   },
-  disabled: {
-    opacity: 0.65,
+  quickStatLabel: {
+    color: palette.muted,
+    fontSize: 11,
+    fontWeight: "700",
   },
   loadingBox: {
     alignItems: "center",
     gap: 8,
-    padding: 22,
-  },
-  muted: {
-    color: palette.muted,
-    lineHeight: 20,
-  },
-  successText: {
-    color: palette.success,
-    marginTop: 10,
-    fontWeight: "700",
-  },
-  errorText: {
-    color: palette.danger,
-    marginTop: 10,
-    fontWeight: "700",
-  },
-  calendarWrap: {
-    gap: 8,
-    marginTop: 8,
+    padding: 24,
   },
   weekRow: {
     flexDirection: "row",
-    gap: 6,
+    marginTop: 14,
   },
   weekLabel: {
     color: palette.muted,
@@ -810,152 +1483,551 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
+    marginTop: 8,
   },
   dayCell: {
+    alignItems: "center",
+    aspectRatio: 1,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
     borderRadius: 14,
     borderWidth: 1,
-    gap: 6,
-    minHeight: 128,
-    padding: 10,
-    width: "13.4%",
+    justifyContent: "center",
+    margin: "0.7%",
+    padding: 6,
+    position: "relative",
+    width: "12.85%",
   },
   dayCellMuted: {
-    opacity: 0.55,
+    opacity: 0.5,
+  },
+  dayCellSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
   },
   dayNumber: {
     color: palette.text,
-    fontSize: 15,
     fontWeight: "800",
   },
   dayNumberMuted: {
     color: palette.muted,
   },
-  daySubtitle: {
+  dayNumberSelected: {
+    color: "#fff",
+  },
+  dayHint: {
     color: palette.muted,
     fontSize: 10,
     fontWeight: "700",
+    marginTop: 4,
   },
-  cellItems: {
+  dayHintSelected: {
+    color: "#e7f4f1",
+  },
+  dayPreviewRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 3,
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  dayPreviewDot: {
+    borderRadius: 999,
+    height: 6,
+    width: 6,
+  },
+  dayMore: {
+    color: palette.muted,
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  sectionActions: {
+    alignItems: "flex-end",
     gap: 6,
   },
-  shiftPill: {
-    backgroundColor: "#eef6f3",
-    borderColor: "#d6e7e2",
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  shiftPillDraft: {
-    backgroundColor: "#fff5e9",
-    borderColor: "#f5d8b8",
-  },
-  shiftPillText: {
-    color: palette.text,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  shiftPillMeta: {
+  sectionHint: {
     color: palette.muted,
-    fontSize: 10,
+    fontSize: 12,
   },
-  moreText: {
-    color: palette.warning,
-    fontSize: 10,
+  publishDayButton: {
+    alignItems: "center",
+    backgroundColor: palette.accent,
+    borderRadius: 999,
+    minHeight: 34,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  publishDayButtonText: {
+    color: "#fff",
+    fontSize: 12,
     fontWeight: "800",
   },
-  dayList: {
-    gap: 12,
-    marginTop: 12,
-  },
-  dayGroup: {
-    borderTopColor: palette.border,
-    borderTopWidth: 1,
-    gap: 8,
-    paddingTop: 10,
-  },
-  dayTitle: {
-    color: palette.text,
-    fontWeight: "800",
+  shiftList: {
+    gap: 10,
   },
   shiftCard: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
     borderRadius: 16,
     borderWidth: 1,
+    gap: 10,
     padding: 12,
   },
-  shiftBody: {
-    gap: 6,
-  },
-  shiftTop: {
-    alignItems: "center",
+  shiftHeader: {
+    alignItems: "flex-start",
     flexDirection: "row",
     gap: 8,
     justifyContent: "space-between",
   },
-  shiftName: {
-    color: palette.text,
+  shiftIdentity: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: "800",
+    gap: 4,
   },
-  shiftTime: {
+  shiftUser: {
     color: palette.text,
+    fontSize: 16,
     fontWeight: "800",
   },
   shiftMeta: {
     color: palette.muted,
-    lineHeight: 19,
-  },
-  badge: {
-    backgroundColor: "#e6f1ec",
-    borderRadius: 999,
-    color: palette.success,
     fontSize: 12,
+  },
+  statusChip: {
+    borderRadius: 999,
+    color: "#fff",
+    fontSize: 11,
     fontWeight: "800",
     overflow: "hidden",
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  badgeDraft: {
-    backgroundColor: "#fff5df",
-    color: palette.warning,
+  shiftRow: {
+    gap: 4,
   },
-  shiftActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
+  shiftLabel: {
+    color: palette.muted,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
-  miniButton: {
+  shiftValue: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  detailRow: {
+    gap: 4,
+  },
+  detailLabel: {
+    color: palette.muted,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  detailValue: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  emptyState: {
     alignItems: "center",
-    borderColor: palette.accent,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 24,
+  },
+  emptyStateTitle: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  emptyStateDetail: {
+    color: palette.muted,
+    textAlign: "center",
+  },
+  muted: {
+    color: palette.muted,
+    lineHeight: 20,
+  },
+  errorText: {
+    color: palette.danger,
+    marginTop: 10,
+    fontWeight: "700",
+  },
+  deniedBox: {
+    gap: 8,
+    padding: 16,
+  },
+  modalOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.38)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 14,
+    maxHeight: "78%",
+    padding: 16,
+    width: "100%",
+  },
+  modalTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  fab: {
+    alignItems: "center",
+    backgroundColor: palette.accent,
+    borderRadius: 999,
+    bottom: 18,
+    elevation: 6,
+    minHeight: 54,
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    position: "absolute",
+    right: 16,
+    shadowColor: "#000",
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  fabText: {
+    color: "#fff",
+    fontWeight: "800",
+  },
+  sheetOverlay: {
+    backgroundColor: "rgba(0, 0, 0, 0.38)",
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: palette.surfaceElevated,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    maxHeight: "92%",
+    paddingTop: 8,
+  },
+  sheetContent: {
+    gap: 12,
+    padding: 16,
+    paddingBottom: 28,
+  },
+  sheetHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  sheetTitleGroup: {
+    flex: 1,
+    gap: 4,
+  },
+  sheetTitle: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  sheetSubtitle: {
+    color: palette.muted,
+    lineHeight: 20,
+  },
+  closeButton: {
+    alignItems: "center",
+    borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  closeButtonText: {
+    color: palette.text,
+    fontWeight: "700",
+  },
+  formRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  fieldButton: {
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
     flex: 1,
-    minHeight: 36,
+    gap: 4,
+    minHeight: 68,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+  },
+  fieldLabel: {
+    color: palette.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  fieldValue: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  publishToggle: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: 14,
+  },
+  publishToggleActive: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  publishToggleText: {
+    color: palette.accent,
+    fontWeight: "800",
+  },
+  publishToggleTextActive: {
+    color: "#fff",
+  },
+  segmentRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  segmentButton: {
+    alignItems: "center",
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    backgroundColor: "#fff",
+  },
+  segmentButtonActive: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  segmentText: {
+    color: palette.accent,
+    fontWeight: "800",
+  },
+  segmentTextActive: {
+    color: "#fff",
+  },
+  selectorBlock: {
+    gap: 10,
+  },
+  selectionCount: {
+    color: palette.muted,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  list: {
+    gap: 8,
+  },
+  row: {
+    alignItems: "center",
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    padding: 10,
+    backgroundColor: "#fff",
+  },
+  rowSelected: {
+    backgroundColor: "#f1f6f4",
+    borderColor: palette.accent,
+  },
+  categoryRow: {
+    alignItems: "center",
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+    padding: 10,
+    backgroundColor: "#fff",
+  },
+  categoryRowSelected: {
+    backgroundColor: "#f1f6f4",
+    borderColor: palette.accent,
+  },
+  categoryMeta: {
+    flex: 1,
+    minWidth: 0,
+  },
+  categoryBadge: {
+    color: palette.accent,
+    fontWeight: "800",
+  },
+  checkbox: {
+    alignItems: "center",
+    borderColor: "#bfc9c4",
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 26,
+    justifyContent: "center",
+    width: 26,
+  },
+  checkboxText: {
+    color: palette.accent,
+    fontWeight: "700",
+  },
+  rowText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rowTitle: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  rowDetail: {
+    color: palette.muted,
+    fontSize: 13,
+  },
+  monthGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  monthChip: {
+    alignItems: "center",
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexGrow: 1,
+    minHeight: 42,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    width: "31.5%",
+  },
+  monthChipSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  monthChipText: {
+    color: palette.text,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  monthChipTextSelected: {
+    color: "#fff",
+  },
+  yearList: {
+    gap: 8,
+  },
+  yearRow: {
+    alignItems: "center",
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  yearRowSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  yearRowText: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  yearRowTextSelected: {
+    color: "#fff",
+  },
+  input: {
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    color: palette.text,
+    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    backgroundColor: "#fff",
+  },
+  formError: {
+    color: palette.danger,
+    fontWeight: "700",
+  },
+  submitButton: {
+    alignItems: "center",
+    backgroundColor: palette.accent,
+    borderRadius: 14,
+    minHeight: 48,
+    justifyContent: "center",
+    paddingVertical: 13,
+  },
+  buttonDisabled: {
+    opacity: 0.55,
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  previewRow: {
+    color: palette.text,
+    lineHeight: 20,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  secondaryButton: {
+    alignItems: "center",
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 48,
     justifyContent: "center",
     backgroundColor: "#fff",
   },
-  miniButtonText: {
+  secondaryButtonText: {
     color: palette.accent,
     fontWeight: "800",
   },
   dangerButton: {
     alignItems: "center",
-    borderColor: "#efc0ba",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: "#b42318",
+    borderRadius: 14,
     flex: 1,
-    minHeight: 36,
     justifyContent: "center",
-    backgroundColor: "#fff",
+    minHeight: 48,
   },
   dangerButtonText: {
-    color: palette.danger,
+    color: "#fff",
     fontWeight: "800",
   },
 });
