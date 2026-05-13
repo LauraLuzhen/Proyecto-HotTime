@@ -167,6 +167,10 @@ async function createAttendanceRecord(
     occurredAt: data.occurredAt ?? new Date(),
   });
 
+  await repo.updateShiftById(shift.id, {
+    status: "COMPLETED",
+  });
+
   return {
     attendance,
   };
@@ -313,6 +317,10 @@ export const updateAttendance = async (
     organizationId,
     type: targetType,
     occurredAt: data.occurredAt,
+  });
+
+  await repo.updateShiftById(shift.id, {
+    status: "COMPLETED",
   });
 
   return {

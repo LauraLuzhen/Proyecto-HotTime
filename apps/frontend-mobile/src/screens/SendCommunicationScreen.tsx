@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -13,8 +14,10 @@ import {
 import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, GeneralUserResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
+import { normalizeSearchText } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 type RecipientMode = NonNullable<CreateCommunicationDto["recipientMode"]>;
 type FieldErrors = Partial<Record<"title", string>>;
@@ -62,14 +65,33 @@ export function SendCommunicationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
+  const loadRecipients = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [usersResult, categoriesResult] = await Promise.all([
+        api.user.getUsers(),
+        api.category.getCategories(),
+      ]);
+      setUsers(usersResult);
+      setCategories(categoriesResult);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setError(e.message ?? "No se han podido cargar los destinatarios.");
+    } finally {
+      setLoading(false);
+    }
+  }, [api.category, api.user]);
+
   const filteredUsers = useMemo(() => {
-    const query = searchText.trim().toLowerCase();
+    const query = normalizeSearchText(searchText);
     if (!query) return users;
 
     return users.filter((user) => {
       return (
-        user.fullName.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
+        normalizeSearchText(user.fullName).includes(query) ||
+        normalizeSearchText(user.email).includes(query)
       );
     });
   }, [searchText, users]);
@@ -113,27 +135,12 @@ export function SendCommunicationScreen() {
   }, [excludedCategoryUserIds, extraCategoryUserIds, selectedCategoryIds, selectedWithoutCategory, usersByCategoryId, usersWithoutCategory]);
 
   useEffect(() => {
-    async function loadRecipients() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [usersResult, categoriesResult] = await Promise.all([
-          api.user.getUsers(),
-          api.category.getCategories(),
-        ]);
-        setUsers(usersResult);
-        setCategories(categoriesResult);
-      } catch (err) {
-        const e = err as ApiClientError;
-        setError(e.message ?? "No se han podido cargar los destinatarios.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
     void loadRecipients();
-  }, [api.category, api.user]);
+  }, [loadRecipients]);
+
+  useRefreshOnFocus(() => {
+    void loadRecipients();
+  }, [loadRecipients]);
 
   function toggleUser(userId: number) {
     setSelectedUserIds((current) => (
@@ -279,7 +286,11 @@ export function SendCommunicationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadRecipients()} />}
+      >
         <View style={styles.panel}>
           <Text style={styles.title}>Enviar comunicado</Text>
 

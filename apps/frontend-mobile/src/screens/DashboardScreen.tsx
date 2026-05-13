@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Location from "expo-location";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
@@ -12,11 +12,20 @@ import {
   formatRange,
   palette,
   sameDay,
+  startOfDay,
   startOfWeek,
   statusLabel,
 } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+
+const CLOCK_IN_WINDOW_MS = 30 * 60 * 1000;
+const CLOCK_OUT_GRACE_MS = 60 * 60 * 1000;
+
+function getAttendanceTypes(attendances: AttendanceEntity[], shiftId: number) {
+  return attendances.filter((attendance) => attendance.shiftId === shiftId);
+}
 
 function canClockIn(shift: ShiftResponse | null, attendances: AttendanceEntity[]) {
   if (!shift) return false;
@@ -24,14 +33,50 @@ function canClockIn(shift: ShiftResponse | null, attendances: AttendanceEntity[]
   const now = Date.now();
   const startsAt = new Date(shift.startsAt).getTime();
   const endsAt = new Date(shift.endsAt).getTime();
-  return now >= startsAt - 60 * 60 * 1000 && now <= endsAt;
+  return now >= startsAt - CLOCK_IN_WINDOW_MS && now <= endsAt;
 }
 
 function canClockOut(shift: ShiftResponse | null, attendances: AttendanceEntity[]) {
   if (!shift) return false;
   const hasClockIn = attendances.some((attendance) => attendance.type === "CLOCK_IN");
   const hasClockOut = attendances.some((attendance) => attendance.type === "CLOCK_OUT");
-  return hasClockIn && !hasClockOut;
+  if (!hasClockIn || hasClockOut) return false;
+
+  const now = Date.now();
+  const endsAt = new Date(shift.endsAt).getTime();
+  return now <= endsAt + CLOCK_OUT_GRACE_MS;
+}
+
+function isCurrentShift(shift: ShiftResponse, attendances: AttendanceEntity[]) {
+  const now = Date.now();
+  const startsAt = new Date(shift.startsAt).getTime();
+  const endsAt = new Date(shift.endsAt).getTime();
+  const shiftAttendances = getAttendanceTypes(attendances, shift.id);
+  const hasClockIn = shiftAttendances.some((attendance) => attendance.type === "CLOCK_IN");
+  const hasClockOut = shiftAttendances.some((attendance) => attendance.type === "CLOCK_OUT");
+
+  if (hasClockOut) return false;
+  if (hasClockIn) return now <= endsAt + CLOCK_OUT_GRACE_MS;
+  return now >= startsAt - CLOCK_IN_WINDOW_MS && now <= endsAt;
+}
+
+function pickActiveShift(shifts: ShiftResponse[], attendances: AttendanceEntity[]) {
+  const sorted = [...shifts].sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
+  return sorted.find((shift) => isCurrentShift(shift, attendances)) ?? null;
+}
+
+function dayTitle(date: Date) {
+  return new Intl.DateTimeFormat("es-ES", {
+    weekday: "short",
+    day: "2-digit",
+  }).format(date);
+}
+
+function dayShiftPreview(shift: ShiftResponse) {
+  return new Intl.DateTimeFormat("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(shift.startsAt));
 }
 
 function shiftSummary(shift: ShiftResponse | null) {
@@ -44,8 +89,9 @@ export function DashboardScreen() {
   const u = auth.user;
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [nextShift, setNextShift] = useState<ShiftResponse | null>(null);
-  const [nextAttendances, setNextAttendances] = useState<AttendanceEntity[]>([]);
+  const [weekAttendances, setWeekAttendances] = useState<AttendanceEntity[]>([]);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [currentWeekShifts, setCurrentWeekShifts] = useState<ShiftResponse[]>([]);
   const [weekShifts, setWeekShifts] = useState<ShiftResponse[]>([]);
   const [planningLoading, setPlanningLoading] = useState(true);
   const [weekLoading, setWeekLoading] = useState(true);
@@ -57,19 +103,28 @@ export function DashboardScreen() {
     setPlanningLoading(true);
     setPlanningError(null);
     try {
-      const calendar = await api.planning.getCalendar({
-        includeNext: true,
-        includeWeek: true,
-        includeMonth: false,
-      });
+      const [calendar, currentWeek, attendanceCalendar] = await Promise.all([
+        api.planning.getCalendar({
+          includeNext: true,
+          includeWeek: false,
+          includeMonth: false,
+        }),
+        api.planning.getShifts({
+          userId: u?.id,
+          startsFrom: startOfWeek(new Date()),
+          startsTo: addDays(startOfWeek(new Date()), 7),
+          published: true,
+        }),
+        api.attendance.getCalendar({
+          date: new Date(),
+          includeWeek: true,
+          includeMonth: false,
+        }),
+      ]);
+
       setNextShift(calendar.next);
-      setWeekShifts(calendar.week);
-      if (calendar.next) {
-        const attendances = await api.attendance.getAttendances({ shiftId: calendar.next.id });
-        setNextAttendances(attendances.attendances);
-      } else {
-        setNextAttendances([]);
-      }
+      setCurrentWeekShifts(currentWeek.shifts);
+      setWeekAttendances(attendanceCalendar.week);
     } catch (err) {
       const e = err as ApiClientError;
       setPlanningError(e.message ?? "No se pudo cargar la planificacion.");
@@ -83,6 +138,7 @@ export function DashboardScreen() {
     setPlanningError(null);
     try {
       const calendar = await api.planning.getShifts({
+        userId: u?.id,
         startsFrom: targetWeek,
         startsTo: addDays(targetWeek, 7),
         published: true,
@@ -96,16 +152,30 @@ export function DashboardScreen() {
     }
   }
 
+  useRefreshOnFocus(() => {
+    void loadPlanning();
+    void loadWeek(weekStart);
+  }, [u?.id, weekStart]);
+
   useEffect(() => {
     void loadPlanning();
-  }, []);
+  }, [u?.id]);
 
   useEffect(() => {
     void loadWeek(weekStart);
   }, [weekStart]);
 
+  const activeShift = pickActiveShift(currentWeekShifts, weekAttendances) ?? nextShift;
+  const activeAttendances = activeShift ? getAttendanceTypes(weekAttendances, activeShift.id) : [];
+  const showClockIn = canClockIn(activeShift, activeAttendances);
+  const showClockOut = canClockOut(activeShift, activeAttendances);
+  const refreshDashboard = () => {
+    void loadPlanning();
+    void loadWeek(weekStart);
+  };
+
   async function clock(type: "IN" | "OUT") {
-    if (!nextShift) return;
+    if (!activeShift) return;
 
     setClockLoading(true);
     setPlanningError(null);
@@ -122,7 +192,7 @@ export function DashboardScreen() {
       });
 
       const payload = {
-        shiftId: nextShift.id,
+        shiftId: activeShift.id,
         latitude: current.coords.latitude,
         longitude: current.coords.longitude,
       };
@@ -133,6 +203,7 @@ export function DashboardScreen() {
 
       setClockMessage(`Fichaje registrado a ${Math.round(attendance.distanceMeters)} m del centro.`);
       await loadPlanning();
+      await loadWeek(weekStart);
     } catch (err) {
       const e = err as ApiClientError;
       setPlanningError(e.message ?? "No se pudo registrar el fichaje.");
@@ -141,13 +212,15 @@ export function DashboardScreen() {
     }
   }
 
-  const showClockIn = canClockIn(nextShift, nextAttendances);
-  const showClockOut = canClockOut(nextShift, nextAttendances);
   const weekEnd = addDays(weekStart, 6);
+  const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={planningLoading || weekLoading} onRefresh={refreshDashboard} />}
+      >
         <View style={styles.hero}>
           <Text style={styles.kicker}>Dashboard</Text>
           <Text style={styles.title}>Tu jornada hoy</Text>
@@ -171,10 +244,10 @@ export function DashboardScreen() {
           </View>
           {planningLoading ? (
             <ActivityIndicator color={palette.accent} />
-          ) : nextShift ? (
+          ) : activeShift ? (
             <>
-              <Text style={styles.nextShiftTitle}>{shiftSummary(nextShift)}</Text>
-              <Text style={styles.nextShiftMeta}>{categoryName(nextShift)} · {statusLabel(nextShift.status)}</Text>
+              <Text style={styles.nextShiftTitle}>{shiftSummary(activeShift)}</Text>
+              <Text style={styles.nextShiftMeta}>{categoryName(activeShift)} · {statusLabel(activeShift.status)}</Text>
               {showClockIn || showClockOut ? (
                 <Pressable
                   style={[styles.clockButton, clockLoading && styles.clockButtonDisabled]}
@@ -186,7 +259,7 @@ export function DashboardScreen() {
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.muted}>El botón aparece desde 1 hora antes del turno y la salida tras la entrada.</Text>
+                <Text style={styles.muted}>El botón aparece 30 minutos antes y la salida se mantiene hasta 1 hora después del fin del turno.</Text>
               )}
             </>
           ) : (
@@ -216,21 +289,20 @@ export function DashboardScreen() {
           {weekLoading ? (
             <ActivityIndicator color={palette.accent} />
           ) : weekShifts.length ? (
-            <View style={styles.weekGrid}>
-              {Array.from({ length: 7 }).map((_, index) => {
-                const day = addDays(weekStart, index);
+            <View style={styles.weekCalendar}>
+              {weekDays.map((day) => {
                 const items = weekShifts.filter((shift) => sameDay(shift.startsAt, day));
                 return (
-                  <View key={day.toISOString()} style={styles.dayBlock}>
-                    <Text style={styles.dayTitle}>{formatDay(day)}</Text>
-                    {items.length ? items.map((shift) => (
-                      <View key={shift.id} style={styles.shiftItem}>
-                        <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
-                        <Text style={styles.shiftMeta}>{statusLabel(shift.status)}</Text>
+                  <View key={day.toISOString()} style={styles.weekDayCard}>
+                    <Text style={styles.weekDayTitle}>{dayTitle(day)}</Text>
+                    <Text style={styles.weekDayCount}>{items.length ? `${items.length} turno(s)` : "Libre"}</Text>
+                    {items.slice(0, 2).map((shift) => (
+                      <View key={shift.id} style={styles.weekShiftChip}>
+                        <Text style={styles.weekShiftChipTime}>{dayShiftPreview(shift)}</Text>
+                        <Text style={styles.weekShiftChipStatus}>{statusLabel(shift.status)}</Text>
                       </View>
-                    )) : (
-                      <Text style={styles.muted}>Sin turno.</Text>
-                    )}
+                    ))}
+                    {items.length > 2 ? <Text style={styles.weekShiftMore}>+{items.length - 2} más</Text> : null}
                   </View>
                 );
               })}
@@ -391,8 +463,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
   },
-  weekGrid: {
-    gap: 10,
+  weekCalendar: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  weekDayCard: {
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 6,
+    minWidth: "31%",
+    padding: 10,
+  },
+  weekDayTitle: {
+    color: palette.text,
+    fontWeight: "800",
+    textTransform: "capitalize",
+  },
+  weekDayCount: {
+    color: palette.muted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  weekShiftChip: {
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  weekShiftChipTime: {
+    color: palette.text,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  weekShiftChipStatus: {
+    color: palette.muted,
+    fontSize: 11,
+  },
+  weekShiftMore: {
+    color: palette.accent,
+    fontSize: 12,
+    fontWeight: "700",
   },
   dayBlock: {
     backgroundColor: palette.backgroundSoft,

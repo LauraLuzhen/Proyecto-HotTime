@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
@@ -6,6 +6,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
+import { MonthYearPicker } from "../components/MonthYearPicker";
 import {
   buildMonthDays,
   calendarDayNames,
@@ -25,11 +27,13 @@ import {
   formatMonth,
   formatRange,
   palette,
+  normalizeSearchText,
   sameMonth,
   startOfMonth,
 } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 const PAGE_SIZE = 100;
 const monthLabels = [
@@ -59,6 +63,11 @@ function dayKey(value: Date | string) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function isPastUnpublishedShift(shift: ShiftResponse | null) {
+  if (!shift) return false;
+  return !shift.published && new Date(shift.endsAt).getTime() < Date.now();
 }
 
 function addHours(value: Date, hours: number) {
@@ -118,8 +127,10 @@ function buildDefaultRange(baseDay: Date) {
   return { start, end };
 }
 
-function userName(user: GeneralUserResponse | undefined, userId: number) {
-  return user?.fullName ?? `Usuario ${userId}`;
+function userName(user: GeneralUserResponse | undefined, userId: number, currentUser?: { id: number; fullName: string } | null) {
+  if (user?.fullName) return user.fullName;
+  if (currentUser?.id === userId) return currentUser.fullName;
+  return `Usuario ${userId}`;
 }
 
 function statusColor(status: ShiftResponse["status"]) {
@@ -170,7 +181,6 @@ export function PlanSchedulesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<CreateMode>("USER");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -215,12 +225,12 @@ export function PlanSchedulesScreen() {
   }, [users]);
 
   const filteredUsers = useMemo(() => {
-    const query = searchText.trim().toLowerCase();
+    const query = normalizeSearchText(searchText);
     if (!query) return users;
 
     return users.filter((user) => (
-      user.fullName.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
+      normalizeSearchText(user.fullName).includes(query) ||
+      normalizeSearchText(user.email).includes(query)
     ));
   }, [searchText, users]);
 
@@ -245,6 +255,10 @@ export function PlanSchedulesScreen() {
 
   const selectedShifts = shiftsByDay.get(dayKey(selectedDay)) ?? [];
 
+  const publishableDayShifts = useMemo(() => {
+    return selectedShifts.filter((shift) => !shift.published && !isPastUnpublishedShift(shift));
+  }, [selectedShifts]);
+
   const monthSummary = useMemo(() => {
     const daysWithShifts = new Set<string>();
 
@@ -259,8 +273,8 @@ export function PlanSchedulesScreen() {
   }, [shifts]);
 
   const dayUnpublishedCount = useMemo(() => {
-    return selectedShifts.filter((shift) => !shift.published).length;
-  }, [selectedShifts]);
+    return publishableDayShifts.length;
+  }, [publishableDayShifts]);
 
   const selectedRecipientIds = useMemo(() => {
     if (createMode === "USER") {
@@ -354,7 +368,7 @@ export function PlanSchedulesScreen() {
       const end = endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0));
 
       const [usersResult, categoriesResult, firstPage] = await Promise.all([
-        api.user.getUsers(),
+        api.user.getUsersAll(),
         api.category.getCategories(),
         api.planning.getShifts({
           startsFrom: start,
@@ -399,12 +413,15 @@ export function PlanSchedulesScreen() {
     void loadMonth(month);
   }, [month]);
 
+  useRefreshOnFocus(() => {
+    void loadMonth(month);
+  }, [month]);
+
   function goToMonth(nextMonth: Date) {
     const normalized = startOfMonth(nextMonth);
     setMonth(normalized);
     setSelectedDay(normalized);
     setMonthPickerOpen(false);
-    setYearPickerOpen(false);
   }
 
   function goToToday() {
@@ -609,7 +626,7 @@ export function PlanSchedulesScreen() {
       await api.planning.updateShift(editShift.id, {
         startsAt: formatBackendDateTime(editStartsAt) as unknown as Date,
         endsAt: formatBackendDateTime(editEndsAt) as unknown as Date,
-        published: editPublished,
+        published: isPastUnpublishedShift(editShift) ? false : editPublished,
       });
       closeEditModal();
       await loadMonth(month);
@@ -652,7 +669,7 @@ export function PlanSchedulesScreen() {
   }
 
   async function publishDayShifts() {
-    const targets = selectedShifts.filter((shift) => !shift.published);
+    const targets = publishableDayShifts;
     if (targets.length === 0) return;
 
     setSaving(true);
@@ -686,9 +703,6 @@ export function PlanSchedulesScreen() {
     );
   }
 
-  const currentYear = month.getFullYear();
-  const yearOptions = Array.from({ length: 11 }, (_, index) => currentYear - 5 + index);
-
   if (!auth.user || (auth.user.role !== "ADMIN" && auth.user.role !== "MANAGER")) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -703,7 +717,10 @@ export function PlanSchedulesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
+        >
           <View style={styles.hero}>
             <Text style={styles.kicker}>Plan schedule</Text>
             <Text style={styles.heroTitle}>Calendario de turnos</Text>
@@ -720,12 +737,8 @@ export function PlanSchedulesScreen() {
 
               <View style={styles.headerCenter}>
                 <Pressable style={styles.selectorButton} onPress={() => setMonthPickerOpen(true)}>
-                  <Text style={styles.selectorLabel}>Mes</Text>
+                  <Text style={styles.selectorLabel}>Mes y año</Text>
                   <Text style={styles.selectorValue}>{formatMonth(month)}</Text>
-                </Pressable>
-                <Pressable style={styles.selectorButton} onPress={() => setYearPickerOpen(true)}>
-                  <Text style={styles.selectorLabel}>Año</Text>
-                  <Text style={styles.selectorValue}>{month.getFullYear()}</Text>
                 </Pressable>
               </View>
 
@@ -805,10 +818,18 @@ export function PlanSchedulesScreen() {
                 <Text style={styles.sectionHint}>{selectedShifts.length} turno(s)</Text>
                 <Pressable
                   disabled={dayUnpublishedCount === 0 || saving}
-                  style={[styles.publishDayButton, (dayUnpublishedCount === 0 || saving) && styles.buttonDisabled]}
+                  style={[
+                    styles.publishDayButton,
+                    (dayUnpublishedCount === 0 || saving) && styles.publishDayButtonDisabled,
+                  ]}
                   onPress={() => void publishDayShifts()}
                 >
-                  <Text style={styles.publishDayButtonText}>
+                  <Text
+                    style={[
+                      styles.publishDayButtonText,
+                      (dayUnpublishedCount === 0 || saving) && styles.publishDayButtonTextDisabled,
+                    ]}
+                  >
                     Publicar {dayUnpublishedCount}
                   </Text>
                 </Pressable>
@@ -819,7 +840,7 @@ export function PlanSchedulesScreen() {
               <View style={styles.shiftList}>
                 {selectedShifts.map((shift) => {
                   const user = usersById.get(shift.userId);
-                  const name = userName(user, shift.userId);
+                  const name = userName(user, shift.userId, auth.user);
 
                   return (
                     <Pressable key={shift.id} style={styles.shiftCard} onPress={() => openDetailModal(shift)}>
@@ -901,7 +922,7 @@ export function PlanSchedulesScreen() {
               </View>
 
               <View style={styles.panelSoft}>
-                <Text style={styles.sectionTitle}>Asignación</Text>
+                <Text style={styles.sectionTitle}>Asignaci\u00f3n</Text>
 
                 <View style={styles.segmentRow}>
                   <Pressable
@@ -920,7 +941,7 @@ export function PlanSchedulesScreen() {
                     style={[styles.segmentButton, createMode === "CATEGORY" && styles.segmentButtonActive]}
                     onPress={() => setCreateMode("CATEGORY")}
                   >
-                    <Text style={[styles.segmentText, createMode === "CATEGORY" && styles.segmentTextActive]}>Por categoría</Text>
+                    <Text style={[styles.segmentText, createMode === "CATEGORY" && styles.segmentTextActive]}>Por categor\u00eda</Text>
                   </Pressable>
                 </View>
 
@@ -949,7 +970,7 @@ export function PlanSchedulesScreen() {
                             : selectedUserIds.includes(user.id);
                           const categoriesLabel = user.categories.length
                             ? user.categories.map((category) => category.name).join(", ")
-                            : "Sin categoría";
+                            : "Sin categor\u00eda";
 
                           return (
                             <Pressable
@@ -975,10 +996,10 @@ export function PlanSchedulesScreen() {
                   <View style={styles.selectorBlock}>
                     <Text style={styles.selectionCount}>
                       {selectedCategoryId === undefined
-                        ? "Selecciona una categoría"
+                        ? "Selecciona una categor\u00eda"
                         : `${selectedCategoryId === null
                           ? usersWithoutCategory.length
-                          : (usersByCategoryId.get(selectedCategoryId)?.length ?? 0)} usuario(s) en la categoría`}
+                          : (usersByCategoryId.get(selectedCategoryId)?.length ?? 0)} usuario(s) en la categor\u00eda`}
                     </Text>
 
                     <View style={styles.list}>
@@ -987,7 +1008,7 @@ export function PlanSchedulesScreen() {
                         onPress={() => selectCategory(null)}
                       >
                         <View style={styles.categoryMeta}>
-                          <Text style={styles.rowTitle}>Sin categoría</Text>
+                          <Text style={styles.rowTitle}>Sin categor\u00eda</Text>
                           <Text style={styles.rowDetail}>
                             {usersWithoutCategory.length} usuario(s)
                           </Text>
@@ -1062,7 +1083,7 @@ export function PlanSchedulesScreen() {
               <ScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
                 <View style={styles.sheetHeader}>
                   <View style={styles.sheetTitleGroup}>
-                    <Text style={styles.sheetTitle}>{userName(usersById.get(detailShift.userId), detailShift.userId)}</Text>
+                    <Text style={styles.sheetTitle}>{userName(usersById.get(detailShift.userId), detailShift.userId, auth.user)}</Text>
                     <Text style={styles.sheetSubtitle}>Vista previa completa del turno #{detailShift.id}</Text>
                   </View>
                   <Pressable style={styles.closeButton} onPress={closeDetailModal}>
@@ -1072,7 +1093,7 @@ export function PlanSchedulesScreen() {
 
                 <View style={styles.panelSoft}>
                   <Text style={styles.sectionTitle}>Información</Text>
-                  <DetailRow label="Usuario" value={userName(usersById.get(detailShift.userId), detailShift.userId)} />
+                  <DetailRow label="Usuario" value={userName(usersById.get(detailShift.userId), detailShift.userId, auth.user)} />
                   <DetailRow label="Turno ID" value={`#${detailShift.id}`} />
                   <DetailRow label="Organización" value={String(detailShift.organizationId)} />
                   <DetailRow label="Creado por" value={String(detailShift.createdById)} />
@@ -1099,17 +1120,19 @@ export function PlanSchedulesScreen() {
 
                 {detailShift ? (
                   <View style={styles.actionRow}>
-                    <Pressable
-                      style={styles.secondaryButton}
-                      onPress={() => {
-                        const shift = detailShift;
-                        if (!shift) return;
-                        closeDetailModal();
-                        openEditModal(shift);
-                      }}
-                    >
-                      <Text style={styles.secondaryButtonText}>Update</Text>
-                    </Pressable>
+                    {!isPastUnpublishedShift(detailShift) ? (
+                      <Pressable
+                        style={styles.secondaryButton}
+                        onPress={() => {
+                          const shift = detailShift;
+                          if (!shift) return;
+                          closeDetailModal();
+                          openEditModal(shift);
+                        }}
+                      >
+                        <Text style={styles.secondaryButtonText}>Update</Text>
+                      </Pressable>
+                    ) : null}
                     <Pressable style={styles.dangerButton} onPress={() => confirmDeleteShift(detailShift)}>
                       <Text style={styles.dangerButtonText}>Delete</Text>
                     </Pressable>
@@ -1161,8 +1184,16 @@ export function PlanSchedulesScreen() {
                 </View>
 
                 <Pressable
-                  style={[styles.publishToggle, editPublished && styles.publishToggleActive]}
-                  onPress={() => setEditPublished((current) => !current)}
+                  disabled={isPastUnpublishedShift(editShift)}
+                  style={[
+                    styles.publishToggle,
+                    editPublished && styles.publishToggleActive,
+                    isPastUnpublishedShift(editShift) && styles.publishToggleDisabled,
+                  ]}
+                  onPress={() => {
+                    if (isPastUnpublishedShift(editShift)) return;
+                    setEditPublished((current) => !current);
+                  }}
                 >
                   <Text style={[styles.publishToggleText, editPublished && styles.publishToggleTextActive]}>
                     {editPublished ? "Publicado" : "Borrador"}
@@ -1206,19 +1237,12 @@ export function PlanSchedulesScreen() {
         </View>
       </Modal>
 
-      <MonthPickerModal
-        currentMonth={month}
+      <MonthYearPicker
+        title="Elegir mes y año"
         visible={monthPickerOpen}
+        value={month}
         onClose={() => setMonthPickerOpen(false)}
-        onSelect={(monthIndex) => goToMonth(new Date(month.getFullYear(), monthIndex, 1))}
-      />
-
-      <YearPickerModal
-        currentMonth={month}
-        visible={yearPickerOpen}
-        onClose={() => setYearPickerOpen(false)}
-        onSelect={(year) => goToMonth(new Date(year, month.getMonth(), 1))}
-        options={yearOptions}
+        onSelect={goToMonth}
       />
     </SafeAreaView>
   );
@@ -1247,82 +1271,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
     </View>
-  );
-}
-
-function MonthPickerModal({
-  currentMonth,
-  visible,
-  onClose,
-  onSelect,
-}: {
-  currentMonth: Date;
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (monthIndex: number) => void;
-}) {
-  return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Cambiar mes</Text>
-          <View style={styles.monthGrid}>
-            {monthLabels.map((label, index) => {
-              const selected = index === currentMonth.getMonth();
-              return (
-                <Pressable
-                  key={label}
-                  style={[styles.monthChip, selected && styles.monthChipSelected]}
-                  onPress={() => onSelect(index)}
-                >
-                  <Text style={[styles.monthChipText, selected && styles.monthChipTextSelected]}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function YearPickerModal({
-  currentMonth,
-  visible,
-  onClose,
-  onSelect,
-  options,
-}: {
-  currentMonth: Date;
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (year: number) => void;
-  options: number[];
-}) {
-  return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Cambiar año</Text>
-          <View style={styles.yearList}>
-            {options.map((year) => {
-              const selected = year === currentMonth.getFullYear();
-              return (
-                <Pressable
-                  key={year}
-                  style={[styles.yearRow, selected && styles.yearRowSelected]}
-                  onPress={() => onSelect(year)}
-                >
-                  <Text style={[styles.yearRowText, selected && styles.yearRowTextSelected]}>{year}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -1565,15 +1513,25 @@ const styles = StyleSheet.create({
   publishDayButton: {
     alignItems: "center",
     backgroundColor: palette.accent,
+    borderColor: palette.accent,
+    borderWidth: 1,
     borderRadius: 999,
     minHeight: 34,
     justifyContent: "center",
     paddingHorizontal: 12,
   },
+  publishDayButtonDisabled: {
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    opacity: 1,
+  },
   publishDayButtonText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "800",
+  },
+  publishDayButtonTextDisabled: {
+    color: palette.muted,
   },
   shiftList: {
     gap: 10,
@@ -1806,6 +1764,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.accent,
     borderColor: palette.accent,
   },
+  publishToggleDisabled: {
+    opacity: 0.55,
+  },
   publishToggleText: {
     color: palette.accent,
     fontWeight: "800",
@@ -2031,3 +1992,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+

@@ -259,10 +259,13 @@ export const getCalendarShifts: GetCalendarShiftsFn = async (
 ) => {
   const userId = data.userId!;
   const baseDate = data.date ?? new Date();
+  const now = new Date();
 
   const includeNext = data.includeNext ?? true;
   const includeWeek = data.includeWeek ?? true;
   const includeMonth = data.includeMonth ?? true;
+
+  await repo.syncOverdueShiftStatuses(organizationId, userId, now);
 
   /* =========================
      PARALLEL EXECUTION
@@ -275,7 +278,7 @@ export const getCalendarShifts: GetCalendarShiftsFn = async (
     promises.next = repo.getNextShift(
       organizationId,
       userId,
-      new Date()
+      now
     );
   }
 

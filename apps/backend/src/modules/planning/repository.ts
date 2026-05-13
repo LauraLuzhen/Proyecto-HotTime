@@ -306,6 +306,7 @@ export async function getNextShift(
     where: {
       organizationId,
       userId,
+      published: true,
       startsAt: { gte: now },
     },
     orderBy: {
@@ -322,6 +323,69 @@ export async function getNextShift(
   });
 
   return shift ? mapShiftCategories(shift) : null;
+}
+
+/* =========================
+   SYNC OVERDUE SHIFTS
+========================= */
+
+export async function syncOverdueShiftStatuses(
+  organizationId: number,
+  userId: number,
+  now: Date
+) {
+  const shifts = await prisma.shift.findMany({
+    where: {
+      organizationId,
+      userId,
+      published: true,
+      status: {
+        in: ["SCHEDULED", "IN_PROGRESS"],
+      },
+      endsAt: {
+        lt: now,
+      },
+    },
+    select: {
+      id: true,
+      endsAt: true,
+      attendances: {
+        select: {
+          type: true,
+        },
+      },
+    },
+  });
+
+  const overdue = shifts.filter((shift) => {
+    const hasClockIn = shift.attendances.some((attendance) => attendance.type === "CLOCK_IN");
+    const hasClockOut = shift.attendances.some((attendance) => attendance.type === "CLOCK_OUT");
+
+    if (!hasClockIn) {
+      return now >= shift.endsAt;
+    }
+
+    if (!hasClockOut) {
+      return now >= new Date(shift.endsAt.getTime() + 60 * 60 * 1000);
+    }
+
+    return false;
+  });
+
+  if (!overdue.length) return;
+
+  await Promise.all(
+    overdue.map((shift) =>
+      prisma.shift.update({
+        where: {
+          id: shift.id,
+        },
+        data: {
+          status: "MISSED",
+        },
+      })
+    )
+  );
 }
 
 /* =========================

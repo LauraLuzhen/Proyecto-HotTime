@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
+import { MonthYearPicker } from "../components/MonthYearPicker";
 import {
   addDays,
   buildMonthDays,
@@ -20,12 +21,15 @@ import {
   startOfDay,
 } from "../lib/schedule";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import { useAuth } from "../state/auth/AuthContext";
 
 function attendanceLabel(type: AttendanceEntity["type"]) {
   return type === "CLOCK_IN" ? "Entrada" : "Salida";
 }
 
 export function MyAttendanceScreen() {
+  const auth = useAuth();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
@@ -33,18 +37,24 @@ export function MyAttendanceScreen() {
   const [selectedAttendances, setSelectedAttendances] = useState<AttendanceEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   async function loadMonth(targetMonth = month, targetDay = selectedDay) {
+    const userId = auth.user?.id;
+    if (!userId) return;
+
     setLoading(true);
     setError(null);
     try {
       const [calendar, selected] = await Promise.all([
         api.attendance.getCalendar({
+          userId,
           date: targetMonth,
           includeWeek: false,
           includeMonth: true,
         }),
         api.attendance.getAttendances({
+          userId,
           from: startOfDay(targetDay),
           to: endOfDay(targetDay),
         }),
@@ -62,16 +72,30 @@ export function MyAttendanceScreen() {
     }
   }
 
+  function goToMonth(nextMonth: Date) {
+    const normalized = startOfMonth(nextMonth);
+    setMonth(normalized);
+    setSelectedDay(normalized);
+    setMonthPickerOpen(false);
+  }
+
   useEffect(() => {
     void loadMonth(month, selectedDay);
-  }, [month, selectedDay]);
+  }, [auth.user?.id, month, selectedDay]);
+
+  useRefreshOnFocus(() => {
+    void loadMonth(month, selectedDay);
+  }, [auth.user?.id, month, selectedDay]);
 
   const days = buildMonthDays(month);
   const weekStart = startOfWeek(selectedDay);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month, selectedDay)} />}
+      >
         <View style={styles.hero}>
           <Text style={styles.kicker}>My attendance</Text>
           <Text style={styles.title}>Mis fichajes</Text>
@@ -80,7 +104,9 @@ export function MyAttendanceScreen() {
 
         <View style={styles.panel}>
           <View style={styles.monthHeader}>
-            <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+            <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
+              <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+            </Pressable>
           </View>
           <Text style={styles.monthSubtitle}>Selecciona un día para ver el detalle de tus fichajes.</Text>
 
@@ -177,6 +203,14 @@ export function MyAttendanceScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <MonthYearPicker
+        title="Elegir mes y año"
+        visible={monthPickerOpen}
+        value={month}
+        onClose={() => setMonthPickerOpen(false)}
+        onSelect={goToMonth}
+      />
     </SafeAreaView>
   );
 }
@@ -224,6 +258,9 @@ const styles = StyleSheet.create({
   monthHeader: {
     alignItems: "center",
     marginBottom: 4,
+  },
+  monthTitleButton: {
+    alignSelf: "center",
   },
   monthTitle: {
     color: palette.text,

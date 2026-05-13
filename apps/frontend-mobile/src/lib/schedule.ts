@@ -119,6 +119,14 @@ export function formatRange(shift: Pick<ShiftResponse, "startsAt" | "endsAt">) {
   return `${formatTime(shift.startsAt)} - ${formatTime(shift.endsAt)}`;
 }
 
+export function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export function categoryName(shift: {
   categories?: { categoryId: number }[];
   category?: { name: string } | null;

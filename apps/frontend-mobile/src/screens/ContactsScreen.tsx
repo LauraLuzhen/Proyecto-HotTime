@@ -6,6 +6,7 @@ import {
   Linking,
   Modal,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role } 
 
 import { ApiClientError, createApi } from "../lib/api";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 const roles: Role[] = ["ADMIN", "MANAGER", "EMPLOYEE"];
 
@@ -145,6 +147,17 @@ export function ContactsScreen() {
     [api.user]
   );
 
+  function buildFilters() {
+    const filters: GetUsersQueryDto = {};
+    const trimmedName = nameFilter.trim();
+
+    if (trimmedName) filters.fullName = trimmedName;
+    if (categoryId !== null) filters.categoryId = categoryId;
+    if (role) filters.role = role;
+
+    return filters;
+  }
+
   useEffect(() => {
     async function loadInitialData() {
       setLoading(true);
@@ -169,15 +182,12 @@ export function ContactsScreen() {
     void loadInitialData();
   }, [api.category, api.user]);
 
+  useRefreshOnFocus(() => {
+    void loadUsers(buildFilters());
+  }, [categoryId, loadUsers, nameFilter, role]);
+
   function submitFilters() {
-    const filters: GetUsersQueryDto = {};
-    const trimmedName = nameFilter.trim();
-
-    if (trimmedName) filters.fullName = trimmedName;
-    if (categoryId !== null) filters.categoryId = categoryId;
-    if (role) filters.role = role;
-
-    void loadUsers(filters);
+    void loadUsers(buildFilters());
   }
 
   function clearFilters() {
@@ -215,7 +225,11 @@ export function ContactsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadUsers(buildFilters())} />}
+      >
         <View style={styles.filtersPanel}>
           <Text style={styles.title}>Contactos</Text>
 

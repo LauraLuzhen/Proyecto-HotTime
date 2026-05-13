@@ -226,6 +226,7 @@ export function createApi(getToken: () => string | null | Promise<string | null>
     },
     user: {
       getUsers: (filters?: GetUsersQueryDto) => http.get<GeneralUserResponse[]>(`/users${buildUserQuery(filters)}`),
+      getUsersAll: (filters?: GetUsersQueryDto) => http.get<GeneralUserResponse[]>(`/users/all${buildUserQuery(filters)}`),
       getMe: () => http.get<MeResponse>("/users/me"),
       createUser: (data: CreateUserDto) => http.post<CreateUserResponse, CreateUserDto>("/users", data),
       updateMe: (data: UpdateMeDto) => http.patch<GeneralUserResponse, UpdateMeDto>("/users/me", data),

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
+import { MonthYearPicker } from "../components/MonthYearPicker";
 import {
   addDays,
   buildMonthDays,
   calendarDayNames,
   categoryName,
   endOfDay,
+  endOfMonth,
   formatDay,
   formatDateTime,
   formatMonth,
@@ -20,27 +22,48 @@ import {
   startOfWeek,
   statusLabel,
 } from "../lib/schedule";
+import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+
+function dayTitle(date: Date) {
+  return new Intl.DateTimeFormat("es-ES", {
+    weekday: "short",
+    day: "2-digit",
+  }).format(date);
+}
+
+function shiftStartLabel(shift: ShiftResponse) {
+  return new Intl.DateTimeFormat("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(shift.startsAt));
+}
 
 export function MyScheduleScreen() {
+  const auth = useAuth();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [shifts, setShifts] = useState<ShiftResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   async function loadMonth(targetMonth = month) {
+    const userId = auth.user?.id;
+    if (!userId) return;
+
     setLoading(true);
     setError(null);
     try {
-      const result = await api.planning.getCalendar({
-        date: targetMonth,
-        includeNext: false,
-        includeWeek: false,
-        includeMonth: true,
+      const result = await api.planning.getShifts({
+        userId,
+        published: true,
+        startsFrom: startOfMonth(targetMonth),
+        startsTo: endOfMonth(targetMonth),
       });
-      setShifts(result.month);
+      setShifts(result.shifts);
     } catch (err) {
       const e = err as ApiClientError;
       setShifts([]);
@@ -50,17 +73,32 @@ export function MyScheduleScreen() {
     }
   }
 
+  function goToMonth(nextMonth: Date) {
+    const normalized = startOfMonth(nextMonth);
+    setMonth(normalized);
+    setSelectedDay(normalized);
+    setMonthPickerOpen(false);
+  }
+
   useEffect(() => {
     void loadMonth(month);
-  }, [month]);
+  }, [auth.user?.id, month]);
+
+  useRefreshOnFocus(() => {
+    void loadMonth(month);
+  }, [auth.user?.id, month]);
 
   const days = buildMonthDays(month);
   const selectedShifts = shifts.filter((shift) => sameDay(shift.startsAt, selectedDay));
   const weekStart = startOfWeek(selectedDay);
+  const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
+      >
         <View style={styles.hero}>
           <Text style={styles.kicker}>My schedule</Text>
           <Text style={styles.title}>Mi horario</Text>
@@ -73,7 +111,9 @@ export function MyScheduleScreen() {
               <Text style={styles.navButtonText}>Anterior</Text>
             </Pressable>
             <View style={styles.monthCenter}>
-              <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
+                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+              </Pressable>
               <Text style={styles.monthSubtitle}>{formatDay(startOfMonth(month))} - {formatDay(endOfDay(new Date(month.getFullYear(), month.getMonth() + 1, 0)))}</Text>
             </View>
             <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
@@ -155,20 +195,34 @@ export function MyScheduleScreen() {
             <Text style={styles.sectionTitle}>Semana seleccionada</Text>
             <Text style={styles.panelHint}>Resumen de {formatDay(weekStart)} - {formatDay(addDays(weekStart, 6))}</Text>
           </View>
-          <View style={styles.weekSummary}>
-            {Array.from({ length: 7 }).map((_, index) => {
-              const day = addDays(weekStart, index);
+          <View style={styles.weekCalendar}>
+            {weekDays.map((day) => {
               const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
               return (
-                <View key={day.toISOString()} style={styles.weekSummaryItem}>
-                  <Text style={styles.weekSummaryDay}>{formatDay(day)}</Text>
-                  <Text style={styles.weekSummaryCount}>{dayShifts.length ? `${dayShifts.length} turno(s)` : "Libre"}</Text>
+                <View key={day.toISOString()} style={styles.weekDayCard}>
+                  <Text style={styles.weekDayTitle}>{dayTitle(day)}</Text>
+                  <Text style={styles.weekDayCount}>{dayShifts.length ? `${dayShifts.length} turno(s)` : "Libre"}</Text>
+                  {dayShifts.slice(0, 2).map((shift) => (
+                    <View key={shift.id} style={styles.weekShiftChip}>
+                      <Text style={styles.weekShiftChipTime}>{shiftStartLabel(shift)}</Text>
+                      <Text style={styles.weekShiftChipStatus}>{statusLabel(shift.status)}</Text>
+                    </View>
+                  ))}
+                  {dayShifts.length > 2 ? <Text style={styles.weekShiftMore}>+{dayShifts.length - 2} más</Text> : null}
                 </View>
               );
             })}
           </View>
         </View>
       </ScrollView>
+
+      <MonthYearPicker
+        title="Elegir mes y año"
+        visible={monthPickerOpen}
+        value={month}
+        onClose={() => setMonthPickerOpen(false)}
+        onSelect={goToMonth}
+      />
     </SafeAreaView>
   );
 }
@@ -234,6 +288,9 @@ const styles = StyleSheet.create({
   monthCenter: {
     flex: 1,
     gap: 2,
+  },
+  monthTitleButton: {
+    alignSelf: "center",
   },
   monthTitle: {
     color: palette.text,
@@ -381,24 +438,52 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontWeight: "700",
   },
-  weekSummary: {
+  weekCalendar: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
+    marginTop: 12,
   },
-  weekSummaryItem: {
+  weekDayCard: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
     borderRadius: 14,
     borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 12,
+    gap: 6,
+    minWidth: "31%",
+    padding: 10,
   },
-  weekSummaryDay: {
+  weekDayTitle: {
     color: palette.text,
     fontWeight: "800",
+    textTransform: "capitalize",
   },
-  weekSummaryCount: {
+  weekDayCount: {
     color: palette.muted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  weekShiftChip: {
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  weekShiftChipTime: {
+    color: palette.text,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  weekShiftChipStatus: {
+    color: palette.muted,
+    fontSize: 11,
+  },
+  weekShiftMore: {
+    color: palette.accent,
+    fontSize: 12,
     fontWeight: "700",
   },
 });

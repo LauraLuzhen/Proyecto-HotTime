@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -19,6 +20,7 @@ import {
 
 import { ApiClientError } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "birthDate" | "password", string>>;
 
@@ -200,6 +202,7 @@ export function ProfileScreen() {
   const [password, setPassword] = useState("");
   const [imgProfile, setImgProfile] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -223,6 +226,19 @@ export function ProfileScreen() {
     setError(null);
     setFieldErrors({});
   }, [isEditing, user]);
+
+  useRefreshOnFocus(() => {
+    void auth.refreshMe();
+  }, [auth]);
+
+  async function refreshProfile() {
+    setRefreshing(true);
+    try {
+      await auth.refreshMe();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   async function pickImage() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -283,7 +299,10 @@ export function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshProfile()} />}
+      >
         <View style={styles.header}>
           <Image source={{ uri: imageUri }} style={styles.avatar} />
           <Text style={styles.name}>{user?.fullName}</Text>

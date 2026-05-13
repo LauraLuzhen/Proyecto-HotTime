@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
+import { MonthYearPicker } from "../components/MonthYearPicker";
 import {
   addDays,
   buildMonthDays,
@@ -25,6 +26,7 @@ import {
 } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 type PickerTarget = "occurredAt" | null;
 
@@ -75,6 +77,7 @@ export function PlanAttendanceScreen() {
   const [selectedType, setSelectedType] = useState<AttendanceType>("CLOCK_IN");
   const [occurredAt, setOccurredAt] = useState(() => new Date());
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   const usersById = useMemo(() => Object.fromEntries(users.map((user) => [user.id, user])) as Record<number, GeneralUserResponse>, [users]);
   const categoriesById = useMemo(() => Object.fromEntries(categories.map((category) => [category.id, category])) as Record<number, CategoriesResponse>, [categories]);
@@ -89,6 +92,7 @@ export function PlanAttendanceScreen() {
         api.planning.getShifts({
           startsFrom: startOfMonth(targetMonth),
           startsTo: endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0)),
+          published: true,
         }),
         api.attendance.getCalendar({
           date: targetMonth,
@@ -107,8 +111,12 @@ export function PlanAttendanceScreen() {
       setMonthAttendances(attendancesResult.month);
       setSelectedAttendances(selectedResult.attendances);
 
-      if (!selectedShiftId && shiftsResult.shifts.length) {
-        setSelectedShiftId(shiftsResult.shifts[0].id);
+      const nextSelectedShiftId = selectedShiftId && shiftsResult.shifts.some((shift) => shift.id === selectedShiftId)
+        ? selectedShiftId
+        : shiftsResult.shifts[0]?.id ?? null;
+
+      if (nextSelectedShiftId !== selectedShiftId) {
+        setSelectedShiftId(nextSelectedShiftId);
       }
     } catch (err) {
       setError(errorMessage(err, "No se pudo cargar el calendario de fichajes."));
@@ -117,10 +125,22 @@ export function PlanAttendanceScreen() {
     }
   }
 
+  function goToMonth(nextMonth: Date) {
+    const normalized = startOfMonth(nextMonth);
+    setMonth(normalized);
+    setSelectedDay(normalized);
+    setMonthPickerOpen(false);
+  }
+
   useEffect(() => {
     if (!isPlanner) return;
     void loadData(month, selectedDay);
   }, [month, selectedDay, isPlanner]);
+
+  useRefreshOnFocus(() => {
+    if (!isPlanner) return;
+    void loadData(month, selectedDay);
+  }, [isPlanner, month, selectedDay]);
 
   function resetForm() {
     setEditing(null);
@@ -187,7 +207,7 @@ export function PlanAttendanceScreen() {
   }
 
   function confirmDelete(attendance: AttendanceEntity) {
-    const user = usersById[attendance.userId]?.fullName ?? `Usuario ${attendance.userId}`;
+    const user = usersById[attendance.userId]?.fullName ?? (attendance.userId === auth.user?.id ? auth.user.fullName : `Usuario ${attendance.userId}`);
     Alert.alert("Eliminar fichaje", `Eliminar ${attendanceLabel(attendance.type)} de ${user}?`, [
       { text: "Cancelar", style: "cancel" },
       { text: "Eliminar", style: "destructive", onPress: () => void deleteAttendance(attendance) },
@@ -226,7 +246,10 @@ export function PlanAttendanceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData(month, selectedDay)} />}
+      >
         <View style={styles.hero}>
           <Text style={styles.kicker}>Plan attendance</Text>
           <Text style={styles.title}>Planificar fichajes</Text>
@@ -239,7 +262,9 @@ export function PlanAttendanceScreen() {
               <Text style={styles.navButtonText}>Anterior</Text>
             </Pressable>
             <View style={styles.monthCenter}>
-              <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
+                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+              </Pressable>
               <Text style={styles.monthSubtitle}>Calendario de fichajes y turnos</Text>
             </View>
             <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
@@ -301,8 +326,8 @@ export function PlanAttendanceScreen() {
           </View>
           {dayAttendances.length ? (
             <View style={styles.shiftList}>
-              {dayAttendances.map((attendance) => {
-                const user = usersById[attendance.userId]?.fullName ?? `Usuario ${attendance.userId}`;
+          {dayAttendances.map((attendance) => {
+                const user = usersById[attendance.userId]?.fullName ?? (attendance.userId === auth.user?.id ? auth.user.fullName : `Usuario ${attendance.userId}`);
                 return (
                   <View key={attendance.id} style={styles.attendanceCard}>
                     <View style={styles.attendanceTop}>
@@ -333,9 +358,9 @@ export function PlanAttendanceScreen() {
 
           <Text style={styles.label}>Turnos del día</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            {dayShifts.map((shift) => {
-              const user = usersById[shift.userId]?.fullName ?? `Usuario ${shift.userId}`;
-              const categoriesText = shift.categories.map((relation) => categoriesById[relation.categoryId]?.name).filter(Boolean).join(", ") || "Sin categoria";
+          {dayShifts.map((shift) => {
+              const user = usersById[shift.userId]?.fullName ?? (shift.userId === auth.user?.id ? auth.user.fullName : `Usuario ${shift.userId}`);
+              const categoriesText = shift.categories.map((relation) => categoriesById[relation.categoryId]?.name).filter(Boolean).join(", ") || "Sin categoría";
               return (
                 <Pressable
                   key={shift.id}
@@ -379,6 +404,14 @@ export function PlanAttendanceScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <MonthYearPicker
+        title="Elegir mes y año"
+        visible={monthPickerOpen}
+        value={month}
+        onClose={() => setMonthPickerOpen(false)}
+        onSelect={goToMonth}
+      />
 
       {pickerTarget ? (
         <DateTimePicker
@@ -454,6 +487,9 @@ const styles = StyleSheet.create({
   monthCenter: {
     flex: 1,
     gap: 2,
+  },
+  monthTitleButton: {
+    alignSelf: "center",
   },
   monthTitle: {
     color: palette.text,

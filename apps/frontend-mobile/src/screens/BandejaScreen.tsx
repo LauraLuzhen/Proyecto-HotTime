@@ -14,6 +14,7 @@ import type { CommunicationDetailResponse, CommunicationInboxResponse, Communica
 
 import { ApiClientError, createApi } from "../lib/api";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 type InboxFilter = "ALL" | "READ" | "UNREAD";
 
@@ -97,6 +98,10 @@ export function BandejaScreen() {
   useEffect(() => {
     void loadInbox("ALL");
   }, [loadInbox]);
+
+  useRefreshOnFocus(() => {
+    void loadInbox(filter, false);
+  }, [filter, loadInbox]);
 
   async function changeFilter(nextFilter: InboxFilter) {
     setFilter(nextFilter);

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Location from "expo-location";
-import { ActivityIndicator, Linking, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ApiClientError, createApi } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 function toInput(value: number | null | undefined) {
   return value === null || value === undefined ? "" : String(value);
@@ -50,6 +51,10 @@ export function OrganizationScreen() {
   }
 
   useEffect(() => {
+    void loadOrganization();
+  }, []);
+
+  useRefreshOnFocus(() => {
     void loadOrganization();
   }, []);
 
@@ -135,7 +140,10 @@ export function OrganizationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadOrganization()} />}
+      >
         <Text style={styles.title}>Organizacion</Text>
         <Text style={styles.subtitle}>Configura el punto y radio permitido para fichar.</Text>
 

@@ -25,6 +25,14 @@ function uniqueCategoryIds(categoryIds: number[]) {
   return [...new Set(categoryIds)];
 }
 
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 //#region GET
 // Count users by organization id
 export async function countByOrganization(organizationId: number) {
@@ -148,7 +156,16 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
         },
       },
     },
-  }).then((users) => users.map(mapUserCategories));
+  }).then((users) => {
+    const mapped = users.map(mapUserCategories);
+
+    if (!filters.fullName) {
+      return mapped;
+    }
+
+    const query = normalizeSearchText(filters.fullName);
+    return mapped.filter((user) => normalizeSearchText(user.fullName).includes(query));
+  });
 }
 
 // Find All + me
@@ -193,7 +210,16 @@ export function findAll(organizationId: number, filters: GetUsersQueryDto, userI
         },
       },
     },
-  }).then((users) => users.map(mapUserCategories));
+  }).then((users) => {
+    const mapped = users.map(mapUserCategories);
+
+    if (!filters.fullName) {
+      return mapped;
+    }
+
+    const query = normalizeSearchText(filters.fullName);
+    return mapped.filter((user) => normalizeSearchText(user.fullName).includes(query));
+  });
 }
 
 // Find user with name category and organization

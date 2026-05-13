@@ -7,6 +7,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -19,6 +20,7 @@ import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role, U
 import { ApiClientError, createApi } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
+import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 type CategoryGroup = {
   id: number | null;
@@ -400,6 +402,10 @@ export function AdministrationScreen() {
     void loadData();
   }, [loadData]);
 
+  useRefreshOnFocus(() => {
+    void loadData(currentFilters());
+  }, [loadData, searchText]);
+
   function submitSearch() {
     const fullName = searchText.trim();
     setExpandedCategoryId(null);
@@ -703,7 +709,11 @@ export function AdministrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData(currentFilters())} />}
+      >
         <View style={styles.searchPanel}>
           <Text style={styles.title}>Administracion</Text>
           <View style={styles.searchRow}>
