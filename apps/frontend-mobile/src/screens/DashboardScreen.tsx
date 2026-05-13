@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import * as Location from "expo-location";
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, ShiftResponse } from "@hottime/types";
@@ -16,6 +16,7 @@ import {
   startOfWeek,
   statusLabel,
 } from "../lib/schedule";
+import { BrandBackdrop } from "../components/BrandBackdrop";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
@@ -80,8 +81,8 @@ function dayShiftPreview(shift: ShiftResponse) {
 }
 
 function shiftSummary(shift: ShiftResponse | null) {
-  if (!shift) return "No hay turno próximo.";
-  return `${formatDay(shift.startsAt)} · ${formatRange(shift)}`;
+  if (!shift) return "No hay turno prÃ³ximo.";
+  return `${formatDay(shift.startsAt)} Â· ${formatRange(shift)}`;
 }
 
 export function DashboardScreen() {
@@ -217,14 +218,15 @@ export function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <BrandBackdrop />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={planningLoading || weekLoading} onRefresh={refreshDashboard} />}
       >
         <View style={styles.hero}>
-          <Text style={styles.kicker}>Dashboard</Text>
+          <Text style={styles.kicker}>HotTime</Text>
           <Text style={styles.title}>Tu jornada hoy</Text>
-          <Text style={styles.subtitle}>Aquí tienes el próximo fichaje, el calendario semanal y tu información principal.</Text>
+          <Text style={styles.subtitle}>AquÃ­ tienes el prÃ³ximo fichaje, el calendario semanal y tu informaciÃ³n principal.</Text>
         </View>
 
         <View style={styles.panel}>
@@ -240,14 +242,14 @@ export function DashboardScreen() {
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Fichaje</Text>
-            <Text style={styles.panelHint}>Entrada y salida con control de ubicación</Text>
+            <Text style={styles.panelHint}>Entrada y salida con control de ubicaciÃ³n</Text>
           </View>
           {planningLoading ? (
             <ActivityIndicator color={palette.accent} />
           ) : activeShift ? (
             <>
               <Text style={styles.nextShiftTitle}>{shiftSummary(activeShift)}</Text>
-              <Text style={styles.nextShiftMeta}>{categoryName(activeShift)} · {statusLabel(activeShift.status)}</Text>
+              <Text style={styles.nextShiftMeta}>{categoryName(activeShift)} Â· {statusLabel(activeShift.status)}</Text>
               {showClockIn || showClockOut ? (
                 <Pressable
                   style={[styles.clockButton, clockLoading && styles.clockButtonDisabled]}
@@ -259,11 +261,11 @@ export function DashboardScreen() {
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.muted}>El botón aparece 30 minutos antes y la salida se mantiene hasta 1 hora después del fin del turno.</Text>
+                <Text style={styles.muted}>El botÃ³n aparece 30 minutos antes y la salida se mantiene hasta 1 hora despuÃ©s del fin del turno.</Text>
               )}
             </>
           ) : (
-            <Text style={styles.muted}>No hay turnos próximos publicados.</Text>
+            <Text style={styles.muted}>No hay turnos prÃ³ximos publicados.</Text>
           )}
           {clockMessage ? <Text style={styles.successText}>{clockMessage}</Text> : null}
           {planningError ? <Text style={styles.errorText}>{planningError}</Text> : null}
@@ -302,7 +304,7 @@ export function DashboardScreen() {
                         <Text style={styles.weekShiftChipStatus}>{statusLabel(shift.status)}</Text>
                       </View>
                     ))}
-                    {items.length > 2 ? <Text style={styles.weekShiftMore}>+{items.length - 2} más</Text> : null}
+                    {items.length > 2 ? <Text style={styles.weekShiftMore}>+{items.length - 2} mÃ¡s</Text> : null}
                   </View>
                 );
               })}
@@ -327,7 +329,7 @@ function InfoCard({ label, value }: { label: string; value?: string | null }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -336,25 +338,24 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   hero: {
-    backgroundColor: palette.accentStrong,
-    borderRadius: 18,
-    gap: 8,
-    padding: 18,
+    gap: 6,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
   },
   kicker: {
-    color: "#d8ece7",
+    color: palette.accent,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.3,
     textTransform: "uppercase",
   },
   title: {
-    color: "#fff",
-    fontSize: 28,
+    color: palette.text,
+    fontSize: 26,
     fontWeight: "800",
   },
   subtitle: {
-    color: "#e6f2ef",
+    color: palette.muted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -465,27 +466,29 @@ const styles = StyleSheet.create({
   },
   weekCalendar: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    flexWrap: "nowrap",
+    gap: 6,
     marginTop: 12,
   },
   weekDayCard: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 6,
-    minWidth: "31%",
-    padding: 10,
+    flex: 1,
+    minWidth: 0,
+    padding: 8,
   },
   weekDayTitle: {
     color: palette.text,
+    fontSize: 12,
     fontWeight: "800",
     textTransform: "capitalize",
   },
   weekDayCount: {
     color: palette.muted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   weekShiftChip: {
@@ -499,16 +502,16 @@ const styles = StyleSheet.create({
   },
   weekShiftChipTime: {
     color: palette.text,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
   },
   weekShiftChipStatus: {
     color: palette.muted,
-    fontSize: 11,
+    fontSize: 10,
   },
   weekShiftMore: {
     color: palette.accent,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   dayBlock: {
@@ -540,3 +543,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

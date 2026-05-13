@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import * as Location from "expo-location";
 import { ActivityIndicator, Linking, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -149,7 +149,7 @@ export function OrganizationScreen() {
 
         {loading ? (
           <View style={styles.panel}>
-            <ActivityIndicator color="#2f5f5b" />
+            <ActivityIndicator color="#5f6df5" />
           </View>
         ) : (
           <View style={styles.panel}>
@@ -213,7 +213,7 @@ export function OrganizationScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f7f7f4",
+    backgroundColor: "#eef3ff",
   },
   content: {
     gap: 14,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 10,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#fff",
-    borderColor: "#d8d8d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     color: "#151515",
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     minHeight: 46,
     justifyContent: "center",
@@ -273,14 +273,14 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: "center",
-    borderColor: "#2f5f5b",
+    borderColor: "#5f6df5",
     borderRadius: 8,
     borderWidth: 1,
     minHeight: 42,
     justifyContent: "center",
   },
   secondaryButtonText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   disabledButton: {
@@ -296,3 +296,5 @@ const styles = StyleSheet.create({
     color: "#b42318",
   },
 });
+
+

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
@@ -732,7 +732,7 @@ export function AdministrationScreen() {
 
         {loading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color="#2f5f5b" />
+            <ActivityIndicator color="#5f6df5" />
             <Text style={styles.loadingText}>Cargando administracion...</Text>
           </View>
         ) : error ? (
@@ -1060,7 +1060,7 @@ export function AdministrationScreen() {
           </View>
         ) : null}
         <Pressable style={styles.fab} onPress={() => setFabOpen((current) => !current)}>
-          <Text style={styles.fabText}>{fabOpen ? "X" : "+ Añadir"}</Text>
+          <Text style={styles.fabText}>{fabOpen ? "X" : "+ AÃ±adir"}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -1069,7 +1069,7 @@ export function AdministrationScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#f7f7f4",
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
   },
   searchPanel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 12,
@@ -1095,7 +1095,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     color: "#1f1f1d",
@@ -1107,7 +1107,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     justifyContent: "center",
     minWidth: 88,
@@ -1128,7 +1128,7 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: "center",
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 6,
@@ -1149,7 +1149,7 @@ const styles = StyleSheet.create({
   },
   groupCard: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     overflow: "hidden",
@@ -1168,9 +1168,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   groupCount: {
-    backgroundColor: "#e5efec",
+    backgroundColor: "#e4e7ff",
     borderRadius: 8,
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
     minWidth: 36,
     overflow: "hidden",
@@ -1180,7 +1180,7 @@ const styles = StyleSheet.create({
   },
   categoryActionButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     height: 32,
@@ -1188,19 +1188,19 @@ const styles = StyleSheet.create({
     width: 32,
   },
   categoryActionText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 22,
   },
   groupEmpty: {
-    borderTopColor: "#eeeeea",
+    borderTopColor: "#e8ecff",
     borderTopWidth: 1,
     color: "#6a6a64",
     padding: 14,
   },
   userList: {
-    borderTopColor: "#eeeeea",
+    borderTopColor: "#e8ecff",
     borderTopWidth: 1,
   },
   userRow: {
@@ -1213,7 +1213,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   avatar: {
-    backgroundColor: "#dfe7e3",
+    backgroundColor: "#e4e7ff",
     borderRadius: 20,
     height: 40,
     width: 40,
@@ -1226,7 +1226,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   userRole: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontSize: 12,
     fontWeight: "700",
     minWidth: 62,
@@ -1251,7 +1251,7 @@ const styles = StyleSheet.create({
   xButton: {
     alignItems: "center",
     alignSelf: "flex-end",
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     height: 36,
@@ -1267,7 +1267,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   previewAvatar: {
-    backgroundColor: "#dfe7e3",
+    backgroundColor: "#e4e7ff",
     borderRadius: 48,
     height: 96,
     width: 96,
@@ -1283,12 +1283,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   detailsPanel: {
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
   },
   detailRow: {
-    borderBottomColor: "#eeeeea",
+    borderBottomColor: "#e8ecff",
     borderBottomWidth: 1,
     gap: 4,
     padding: 12,
@@ -1319,7 +1319,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   editInput: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     color: "#1f1f1d",
@@ -1328,7 +1328,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dateButton: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: "center",
@@ -1344,7 +1344,7 @@ const styles = StyleSheet.create({
   },
   selectButton: {
     alignItems: "center",
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
@@ -1377,7 +1377,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   option: {
-    borderBottomColor: "#eeeeea",
+    borderBottomColor: "#e8ecff",
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1395,7 +1395,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     flex: 1,
     paddingVertical: 12,
@@ -1417,7 +1417,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     alignItems: "center",
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -1429,7 +1429,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     flex: 1,
     paddingVertical: 12,
@@ -1451,7 +1451,7 @@ const styles = StyleSheet.create({
   fabMenuButton: {
     alignItems: "center",
     backgroundColor: "#fff",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     minWidth: 112,
@@ -1459,12 +1459,12 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   fabMenuText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   fab: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     elevation: 4,
     minWidth: 112,
@@ -1480,3 +1480,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
+

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
 import { MonthYearPicker } from "../components/MonthYearPicker";
+import { BrandBackdrop } from "../components/BrandBackdrop";
 import {
   addDays,
   buildMonthDays,
@@ -95,14 +96,15 @@ export function MyScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <BrandBackdrop />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
       >
         <View style={styles.hero}>
-          <Text style={styles.kicker}>My schedule</Text>
+          <Text style={styles.kicker}>HotTime</Text>
           <Text style={styles.title}>Mi horario</Text>
-          <Text style={styles.subtitle}>Calendario mensual con el detalle del día seleccionado y un resumen semanal abajo.</Text>
+          <Text style={styles.subtitle}>Calendario mensual con el detalle del dÃ­a seleccionado y un resumen semanal abajo.</Text>
         </View>
 
         <View style={styles.panel}>
@@ -180,13 +182,13 @@ export function MyScheduleScreen() {
                     <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
                     <Text style={[styles.badge, !shift.published && styles.badgeDraft]}>{shift.published ? "Publicado" : "Borrador"}</Text>
                   </View>
-                  <Text style={styles.shiftMeta}>{categoryName(shift)} · {statusLabel(shift.status)}</Text>
+                  <Text style={styles.shiftMeta}>{categoryName(shift)} Â· {statusLabel(shift.status)}</Text>
                   <Text style={styles.shiftMeta}>Inicio exacto {formatDateTime(shift.startsAt)}</Text>
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={styles.muted}>No tienes turnos publicados este día.</Text>
+            <Text style={styles.muted}>No tienes turnos publicados este dÃ­a.</Text>
           )}
         </View>
 
@@ -208,7 +210,7 @@ export function MyScheduleScreen() {
                       <Text style={styles.weekShiftChipStatus}>{statusLabel(shift.status)}</Text>
                     </View>
                   ))}
-                  {dayShifts.length > 2 ? <Text style={styles.weekShiftMore}>+{dayShifts.length - 2} más</Text> : null}
+                  {dayShifts.length > 2 ? <Text style={styles.weekShiftMore}>+{dayShifts.length - 2} mÃ¡s</Text> : null}
                 </View>
               );
             })}
@@ -217,7 +219,7 @@ export function MyScheduleScreen() {
       </ScrollView>
 
       <MonthYearPicker
-        title="Elegir mes y año"
+        title="Elegir mes y aÃ±o"
         visible={monthPickerOpen}
         value={month}
         onClose={() => setMonthPickerOpen(false)}
@@ -229,7 +231,7 @@ export function MyScheduleScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -238,25 +240,24 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   hero: {
-    backgroundColor: palette.accentStrong,
-    borderRadius: 18,
-    gap: 8,
-    padding: 18,
+    gap: 6,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
   },
   kicker: {
-    color: "#d8ece7",
+    color: palette.accent,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.3,
     textTransform: "uppercase",
   },
   title: {
-    color: "#fff",
-    fontSize: 28,
+    color: palette.text,
+    fontSize: 26,
     fontWeight: "800",
   },
   subtitle: {
-    color: "#e6f2ef",
+    color: palette.muted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -358,12 +359,11 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: "center",
-    margin: "0.7%",
     position: "relative",
-    width: "12.85%",
+    width: "13.1%",
   },
   dayCellMuted: {
     opacity: 0.5,
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDraft: {
-    backgroundColor: "#fff5df",
+    backgroundColor: "#eef3ff",
     color: palette.warning,
   },
   muted: {
@@ -440,27 +440,29 @@ const styles = StyleSheet.create({
   },
   weekCalendar: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    flexWrap: "nowrap",
+    gap: 6,
     marginTop: 12,
   },
   weekDayCard: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 6,
-    minWidth: "31%",
-    padding: 10,
+    flex: 1,
+    minWidth: 0,
+    padding: 8,
   },
   weekDayTitle: {
     color: palette.text,
+    fontSize: 12,
     fontWeight: "800",
     textTransform: "capitalize",
   },
   weekDayCount: {
     color: palette.muted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   weekShiftChip: {
@@ -474,16 +476,20 @@ const styles = StyleSheet.create({
   },
   weekShiftChipTime: {
     color: palette.text,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
   },
   weekShiftChipStatus: {
     color: palette.muted,
-    fontSize: 11,
+    fontSize: 10,
   },
   weekShiftMore: {
     color: palette.accent,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
 });
+
+
+
+

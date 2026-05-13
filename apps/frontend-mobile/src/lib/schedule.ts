@@ -4,21 +4,36 @@ export const dayNames = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
 export const calendarDayNames = ["L", "M", "X", "J", "V", "S", "D"];
 
 export const palette = {
-  background: "#f5efe5",
-  backgroundSoft: "#f8f4ec",
-  surface: "#fffaf2",
+  background: "#eef3ff",
+  backgroundSoft: "#f7f8ff",
+  surface: "#ffffff",
   surfaceElevated: "#ffffff",
-  border: "#e4d9c8",
-  text: "#1f1a17",
-  muted: "#71665b",
-  accent: "#2f5f5b",
-  accentStrong: "#204642",
-  accentSoft: "#dbe8e4",
-  warning: "#c85b28",
+  border: "#d7ddff",
+  text: "#1f2340",
+  muted: "#667096",
+  accent: "#5f6df5",
+  accentStrong: "#454ce0",
+  accentSoft: "#e4e7ff",
+  warning: "#7b67ef",
   danger: "#b42318",
   success: "#217a3f",
-  gold: "#c18a2d",
+  gold: "#7a63e6",
+  brandA: "#B4DAFA",
+  brandB: "#BAB4FA",
+  brandC: "#B4C4FA",
+  brandD: "#B4F0FA",
+  brandE: "#D1B4FA",
+  brandF: "#BBC9FA",
 };
+
+export const brandPalette = [
+  palette.brandA,
+  palette.brandB,
+  palette.brandC,
+  palette.brandD,
+  palette.brandE,
+  palette.brandF,
+];
 
 export function startOfWeek(value: Date) {
   const date = new Date(value);

@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
 
 import { useAuth } from "../state/auth/AuthContext";
@@ -29,6 +30,7 @@ import { PlanAttendanceScreen } from "../screens/PlanAttendanceScreen";
 import { MyScheduleScreen } from "../screens/MyScheduleScreen";
 import { MyAttendanceScreen } from "../screens/MyAttendanceScreen";
 import { ApiClientError, createApi } from "../lib/api";
+import { palette } from "../lib/schedule";
 import { tokenStorage } from "../state/auth/storage";
 
 const Stack = createNativeStackNavigator();
@@ -112,6 +114,7 @@ function HeaderInboxButton({ navigation }: { navigation: any }) {
   return (
     <>
       <Pressable style={styles.headerInboxButton} onPress={() => void loadLatest()}>
+        <MaterialIcons name="mail-outline" size={18} color={palette.accent} />
         <Text style={styles.headerInboxButtonText}>Inbox</Text>
       </Pressable>
 
@@ -121,13 +124,13 @@ function HeaderInboxButton({ navigation }: { navigation: any }) {
             <View style={styles.panelHeader}>
               <Text style={styles.panelTitle}>Ultimos comunicados</Text>
               <Pressable style={styles.closeButton} onPress={() => setOpen(false)}>
-                <Text style={styles.closeButtonText}>X</Text>
+                <MaterialIcons name="close" size={18} color={palette.text} />
               </Pressable>
             </View>
 
             {loading ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator color="#2f5f5b" />
+                <ActivityIndicator color="#5f6df5" />
                 <Text style={styles.loadingText}>Cargando...</Text>
               </View>
             ) : error ? (
@@ -169,12 +172,12 @@ function HeaderInboxButton({ navigation }: { navigation: any }) {
           <View style={styles.detailPanel}>
             {detailLoading ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator color="#2f5f5b" />
+                <ActivityIndicator color="#5f6df5" />
               </View>
             ) : detail ? (
               <ScrollView contentContainerStyle={styles.detailContent}>
                 <Pressable style={styles.closeButton} onPress={() => setDetail(null)}>
-                  <Text style={styles.closeButtonText}>X</Text>
+                  <MaterialIcons name="close" size={18} color={palette.text} />
                 </Pressable>
                 <Text style={styles.detailTitle}>{detail.title}</Text>
                 <Text style={styles.detailMeta}>{detail.sender.fullName} - {detail.sender.email}</Text>
@@ -195,12 +198,29 @@ function AppDrawer() {
   return (
     <Drawer.Navigator
       drawerContent={(props) => <DrawerContent {...props} />}
-      screenOptions={{ headerShown: true }}
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: palette.surfaceElevated,
+        },
+        headerTitleStyle: {
+          color: palette.text,
+          fontWeight: "800",
+        },
+        headerTintColor: palette.accent,
+        drawerActiveBackgroundColor: palette.accentSoft,
+        drawerActiveTintColor: palette.accent,
+        drawerInactiveTintColor: palette.text,
+        drawerLabelStyle: {
+          fontWeight: "700",
+        },
+      }}
     >
       <Drawer.Screen
         name="Dashboard"
         component={DashboardScreen}
         options={({ navigation }) => ({
+          title: "HotTime",
           headerRight: () => <HeaderInboxButton navigation={navigation} />,
         })}
       />
@@ -239,16 +259,19 @@ export function RootNavigator() {
 const styles = StyleSheet.create({
   headerInboxButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
-    borderRadius: 8,
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 999,
     borderWidth: 1,
     marginRight: 12,
     minHeight: 34,
+    gap: 6,
     paddingHorizontal: 12,
     justifyContent: "center",
+    flexDirection: "row",
   },
   headerInboxButtonText: {
-    color: "#2f5f5b",
+    color: palette.accent,
     fontWeight: "700",
   },
   overlay: {
@@ -260,7 +283,7 @@ const styles = StyleSheet.create({
   },
   inboxPanel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     maxHeight: "78%",
@@ -282,7 +305,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: "center",
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     height: 34,
@@ -313,15 +336,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   latestItem: {
-    borderColor: "#eeeeea",
+    borderColor: "#e8ecff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 5,
     padding: 10,
   },
   latestItemUnread: {
-    backgroundColor: "#f1f6f4",
-    borderColor: "#2f5f5b",
+    backgroundColor: "#f7f8ff",
+    borderColor: "#5f6df5",
   },
   latestTopRow: {
     alignItems: "center",
@@ -340,7 +363,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   latestStateUnread: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
   },
   latestMeta: {
     color: "#64645e",
@@ -353,7 +376,7 @@ const styles = StyleSheet.create({
   },
   viewAllButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     marginTop: 12,
     paddingVertical: 11,
@@ -388,7 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   detailBody: {
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     padding: 14,
@@ -399,4 +422,5 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 });
+
 

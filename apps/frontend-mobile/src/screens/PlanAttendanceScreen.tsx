@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { ActivityIndicator, Alert, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
 import { MonthYearPicker } from "../components/MonthYearPicker";
+import { BrandBackdrop } from "../components/BrandBackdrop";
 import {
   addDays,
   buildMonthDays,
@@ -246,12 +247,13 @@ export function PlanAttendanceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <BrandBackdrop />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData(month, selectedDay)} />}
       >
         <View style={styles.hero}>
-          <Text style={styles.kicker}>Plan attendance</Text>
+          <Text style={styles.kicker}>HotTime</Text>
           <Text style={styles.title}>Planificar fichajes</Text>
           <Text style={styles.subtitle}>Calendario mensual para revisar, crear, editar y borrar entradas o salidas por turno.</Text>
         </View>
@@ -334,8 +336,8 @@ export function PlanAttendanceScreen() {
                       <Text style={[styles.typeChip, chipStyle(attendance.type)]}>{attendanceLabel(attendance.type)}</Text>
                       <Text style={styles.attendanceTime}>{formatTime(attendance.occurredAt)}</Text>
                     </View>
-                    <Text style={styles.shiftMeta}>{user} · turno #{attendance.shiftId}</Text>
-                    <Text style={styles.shiftMeta}>Distancia {formatDistance(attendance.distanceMeters)} · {formatDateTime(attendance.occurredAt)}</Text>
+                    <Text style={styles.shiftMeta}>{user} Â· turno #{attendance.shiftId}</Text>
+                    <Text style={styles.shiftMeta}>Distancia {formatDistance(attendance.distanceMeters)} Â· {formatDateTime(attendance.occurredAt)}</Text>
                     <View style={styles.shiftActions}>
                       <Pressable style={styles.miniButton} onPress={() => editAttendance(attendance)}>
                         <Text style={styles.miniButtonText}>Editar</Text>
@@ -349,18 +351,18 @@ export function PlanAttendanceScreen() {
               })}
             </View>
           ) : (
-            <Text style={styles.muted}>No hay fichajes en este día.</Text>
+            <Text style={styles.muted}>No hay fichajes en este dÃ­a.</Text>
           )}
         </View>
 
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>{editing ? "Editar fichaje" : "Nuevo fichaje"}</Text>
 
-          <Text style={styles.label}>Turnos del día</Text>
+          <Text style={styles.label}>Turnos del dÃ­a</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
           {dayShifts.map((shift) => {
               const user = usersById[shift.userId]?.fullName ?? (shift.userId === auth.user?.id ? auth.user.fullName : `Usuario ${shift.userId}`);
-              const categoriesText = shift.categories.map((relation) => categoriesById[relation.categoryId]?.name).filter(Boolean).join(", ") || "Sin categoría";
+              const categoriesText = shift.categories.map((relation) => categoriesById[relation.categoryId]?.name).filter(Boolean).join(", ") || "Sin categorÃ­a";
               return (
                 <Pressable
                   key={shift.id}
@@ -371,7 +373,7 @@ export function PlanAttendanceScreen() {
                     {user}
                   </Text>
                   <Text style={[styles.shiftChipMeta, selectedShiftId === shift.id && styles.shiftChipTextSelected]} numberOfLines={1}>
-                    {formatRange(shift)} · {categoriesText}
+                    {formatRange(shift)} Â· {categoriesText}
                   </Text>
                 </Pressable>
               );
@@ -406,7 +408,7 @@ export function PlanAttendanceScreen() {
       </ScrollView>
 
       <MonthYearPicker
-        title="Elegir mes y año"
+        title="Elegir mes y aÃ±o"
         visible={monthPickerOpen}
         value={month}
         onClose={() => setMonthPickerOpen(false)}
@@ -436,7 +438,7 @@ function FieldButton({ label, value, onPress }: { label: string; value: string; 
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -445,25 +447,24 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   hero: {
-    backgroundColor: palette.accentStrong,
-    borderRadius: 18,
-    gap: 8,
-    padding: 18,
+    gap: 6,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
   },
   kicker: {
-    color: "#d8ece7",
+    color: palette.accent,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.3,
     textTransform: "uppercase",
   },
   title: {
-    color: "#fff",
-    fontSize: 28,
+    color: palette.text,
+    fontSize: 26,
     fontWeight: "800",
   },
   subtitle: {
-    color: "#e6f2ef",
+    color: palette.muted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
   panel: {
     backgroundColor: palette.surfaceElevated,
     borderColor: palette.border,
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 14,
   },
@@ -557,12 +558,11 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: "center",
-    margin: "0.7%",
     position: "relative",
-    width: "12.85%",
+    width: "13.1%",
   },
   dayCellMuted: {
     opacity: 0.5,
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   attendanceCard: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     gap: 6,
     padding: 12,
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   shiftChip: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     gap: 2,
     minHeight: 58,
@@ -818,3 +818,8 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
 });
+
+
+
+
+

@@ -1,5 +1,8 @@
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Modal, Pressable, Platform, StyleSheet, Text, View } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
+import { palette } from "../lib/schedule";
 
 type Props = {
   visible: boolean;
@@ -27,7 +30,7 @@ export function MonthYearPicker({ visible, value, title = "Elegir mes", onClose,
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <Pressable style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeText}>X</Text>
+              <MaterialIcons name="close" size={18} color={palette.text} />
             </Pressable>
           </View>
           <DateTimePicker
@@ -45,14 +48,16 @@ export function MonthYearPicker({ visible, value, title = "Elegir mes", onClose,
 const styles = StyleSheet.create({
   overlay: {
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(17, 28, 31, 0.38)",
     flex: 1,
     justifyContent: "center",
     padding: 20,
   },
   panel: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    backgroundColor: palette.surfaceElevated,
+    borderColor: palette.border,
+    borderRadius: 20,
+    borderWidth: 1,
     gap: 12,
     padding: 16,
     width: "100%",
@@ -71,15 +76,12 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: "center",
-    borderColor: "#d7d7d0",
-    borderRadius: 8,
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderRadius: 12,
     borderWidth: 1,
     height: 34,
     justifyContent: "center",
     width: 34,
-  },
-  closeText: {
-    color: "#2f2f2b",
-    fontWeight: "700",
   },
 });

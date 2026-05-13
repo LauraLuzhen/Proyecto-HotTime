@@ -1,9 +1,10 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ApiClientError } from "../lib/api";
-import { palette } from "../lib/schedule";
+import { brandPalette, palette } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
+import { BrandBackdrop } from "../components/BrandBackdrop";
 
 function Pill({ label }: { label: string }) {
   return (
@@ -44,6 +45,7 @@ export function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <BrandBackdrop />
       <Ornament />
 
       <KeyboardAvoidingView
@@ -67,8 +69,8 @@ export function LoginScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Iniciar sesion</Text>
-              <Text style={styles.cardSubtitle}>Accede con tu email y contraseña de HotTime.</Text>
+              <Text style={styles.cardTitle}>Iniciar sesiÃ³n</Text>
+              <Text style={styles.cardSubtitle}>Accede con tu email y contraseÃ±a de HotTime.</Text>
             </View>
 
             <View style={styles.field}>
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   safeArea: {
-    backgroundColor: palette.background,
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   container: {
@@ -138,7 +140,7 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   hero: {
-    backgroundColor: palette.accentStrong,
+    backgroundColor: "#5f89c6",
     borderRadius: 28,
     gap: 12,
     overflow: "hidden",
@@ -256,7 +258,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   ornamentTop: {
-    backgroundColor: "#d6e7e2",
+    backgroundColor: brandPalette[0],
     borderBottomLeftRadius: 220,
     borderBottomRightRadius: 220,
     height: 220,
@@ -267,7 +269,7 @@ const styles = StyleSheet.create({
     width: 220,
   },
   ornamentBottom: {
-    backgroundColor: "#ead7bf",
+    backgroundColor: brandPalette[4],
     borderTopLeftRadius: 220,
     borderTopRightRadius: 220,
     bottom: -110,
@@ -278,3 +280,4 @@ const styles = StyleSheet.create({
     width: 250,
   },
 });
+

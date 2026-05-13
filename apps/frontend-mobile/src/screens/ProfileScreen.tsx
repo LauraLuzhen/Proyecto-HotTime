@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
@@ -400,7 +400,7 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#f7f7f4",
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   avatar: {
-    backgroundColor: "#dfe7e3",
+    backgroundColor: "#e4e7ff",
     borderRadius: 56,
     height: 112,
     width: 112,
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     padding: 16,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   row: {
-    borderTopColor: "#eeeeea",
+    borderTopColor: "#e8ecff",
     borderTopWidth: 1,
     gap: 4,
     paddingVertical: 10,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   fab: {
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     bottom: 24,
     elevation: 4,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   editAvatar: {
-    backgroundColor: "#dfe7e3",
+    backgroundColor: "#e4e7ff",
     borderRadius: 48,
     height: 96,
     width: 96,
@@ -514,14 +514,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   secondaryButton: {
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   secondaryButtonText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   field: {
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   input: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     color: "#1f1f1d",
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dateButton: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: "center",
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   cancelButton: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     minWidth: 92,
     paddingHorizontal: 16,
@@ -592,3 +592,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
+

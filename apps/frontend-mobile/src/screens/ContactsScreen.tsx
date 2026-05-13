@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role } from "@hottime/types";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { ApiClientError, createApi } from "../lib/api";
 import { tokenStorage } from "../state/auth/storage";
@@ -60,7 +61,7 @@ function SelectField<TValue extends string | number>({
         <Text style={[styles.selectText, !valueLabel && styles.placeholder]} numberOfLines={1}>
           {valueLabel ?? placeholder}
         </Text>
-        <Text style={styles.selectIcon}>v</Text>
+        <MaterialIcons name="keyboard-arrow-down" size={20} color="#6a6a64" />
       </Pressable>
 
       <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
@@ -273,7 +274,7 @@ export function ContactsScreen() {
 
         {loading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color="#2f5f5b" />
+            <ActivityIndicator color="#5f6df5" />
             <Text style={styles.loadingText}>Cargando usuarios...</Text>
           </View>
         ) : error ? (
@@ -339,7 +340,7 @@ export function ContactsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#f7f7f4",
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
   },
   filtersPanel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 12,
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   input: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     color: "#1f1f1d",
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   },
   selectButton: {
     alignItems: "center",
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
@@ -421,7 +422,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   option: {
-    borderBottomColor: "#eeeeea",
+    borderBottomColor: "#e8ecff",
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     flex: 1,
     paddingVertical: 12,
@@ -447,14 +448,14 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
     paddingVertical: 12,
   },
   secondaryButtonText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   loading: {
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: "center",
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 6,
@@ -489,7 +490,7 @@ const styles = StyleSheet.create({
   },
   userCard: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
@@ -500,7 +501,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   avatar: {
-    backgroundColor: "#dfe7e3",
+    backgroundColor: "#e4e7ff",
     borderRadius: 20,
     height: 40,
     width: 40,
@@ -519,14 +520,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   userRole: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontSize: 12,
     fontWeight: "700",
     minWidth: 62,
     textAlign: "right",
   },
   userDetails: {
-    borderTopColor: "#eeeeea",
+    borderTopColor: "#e8ecff",
     borderTopWidth: 1,
     gap: 4,
     marginTop: 10,
@@ -545,7 +546,7 @@ const styles = StyleSheet.create({
   },
   detailActionButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     height: 32,
@@ -553,9 +554,11 @@ const styles = StyleSheet.create({
     width: 32,
   },
   detailActionText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 22,
   },
 });
+
+

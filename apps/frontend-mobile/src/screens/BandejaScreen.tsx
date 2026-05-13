@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -178,7 +178,7 @@ export function BandejaScreen() {
 
         {loading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color="#2f5f5b" />
+            <ActivityIndicator color="#5f6df5" />
             <Text style={styles.loadingText}>Cargando comunicados...</Text>
           </View>
         ) : error ? (
@@ -255,7 +255,7 @@ export function BandejaScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#f7f7f4",
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   headerPanel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 14,
@@ -281,8 +281,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   countBox: {
-    backgroundColor: "#f1f6f4",
-    borderColor: "#d8e3df",
+    backgroundColor: "#f7f8ff",
+    borderColor: "#e4e7ff",
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   countValue: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -315,11 +315,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   filterButtonActive: {
-    backgroundColor: "#2f5f5b",
-    borderColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
+    borderColor: "#5f6df5",
   },
   filterText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   filterTextActive: {
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: "center",
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 6,
@@ -357,14 +357,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 8,
     padding: 12,
   },
   cardUnread: {
-    borderColor: "#2f5f5b",
+    borderColor: "#5f6df5",
   },
   cardHeader: {
     alignItems: "flex-start",
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   typePill: {
-    backgroundColor: "#f1f6f4",
+    backgroundColor: "#f7f8ff",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fde9e7",
   },
   typeText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   unreadState: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
   },
   detailLoading: {
     alignItems: "center",
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   xButton: {
     alignItems: "center",
     alignSelf: "flex-end",
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     height: 36,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   detailBody: {
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     padding: 14,
@@ -493,3 +493,5 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 });
+
+

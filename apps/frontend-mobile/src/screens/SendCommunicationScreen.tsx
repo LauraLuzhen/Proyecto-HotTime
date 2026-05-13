@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -361,7 +361,7 @@ export function SendCommunicationScreen() {
 
           {loading ? (
             <View style={styles.loading}>
-              <ActivityIndicator color="#2f5f5b" />
+              <ActivityIndicator color="#5f6df5" />
               <Text style={styles.loadingText}>Cargando destinatarios...</Text>
             </View>
           ) : error ? (
@@ -551,7 +551,7 @@ export function SendCommunicationScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#f7f7f4",
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 12,
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   input: {
-    borderColor: "#d7d7d0",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     color: "#1f1f1d",
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   },
   segmentButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     minHeight: 38,
@@ -616,11 +616,11 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   segmentButtonActive: {
-    backgroundColor: "#2f5f5b",
-    borderColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
+    borderColor: "#5f6df5",
   },
   segmentText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   segmentTextActive: {
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   },
   modeButton: {
     alignItems: "center",
-    borderColor: "#cfd6d2",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -638,15 +638,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   modeButtonActive: {
-    backgroundColor: "#e5efec",
-    borderColor: "#2f5f5b",
+    backgroundColor: "#e4e7ff",
+    borderColor: "#5f6df5",
   },
   modeText: {
     color: "#3d3d39",
     fontWeight: "700",
   },
   modeTextActive: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
   },
   loading: {
     alignItems: "center",
@@ -657,8 +657,8 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   infoBox: {
-    backgroundColor: "#f1f6f4",
-    borderColor: "#cfd6d2",
+    backgroundColor: "#f7f8ff",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 4,
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
   },
   row: {
     alignItems: "center",
-    borderColor: "#eeeeea",
+    borderColor: "#e8ecff",
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   categoryBlock: {
-    borderColor: "#eeeeea",
+    borderColor: "#e8ecff",
     borderRadius: 8,
     borderWidth: 1,
     overflow: "hidden",
@@ -708,14 +708,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   categoryUsers: {
-    borderTopColor: "#eeeeea",
+    borderTopColor: "#e8ecff",
     borderTopWidth: 1,
     gap: 7,
     padding: 10,
   },
   categoryUserRow: {
     alignItems: "center",
-    borderColor: "#eeeeea",
+    borderColor: "#e8ecff",
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
@@ -723,16 +723,16 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   categoryUserRowSelected: {
-    backgroundColor: "#f7fbfa",
+    backgroundColor: "#f7f8ff",
     borderColor: "#b8cec8",
   },
   rowSelected: {
-    backgroundColor: "#f1f6f4",
-    borderColor: "#2f5f5b",
+    backgroundColor: "#f7f8ff",
+    borderColor: "#5f6df5",
   },
   checkbox: {
     alignItems: "center",
-    borderColor: "#bfc9c4",
+    borderColor: "#d7ddff",
     borderRadius: 6,
     borderWidth: 1,
     height: 26,
@@ -740,12 +740,12 @@ const styles = StyleSheet.create({
     width: 26,
   },
   checkboxText: {
-    color: "#2f5f5b",
+    color: "#5f6df5",
     fontWeight: "700",
   },
   smallCheckbox: {
     alignItems: "center",
-    borderColor: "#bfc9c4",
+    borderColor: "#d7ddff",
     borderRadius: 6,
     borderWidth: 1,
     height: 24,
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: "center",
     backgroundColor: "#fff",
-    borderColor: "#deded8",
+    borderColor: "#d7ddff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 6,
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     alignItems: "center",
-    backgroundColor: "#2f5f5b",
+    backgroundColor: "#5f6df5",
     borderRadius: 8,
     minHeight: 48,
     justifyContent: "center",
@@ -804,3 +804,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
+

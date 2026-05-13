@@ -14,10 +14,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
 import { MonthYearPicker } from "../components/MonthYearPicker";
+import { BrandBackdrop } from "../components/BrandBackdrop";
 import {
   buildMonthDays,
   calendarDayNames,
@@ -716,6 +718,7 @@ export function PlanSchedulesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <BrandBackdrop />
       <View style={styles.screen}>
         <ScrollView
           contentContainerStyle={styles.content}
@@ -885,7 +888,7 @@ export function PlanSchedulesScreen() {
                   <Text style={styles.sheetSubtitle}>Previsualiza el turno antes de guardarlo.</Text>
                 </View>
                 <Pressable style={styles.closeButton} onPress={resetCreateModal}>
-                  <Text style={styles.closeButtonText}>X</Text>
+                  <MaterialIcons name="close" size={18} color={palette.text} />
                 </Pressable>
               </View>
 
@@ -978,9 +981,13 @@ export function PlanSchedulesScreen() {
                               style={[styles.row, selected && styles.rowSelected]}
                               onPress={() => toggleSelectedUser(user.id)}
                             >
-                              <View style={styles.checkbox}>
-                                <Text style={styles.checkboxText}>{selected ? "x" : ""}</Text>
-                              </View>
+                          <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                            <MaterialIcons
+                              name={selected ? "check" : "radio-button-unchecked"}
+                              size={16}
+                              color={selected ? "#fff" : palette.muted}
+                            />
+                          </View>
                               <View style={styles.rowText}>
                                 <Text style={styles.rowTitle} numberOfLines={1}>{user.fullName}</Text>
                                 <Text style={styles.rowDetail} numberOfLines={1}>{user.email}</Text>
@@ -1013,7 +1020,7 @@ export function PlanSchedulesScreen() {
                             {usersWithoutCategory.length} usuario(s)
                           </Text>
                         </View>
-                        <Text style={styles.categoryBadge}>x</Text>
+                        <MaterialIcons name="close" size={16} color={palette.muted} />
                       </Pressable>
 
                       {categories.map((category) => {
@@ -1030,7 +1037,7 @@ export function PlanSchedulesScreen() {
                               <Text style={styles.rowTitle}>{category.name}</Text>
                               <Text style={styles.rowDetail}>{count} usuario(s)</Text>
                             </View>
-                            <Text style={styles.categoryBadge}>x</Text>
+                            <MaterialIcons name="close" size={16} color={palette.muted} />
                           </Pressable>
                         );
                       })}
@@ -1087,7 +1094,7 @@ export function PlanSchedulesScreen() {
                     <Text style={styles.sheetSubtitle}>Vista previa completa del turno #{detailShift.id}</Text>
                   </View>
                   <Pressable style={styles.closeButton} onPress={closeDetailModal}>
-                    <Text style={styles.closeButtonText}>X</Text>
+                    <MaterialIcons name="close" size={18} color={palette.text} />
                   </Pressable>
                 </View>
 
@@ -1157,7 +1164,7 @@ export function PlanSchedulesScreen() {
                   </Text>
                 </View>
                 <Pressable style={styles.closeButton} onPress={closeEditModal}>
-                  <Text style={styles.closeButtonText}>X</Text>
+                  <MaterialIcons name="close" size={18} color={palette.text} />
                 </Pressable>
               </View>
 
@@ -1276,7 +1283,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   screen: {
@@ -1288,39 +1295,38 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   hero: {
-    backgroundColor: palette.accentStrong,
-    borderRadius: 18,
-    gap: 8,
-    padding: 18,
+    gap: 6,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
   },
   kicker: {
-    color: "#d8ece7",
+    color: palette.accent,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.3,
     textTransform: "uppercase",
   },
   heroTitle: {
-    color: "#fff",
-    fontSize: 28,
+    color: palette.text,
+    fontSize: 26,
     fontWeight: "800",
   },
   heroSubtitle: {
-    color: "#e6f2ef",
+    color: palette.muted,
     fontSize: 14,
     lineHeight: 20,
   },
   panel: {
     backgroundColor: palette.surfaceElevated,
     borderColor: palette.border,
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 14,
   },
   panelSoft: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     gap: 12,
     padding: 12,
@@ -1441,10 +1447,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     justifyContent: "center",
-    margin: "0.7%",
     padding: 6,
     position: "relative",
-    width: "12.85%",
+    width: "13.1%",
   },
   dayCellMuted: {
     opacity: 0.5,
@@ -1823,7 +1828,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   rowSelected: {
-    backgroundColor: "#f1f6f4",
+    backgroundColor: "#f7f8ff",
     borderColor: palette.accent,
   },
   categoryRow: {
@@ -1838,7 +1843,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   categoryRowSelected: {
-    backgroundColor: "#f1f6f4",
+    backgroundColor: "#f7f8ff",
     borderColor: palette.accent,
   },
   categoryMeta: {
@@ -1851,12 +1856,16 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     alignItems: "center",
-    borderColor: "#bfc9c4",
+    borderColor: "#d7ddff",
     borderRadius: 6,
     borderWidth: 1,
     height: 26,
     justifyContent: "center",
     width: 26,
+  },
+  checkboxSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
   },
   checkboxText: {
     color: palette.accent,
@@ -1992,4 +2001,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+
+
+
+
+
+
 

@@ -10,6 +10,7 @@
     "build": "echo \"Use EAS for builds\""
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@hottime/types": "workspace:*",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",

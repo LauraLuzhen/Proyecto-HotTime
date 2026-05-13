@@ -4,6 +4,7 @@ import type { AttendanceEntity } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
 import { MonthYearPicker } from "../components/MonthYearPicker";
+import { BrandBackdrop } from "../components/BrandBackdrop";
 import {
   addDays,
   buildMonthDays,
@@ -92,12 +93,13 @@ export function MyAttendanceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <BrandBackdrop />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month, selectedDay)} />}
       >
         <View style={styles.hero}>
-          <Text style={styles.kicker}>My attendance</Text>
+          <Text style={styles.kicker}>HotTime</Text>
           <Text style={styles.title}>Mis fichajes</Text>
           <Text style={styles.subtitle}>Un calendario mensual para revisar entradas y salidas sin caer en listas largas.</Text>
         </View>
@@ -217,7 +219,7 @@ export function MyAttendanceScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: palette.background,
+    backgroundColor: "#eef3ff",
     flex: 1,
   },
   content: {
@@ -226,32 +228,31 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   hero: {
-    backgroundColor: palette.accentStrong,
-    borderRadius: 18,
-    gap: 8,
-    padding: 18,
+    gap: 6,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
   },
   kicker: {
-    color: "#d8ece7",
+    color: palette.accent,
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.3,
     textTransform: "uppercase",
   },
   title: {
-    color: "#fff",
-    fontSize: 28,
+    color: palette.text,
+    fontSize: 26,
     fontWeight: "800",
   },
   subtitle: {
-    color: "#e6f2ef",
+    color: palette.muted,
     fontSize: 14,
     lineHeight: 20,
   },
   panel: {
     backgroundColor: palette.surfaceElevated,
     borderColor: palette.border,
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 14,
   },
@@ -288,6 +289,7 @@ const styles = StyleSheet.create({
   navButtons: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
   },
   navActionButton: {
     backgroundColor: "#fff",
@@ -331,12 +333,11 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: "center",
-    margin: "0.7%",
     position: "relative",
-    width: "12.85%",
+    width: "13.1%",
   },
   dayCellMuted: {
     opacity: 0.5,
@@ -426,23 +427,29 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   weekSummary: {
-    gap: 8,
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    gap: 6,
   },
   weekSummaryItem: {
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
+    flex: 1,
+    minWidth: 0,
     padding: 12,
   },
   weekSummaryDay: {
     color: palette.text,
+    fontSize: 12,
     fontWeight: "800",
   },
   weekSummaryCount: {
     color: palette.muted,
+    fontSize: 11,
     fontWeight: "700",
   },
 });
