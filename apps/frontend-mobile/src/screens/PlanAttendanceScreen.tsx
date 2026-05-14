@@ -95,10 +95,9 @@ export function PlanAttendanceScreen() {
           startsTo: endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0)),
           published: true,
         }),
-        api.attendance.getCalendar({
-          date: targetMonth,
-          includeWeek: false,
-          includeMonth: true,
+        api.attendance.getAttendances({
+          from: startOfDay(startOfMonth(targetMonth)),
+          to: endOfDay(new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0)),
         }),
         api.attendance.getAttendances({
           from: startOfDay(targetDay),
@@ -109,7 +108,7 @@ export function PlanAttendanceScreen() {
       setUsers(usersResult);
       setCategories(categoriesResult);
       setShifts(shiftsResult.shifts);
-      setMonthAttendances(attendancesResult.month);
+      setMonthAttendances(attendancesResult.attendances);
       setSelectedAttendances(selectedResult.attendances);
 
       const nextSelectedShiftId = selectedShiftId && shiftsResult.shifts.some((shift) => shift.id === selectedShiftId)
@@ -252,12 +251,6 @@ export function PlanAttendanceScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData(month, selectedDay)} />}
       >
-        <View style={styles.hero}>
-          <Text style={styles.kicker}>HotTime</Text>
-          <Text style={styles.title}>Planificar fichajes</Text>
-          <Text style={styles.subtitle}>Calendario mensual para revisar, crear, editar y borrar entradas o salidas por turno.</Text>
-        </View>
-
         <View style={styles.panel}>
           <View style={styles.monthHeader}>
             <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
@@ -267,7 +260,6 @@ export function PlanAttendanceScreen() {
               <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
                 <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
               </Pressable>
-              <Text style={styles.monthSubtitle}>Calendario de fichajes y turnos</Text>
             </View>
             <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
               <Text style={styles.navButtonText}>Siguiente</Text>
@@ -309,7 +301,7 @@ export function PlanAttendanceScreen() {
                       <Text style={[styles.dayNumber, !inMonth && styles.dayNumberMuted, selected && styles.dayNumberSelected]}>
                         {day.getDate()}
                       </Text>
-                      <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>{count ? `${count} fichajes` : "Sin fichajes"}</Text>
+                      <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>{count ? `${count} fichajes` : "Libre"}</Text>
                     </Pressable>
                   );
                 })}
@@ -336,8 +328,8 @@ export function PlanAttendanceScreen() {
                       <Text style={[styles.typeChip, chipStyle(attendance.type)]}>{attendanceLabel(attendance.type)}</Text>
                       <Text style={styles.attendanceTime}>{formatTime(attendance.occurredAt)}</Text>
                     </View>
-                    <Text style={styles.shiftMeta}>{user} Â· turno #{attendance.shiftId}</Text>
-                    <Text style={styles.shiftMeta}>Distancia {formatDistance(attendance.distanceMeters)} Â· {formatDateTime(attendance.occurredAt)}</Text>
+                    <Text style={styles.shiftMeta}>{user} · turno #{attendance.shiftId}</Text>
+                    <Text style={styles.shiftMeta}>Distancia {formatDistance(attendance.distanceMeters)} · {formatDateTime(attendance.occurredAt)}</Text>
                     <View style={styles.shiftActions}>
                       <Pressable style={styles.miniButton} onPress={() => editAttendance(attendance)}>
                         <Text style={styles.miniButtonText}>Editar</Text>
@@ -351,18 +343,18 @@ export function PlanAttendanceScreen() {
               })}
             </View>
           ) : (
-            <Text style={styles.muted}>No hay fichajes en este dÃ­a.</Text>
+            <Text style={styles.muted}>No hay fichajes en este dia.</Text>
           )}
         </View>
 
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>{editing ? "Editar fichaje" : "Nuevo fichaje"}</Text>
 
-          <Text style={styles.label}>Turnos del dÃ­a</Text>
+          <Text style={styles.label}>Turnos del dia</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
           {dayShifts.map((shift) => {
               const user = usersById[shift.userId]?.fullName ?? (shift.userId === auth.user?.id ? auth.user.fullName : `Usuario ${shift.userId}`);
-              const categoriesText = shift.categories.map((relation) => categoriesById[relation.categoryId]?.name).filter(Boolean).join(", ") || "Sin categorÃ­a";
+              const categoriesText = shift.categories.map((relation) => categoriesById[relation.categoryId]?.name).filter(Boolean).join(", ") || "Sin categoria";
               return (
                 <Pressable
                   key={shift.id}
@@ -373,7 +365,7 @@ export function PlanAttendanceScreen() {
                     {user}
                   </Text>
                   <Text style={[styles.shiftChipMeta, selectedShiftId === shift.id && styles.shiftChipTextSelected]} numberOfLines={1}>
-                    {formatRange(shift)} Â· {categoriesText}
+                    {formatRange(shift)} · {categoriesText}
                   </Text>
                 </Pressable>
               );
@@ -408,7 +400,7 @@ export function PlanAttendanceScreen() {
       </ScrollView>
 
       <MonthYearPicker
-        title="Elegir mes y aÃ±o"
+        title="Elegir mes y año"
         visible={monthPickerOpen}
         value={month}
         onClose={() => setMonthPickerOpen(false)}
@@ -550,19 +542,22 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
     marginTop: 8,
+    marginHorizontal: -2,
   },
+
   dayCell: {
     alignItems: "center",
+    justifyContent: "center",
     aspectRatio: 1,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: "13.0%",
+    margin: 2,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 16,
     borderWidth: 1,
-    justifyContent: "center",
-    position: "relative",
-    width: "13.1%",
+    borderRadius: 16,
   },
   dayCellMuted: {
     opacity: 0.5,

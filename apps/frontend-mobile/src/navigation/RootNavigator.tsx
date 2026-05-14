@@ -114,15 +114,14 @@ function HeaderInboxButton({ navigation }: { navigation: any }) {
   return (
     <>
       <Pressable style={styles.headerInboxButton} onPress={() => void loadLatest()}>
-        <MaterialIcons name="mail-outline" size={18} color={palette.accent} />
-        <Text style={styles.headerInboxButtonText}>Inbox</Text>
+        <MaterialIcons name="notifications" size={18} color={palette.accent} />
       </Pressable>
 
       <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
           <Pressable style={styles.inboxPanel}>
             <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>Ultimos comunicados</Text>
+              <Text style={styles.panelTitle}>Últimos comunicados</Text>
               <Pressable style={styles.closeButton} onPress={() => setOpen(false)}>
                 <MaterialIcons name="close" size={18} color={palette.text} />
               </Pressable>
@@ -224,16 +223,36 @@ function AppDrawer() {
           headerRight: () => <HeaderInboxButton navigation={navigation} />,
         })}
       />
-      <Drawer.Screen name="Profile" component={ProfileScreen} />
-      <Drawer.Screen name="Contacts" component={ContactsScreen} />
-      <Drawer.Screen name="Administration" component={AdministrationScreen} />
-      <Drawer.Screen name="Communication" component={SendCommunicationScreen} />
-      <Drawer.Screen name="PlanSchedules" component={PlanSchedulesScreen} />
-      <Drawer.Screen name="Bandeja" component={BandejaScreen} />
-      <Drawer.Screen name="Organization" component={OrganizationScreen} />
-      <Drawer.Screen name="MySchedule" component={MyScheduleScreen} />
-      <Drawer.Screen name="MyAttendance" component={MyAttendanceScreen} />
-      <Drawer.Screen name="PlanAttendance" component={PlanAttendanceScreen} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} options={({ navigation }) => ({
+          title: "Perfil",
+        })}/>
+      <Drawer.Screen name="Contacts" component={ContactsScreen} options={({ navigation }) => ({
+          title: "Contactos",
+        })}/>
+      <Drawer.Screen name="Administration" component={AdministrationScreen} options={({ navigation }) => ({
+          title: "Administración",
+        })}/>
+      <Drawer.Screen name="Communication" component={SendCommunicationScreen} options={({ navigation }) => ({
+          title: "Enviar comunicado",
+        })}/>
+      <Drawer.Screen name="PlanSchedules" component={PlanSchedulesScreen} options={({ navigation }) => ({
+          title: "Horarios",
+        })}/>
+      <Drawer.Screen name="Bandeja" component={BandejaScreen} options={({ navigation }) => ({
+          title: "Bandeja",
+        })}/>
+      <Drawer.Screen name="Organization" component={OrganizationScreen} options={({ navigation }) => ({
+          title: "Organización",
+        })}/>
+      <Drawer.Screen name="MySchedule" component={MyScheduleScreen} options={({ navigation }) => ({
+          title: "Mi horario",
+        })}/>
+      <Drawer.Screen name="MyAttendance" component={MyAttendanceScreen} options={({ navigation }) => ({
+          title: "Mis fichajes",
+        })}/>
+      <Drawer.Screen name="PlanAttendance" component={PlanAttendanceScreen} options={({ navigation }) => ({
+          title: "Fichajes",
+        })}/>
       <Drawer.Screen name="Manager" component={ManagerOnlyScreen} />
       <Drawer.Screen name="Employee" component={EmployeeOnlyScreen} />
     </Drawer.Navigator>

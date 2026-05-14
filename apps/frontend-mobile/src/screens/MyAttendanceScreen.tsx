@@ -24,6 +24,7 @@ import {
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 import { useAuth } from "../state/auth/AuthContext";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 function attendanceLabel(type: AttendanceEntity["type"]) {
   return type === "CLOCK_IN" ? "Entrada" : "Salida";
@@ -98,34 +99,31 @@ export function MyAttendanceScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month, selectedDay)} />}
       >
-        <View style={styles.hero}>
-          <Text style={styles.kicker}>HotTime</Text>
-          <Text style={styles.title}>Mis fichajes</Text>
-          <Text style={styles.subtitle}>Un calendario mensual para revisar entradas y salidas sin caer en listas largas.</Text>
-        </View>
-
         <View style={styles.panel}>
           <View style={styles.monthHeader}>
-            <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
-              <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
+                <MaterialIcons name="arrow-back-ios" size={16} color={palette.accent} />
             </Pressable>
-          </View>
-          <Text style={styles.monthSubtitle}>Selecciona un día para ver el detalle de tus fichajes.</Text>
-
-          <View style={styles.navRow}>
-            <Text style={styles.navLabel}>Mes</Text>
-            <View style={styles.navButtons}>
-              <Pressable style={styles.navActionButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
-                <Text style={styles.navActionText}>Anterior</Text>
-              </Pressable>
-              <Pressable style={styles.navActionButton} onPress={() => setMonth(startOfMonth(new Date()))}>
-                <Text style={styles.navActionText}>Hoy</Text>
-              </Pressable>
-              <Pressable style={styles.navActionButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
-                <Text style={styles.navActionText}>Siguiente</Text>
+            <View style={styles.monthCenter}>
+              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
+                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
               </Pressable>
             </View>
+            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
+              <MaterialIcons name="arrow-forward-ios" size={16} color={palette.accent} />
+            </Pressable>
           </View>
+
+          <Pressable
+            style={styles.todayButton}
+            onPress={() => {
+              const today = new Date();
+              setMonth(startOfMonth(today));
+              setSelectedDay(today);
+            }}
+          >
+            <Text style={styles.todayButtonText}>Volver a hoy</Text>
+          </Pressable>
 
           {loading ? (
             <View style={styles.loadingBox}>
@@ -149,7 +147,7 @@ export function MyAttendanceScreen() {
                       onPress={() => setSelectedDay(day)}
                     >
                       <Text style={[styles.dayNumber, !inMonth && styles.dayNumberMuted, selected && styles.dayNumberSelected]}>{day.getDate()}</Text>
-                      <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>{count ? `${count} fichajes` : "Sin fichajes"}</Text>
+                      <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>{count ? `${count} fichajes` : "Libre"}</Text>
                     </Pressable>
                   );
                 })}
@@ -184,25 +182,6 @@ export function MyAttendanceScreen() {
           ) : (
             <Text style={styles.muted}>No hay fichajes en este día.</Text>
           )}
-        </View>
-
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.sectionTitle}>Semana seleccionada</Text>
-            <Text style={styles.panelHint}>{formatDay(weekStart)} - {formatDay(addDays(weekStart, 6))}</Text>
-          </View>
-          <View style={styles.weekSummary}>
-            {Array.from({ length: 7 }).map((_, index) => {
-              const day = addDays(weekStart, index);
-              const count = monthAttendances.filter((attendance) => sameDay(attendance.occurredAt, day)).length;
-              return (
-                <View key={day.toISOString()} style={styles.weekSummaryItem}>
-                  <Text style={styles.weekSummaryDay}>{formatDay(day)}</Text>
-                  <Text style={styles.weekSummaryCount}>{count ? `${count} fichaje(s)` : "Libre"}</Text>
-                </View>
-              );
-            })}
-          </View>
         </View>
       </ScrollView>
 
@@ -258,7 +237,9 @@ const styles = StyleSheet.create({
   },
   monthHeader: {
     alignItems: "center",
-    marginBottom: 4,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
   },
   monthTitleButton: {
     alignSelf: "center",
@@ -325,19 +306,22 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
     marginTop: 8,
+    marginHorizontal: -2,
   },
+
   dayCell: {
     alignItems: "center",
+    justifyContent: "center",
     aspectRatio: 1,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: "13.0%",
+    margin: 2,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 16,
     borderWidth: 1,
-    justifyContent: "center",
-    position: "relative",
-    width: "13.1%",
+    borderRadius: 16,
   },
   dayCellMuted: {
     opacity: 0.5,
@@ -451,5 +435,30 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 11,
     fontWeight: "700",
+  },
+  navButton: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 40,
+    minWidth: 86,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  monthCenter: {
+    flex: 1,
+    gap: 2,
+  },
+  todayButton: {
+    alignItems: "center",
+    alignSelf: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  todayButtonText: {
+    color: palette.accent,
+    fontWeight: "800",
   },
 });

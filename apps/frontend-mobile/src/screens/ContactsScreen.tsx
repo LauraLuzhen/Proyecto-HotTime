@@ -30,6 +30,36 @@ function initials(name?: string) {
   return `${first}${second}`.toUpperCase();
 }
 
+function Avatar({ uri, name, size }: { uri?: string | null; name?: string; size: number }) {
+  const radius = size / 2;
+
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: radius, backgroundColor: "#e4e7ff" }}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: "#c4b5fd",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ color: "#fff", fontSize: size * 0.32, fontWeight: "700" }}>
+        {initials(name)}
+      </Text>
+    </View>
+  );
+}
+
 function placeholderAvatarUri(name?: string) {
   const text = encodeURIComponent(initials(name));
   return `https://ui-avatars.com/api/?name=${text}&background=2f5f5b&color=ffffff&size=128&bold=true`;
@@ -232,8 +262,6 @@ export function ContactsScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadUsers(buildFilters())} />}
       >
         <View style={styles.filtersPanel}>
-          <Text style={styles.title}>Contactos</Text>
-
           <View style={styles.filterField}>
             <Text style={styles.filterLabel}>Buscar</Text>
             <TextInput
@@ -299,10 +327,7 @@ export function ContactsScreen() {
                   onPress={() => setExpandedUserId(expanded ? null : user.id)}
                 >
                   <View style={styles.userMain}>
-                    <Image
-                      source={{ uri: user.imgProfile || placeholderAvatarUri(user.fullName) }}
-                      style={styles.avatar}
-                    />
+                    <Avatar uri={user.imgProfile} name={user.fullName} size={40} />
                     <Text style={styles.userName} numberOfLines={1}>
                       {user.fullName}
                     </Text>
@@ -315,15 +340,15 @@ export function ContactsScreen() {
                   {expanded ? (
                     <View style={styles.userDetails}>
                       <View style={styles.detailActionRow}>
-                        <Text style={styles.detailText}>Telefono: {user.phone}</Text>
+                        <Text style={styles.detailText}>Teléfono: {user.phone}</Text>
                         <Pressable style={styles.detailActionButton} onPress={() => void openPhone(user.phone)}>
-                          <Text style={styles.detailActionText}>+</Text>
+                          <MaterialIcons name="phone" size={18} color="#5f6df5" />
                         </Pressable>
                       </View>
                       <View style={styles.detailActionRow}>
                         <Text style={styles.detailText}>Email: {user.email}</Text>
                         <Pressable style={styles.detailActionButton} onPress={() => void openEmail(user.email)}>
-                          <Text style={styles.detailActionText}>+</Text>
+                          <MaterialIcons name="email" size={18} color="#5f6df5" />
                         </Pressable>
                       </View>
                     </View>

@@ -26,7 +26,6 @@ type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "birthDate" |
 
 function formatDate(value?: Date) {
   if (!value) return "-";
-
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",
@@ -36,7 +35,6 @@ function formatDate(value?: Date) {
 
 function toDateInputValue(value?: Date) {
   if (!value) return "";
-
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",
@@ -47,12 +45,10 @@ function toDateInputValue(value?: Date) {
 function parseDateInput(value: string): Date | null {
   const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value.trim());
   if (!match) return null;
-
   const day = Number(match[1]);
   const month = Number(match[2]);
   const year = Number(match[3]);
   const date = new Date(year, month - 1, day);
-
   if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
   return date;
 }
@@ -80,8 +76,8 @@ function validatePassword(value: string) {
   const password = value.trim();
   if (!password) return undefined;
   if (password.length < 8) return "Minimo 8 caracteres.";
-  if (!/[A-Z]/.test(password)) return "Debe tener 1 mayuscula.";
-  if (!/[a-z]/.test(password)) return "Debe tener 1 minuscula.";
+  if (!/[A-Z]/.test(password)) return "Debe tener 1 mayúscula.";
+  if (!/[a-z]/.test(password)) return "Debe tener 1 minúscula.";
   if (!/[0-9]/.test(password)) return "Debe tener 1 numero.";
   if (!/[^A-Za-z0-9]/.test(password)) return "Debe tener 1 caracter especial.";
   return undefined;
@@ -94,9 +90,38 @@ function initials(name?: string) {
   return `${first}${second}`.toUpperCase();
 }
 
-function placeholderAvatarUri(name?: string) {
-  const text = encodeURIComponent(initials(name));
-  return `https://ui-avatars.com/api/?name=${text}&background=2f5f5b&color=ffffff&size=256&bold=true`;
+function Avatar({ uri, name, size }: { uri?: string | null; name?: string; size: number }) {
+  const radius = size / 2;
+
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: radius, backgroundColor: "#e4e7ff" }}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: "#c4b5fd",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ color: "#fff", fontSize: size * 0.32, fontWeight: "700" }}>
+        {initials(name)}
+      </Text>
+    </View>
+  );
+}
+
+function categoriesLabel(categories?: { name: string }[]) {
+  return categories?.length ? categories.map((c) => c.name).join(", ") : "Sin categoria";
 }
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
@@ -106,10 +131,6 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
       <Text style={styles.value}>{value ?? "-"}</Text>
     </View>
   );
-}
-
-function categoriesLabel(categories?: { name: string }[]) {
-  return categories?.length ? categories.map((category) => category.name).join(", ") : "Sin categoria";
 }
 
 function Field({
@@ -194,6 +215,7 @@ function DateField({
 export function ProfileScreen() {
   const auth = useAuth();
   const user = auth.user;
+
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -206,23 +228,20 @@ export function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  const imageUri = user?.imgProfile || placeholderAvatarUri(user?.fullName);
-  const editImageUri = imgProfile || placeholderAvatarUri(fullName);
-
   const roleLabel = useMemo(() => {
     if (!user?.role) return "-";
     return user.role.charAt(0) + user.role.slice(1).toLowerCase();
   }, [user?.role]);
 
+  // Inicializa el formulario cada vez que se abre el modal de edición
   useEffect(() => {
     if (!user || !isEditing) return;
-
     setFullName(user.fullName);
     setEmail(user.email);
     setPhone(user.phone);
     setBirthDate(toDateInputValue(user.birthDate));
     setPassword("");
-    setImgProfile(user.imgProfile);
+    setImgProfile(user.imgProfile ?? null);
     setError(null);
     setFieldErrors({});
   }, [isEditing, user]);
@@ -242,7 +261,6 @@ export function ProfileScreen() {
 
   async function pickImage() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (!permission.granted) {
       Alert.alert("Permiso necesario", "Activa el acceso a la galeria para elegir una foto.");
       return;
@@ -256,6 +274,7 @@ export function ProfileScreen() {
     });
 
     if (!result.canceled) {
+      // Solo actualiza el estado local; NO se sube hasta que el usuario pulse "Guardar"
       setImgProfile(result.assets[0]?.uri ?? null);
     }
   }
@@ -270,9 +289,7 @@ export function ProfileScreen() {
     };
 
     setFieldErrors(errors);
-    if (Object.values(errors).some(Boolean)) {
-      return;
-    }
+    if (Object.values(errors).some(Boolean)) return;
 
     const parsedBirthDate = parseDateInput(birthDate)!;
 
@@ -297,34 +314,44 @@ export function ProfileScreen() {
     }
   }
 
+  function cancelEditing() {
+    setFieldErrors({});
+    setError(null);
+    setIsEditing(false);
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshProfile()} />}
       >
+        {/* Cabecera con avatar */}
         <View style={styles.header}>
-          <Image source={{ uri: imageUri }} style={styles.avatar} />
+          <Avatar uri={user?.imgProfile} name={user?.fullName} size={112} />
           <Text style={styles.name}>{user?.fullName}</Text>
           <Text style={styles.meta}>{roleLabel}</Text>
         </View>
 
+        {/* Panel de información */}
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Informacion personal</Text>
+          <Text style={styles.panelTitle}>Información personal</Text>
           <InfoRow label="Email" value={user?.email} />
-          <InfoRow label="Telefono" value={user?.phone} />
+          <InfoRow label="Teléfono" value={user?.phone} />
           <InfoRow label="Nacimiento" value={formatDate(user?.birthDate)} />
           <InfoRow label="Alta" value={formatDate(user?.initDate)} />
-          <InfoRow label="Categorias" value={categoriesLabel(user?.categories)} />
-          <InfoRow label="Organizacion" value={user?.organization.name} />
+          <InfoRow label="Categorías" value={categoriesLabel(user?.categories)} />
+          <InfoRow label="Organización" value={user?.organization.name} />
         </View>
       </ScrollView>
 
+      {/* Botón flotante */}
       <Pressable style={styles.fab} onPress={() => setIsEditing(true)}>
         <Text style={styles.fabText}>Editar perfil</Text>
       </Pressable>
 
-      <Modal animationType="slide" transparent visible={isEditing} onRequestClose={() => setIsEditing(false)}>
+      {/* Modal de edición */}
+      <Modal animationType="slide" transparent visible={isEditing} onRequestClose={cancelEditing}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.modalOverlay}
@@ -333,8 +360,10 @@ export function ProfileScreen() {
             <ScrollView contentContainerStyle={styles.modalContent}>
               <Text style={styles.modalTitle}>Editar perfil</Text>
 
+              {/* Editor de foto */}
               <View style={styles.photoEditor}>
-                <Image source={{ uri: editImageUri }} style={styles.editAvatar} />
+                {/* Preview en tiempo real: muestra la imagen seleccionada o el placeholder lila */}
+                <Avatar uri={imgProfile} name={fullName} size={96} />
                 <View style={styles.photoActions}>
                   <Pressable style={styles.secondaryButton} onPress={pickImage}>
                     <Text style={styles.secondaryButtonText}>Elegir de galeria</Text>
@@ -354,7 +383,13 @@ export function ProfileScreen() {
                 onChangeText={setEmail}
                 error={fieldErrors.email}
               />
-              <Field keyboardType="phone-pad" label="Telefono" value={phone} onChangeText={setPhone} error={fieldErrors.phone} />
+              <Field
+                keyboardType="phone-pad"
+                label="Telefono"
+                value={phone}
+                onChangeText={setPhone}
+                error={fieldErrors.phone}
+              />
               <DateField
                 label="Fecha nacimiento"
                 value={birthDate}
@@ -375,15 +410,7 @@ export function ProfileScreen() {
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
               <View style={styles.modalActions}>
-                <Pressable
-                  disabled={saving}
-                  style={styles.cancelButton}
-                  onPress={() => {
-                    setFieldErrors({});
-                    setError(null);
-                    setIsEditing(false);
-                  }}
-                >
+                <Pressable disabled={saving} style={styles.cancelButton} onPress={cancelEditing}>
                   <Text style={styles.cancelButtonText}>Cancelar</Text>
                 </Pressable>
                 <Pressable disabled={saving} style={styles.saveButton} onPress={saveProfile}>
@@ -412,12 +439,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingVertical: 10,
-  },
-  avatar: {
-    backgroundColor: "#e4e7ff",
-    borderRadius: 56,
-    height: 112,
-    width: 112,
   },
   name: {
     color: "#151515",
@@ -500,12 +521,6 @@ const styles = StyleSheet.create({
   photoEditor: {
     alignItems: "center",
     gap: 12,
-  },
-  editAvatar: {
-    backgroundColor: "#e4e7ff",
-    borderRadius: 48,
-    height: 96,
-    width: 96,
   },
   photoActions: {
     flexDirection: "row",
@@ -592,5 +607,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
-

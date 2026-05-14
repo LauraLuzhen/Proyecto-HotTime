@@ -38,21 +38,6 @@ import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 const PAGE_SIZE = 100;
-const monthLabels = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
-
 type CreateMode = "USER" | "USERS" | "CATEGORY";
 type PickerTarget = {
   owner: "create" | "edit";
@@ -375,8 +360,6 @@ export function PlanSchedulesScreen() {
         api.planning.getShifts({
           startsFrom: start,
           startsTo: end,
-          limit: PAGE_SIZE,
-          offset: 0,
         }),
       ]);
 
@@ -724,45 +707,31 @@ export function PlanSchedulesScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
         >
-          <View style={styles.hero}>
-            <Text style={styles.kicker}>Plan schedule</Text>
-            <Text style={styles.heroTitle}>Calendario de turnos</Text>
-            <Text style={styles.heroSubtitle}>
-              Recorre mes y año con rapidez, mira la previsualización de turnos por día y abre el detalle completo con usuario, entrada y salida.
-            </Text>
+          <View style={styles.panel}>
+          <View style={styles.monthHeader}>
+            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
+                <MaterialIcons name="arrow-back-ios" size={16} color={palette.accent} />
+            </Pressable>
+            <View style={styles.monthCenter}>
+              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
+                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+              </Pressable>
+            </View>
+            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
+              <MaterialIcons name="arrow-forward-ios" size={16} color={palette.accent} />
+            </Pressable>
           </View>
 
-          <View style={styles.panel}>
-            <View style={styles.headerRow}>
-              <Pressable style={styles.navButton} onPress={() => goToMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>
-                <Text style={styles.navButtonText}>Anterior</Text>
-              </Pressable>
-
-              <View style={styles.headerCenter}>
-                <Pressable style={styles.selectorButton} onPress={() => setMonthPickerOpen(true)}>
-                  <Text style={styles.selectorLabel}>Mes y año</Text>
-                  <Text style={styles.selectorValue}>{formatMonth(month)}</Text>
-                </Pressable>
-              </View>
-
-              <Pressable style={styles.navButton} onPress={() => goToMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>
-                <Text style={styles.navButtonText}>Siguiente</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.quickRow}>
-              <Pressable style={styles.quickButton} onPress={goToToday}>
-                <Text style={styles.quickButtonText}>Hoy</Text>
-              </Pressable>
-              <View style={styles.quickStat}>
-                <Text style={styles.quickStatValue}>{monthSummary.totalShifts}</Text>
-                <Text style={styles.quickStatLabel}>turnos</Text>
-              </View>
-              <View style={styles.quickStat}>
-                <Text style={styles.quickStatValue}>{monthSummary.daysWithShifts}</Text>
-                <Text style={styles.quickStatLabel}>días con turnos</Text>
-              </View>
-            </View>
+          <Pressable
+            style={styles.todayButton}
+            onPress={() => {
+              const today = new Date();
+              setMonth(startOfMonth(today));
+              setSelectedDay(today);
+            }}
+          >
+            <Text style={styles.todayButtonText}>Volver a hoy</Text>
+          </Pressable>
 
             {loading ? (
               <View style={styles.loadingBox}>
@@ -897,7 +866,7 @@ export function PlanSchedulesScreen() {
 
                 <View style={styles.formRow}>
                   <FieldButton
-                    label="StartsAt"
+                    label="Inicio"
                     value={formatDateTime(createStartsAt)}
                     onPress={() => {
                       setPickerTarget({ owner: "create", field: "startsAt" });
@@ -905,7 +874,7 @@ export function PlanSchedulesScreen() {
                     }}
                   />
                   <FieldButton
-                    label="EndsAt"
+                    label="Fin"
                     value={formatDateTime(createEndsAt)}
                     onPress={() => {
                       setPickerTarget({ owner: "create", field: "endsAt" });
@@ -925,7 +894,7 @@ export function PlanSchedulesScreen() {
               </View>
 
               <View style={styles.panelSoft}>
-                <Text style={styles.sectionTitle}>Asignaci\u00f3n</Text>
+                <Text style={styles.sectionTitle}>Asignación</Text>
 
                 <View style={styles.segmentRow}>
                   <Pressable
@@ -944,7 +913,7 @@ export function PlanSchedulesScreen() {
                     style={[styles.segmentButton, createMode === "CATEGORY" && styles.segmentButtonActive]}
                     onPress={() => setCreateMode("CATEGORY")}
                   >
-                    <Text style={[styles.segmentText, createMode === "CATEGORY" && styles.segmentTextActive]}>Por categor\u00eda</Text>
+                    <Text style={[styles.segmentText, createMode === "CATEGORY" && styles.segmentTextActive]}>Por categoria</Text>
                   </Pressable>
                 </View>
 
@@ -1015,12 +984,11 @@ export function PlanSchedulesScreen() {
                         onPress={() => selectCategory(null)}
                       >
                         <View style={styles.categoryMeta}>
-                          <Text style={styles.rowTitle}>Sin categor\u00eda</Text>
+                          <Text style={styles.rowTitle}>Sin categoria</Text>
                           <Text style={styles.rowDetail}>
                             {usersWithoutCategory.length} usuario(s)
                           </Text>
                         </View>
-                        <MaterialIcons name="close" size={16} color={palette.muted} />
                       </Pressable>
 
                       {categories.map((category) => {
@@ -1037,7 +1005,6 @@ export function PlanSchedulesScreen() {
                               <Text style={styles.rowTitle}>{category.name}</Text>
                               <Text style={styles.rowDetail}>{count} usuario(s)</Text>
                             </View>
-                            <MaterialIcons name="close" size={16} color={palette.muted} />
                           </Pressable>
                         );
                       })}
@@ -1436,20 +1403,22 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
     marginTop: 8,
+    marginHorizontal: -2,
   },
+
   dayCell: {
     alignItems: "center",
+    justifyContent: "center",
     aspectRatio: 1,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: "13.0%",
+    margin: 2,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 14,
     borderWidth: 1,
-    justifyContent: "center",
-    padding: 6,
-    position: "relative",
-    width: "13.1%",
+    borderRadius: 16,
   },
   dayCellMuted: {
     opacity: 0.5,
@@ -1998,6 +1967,36 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: "#fff",
+    fontWeight: "800",
+  },
+  monthHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
+  },
+  monthCenter: {
+    flex: 1,
+    gap: 2,
+  },
+  monthTitleButton: {
+    alignSelf: "center",
+  },
+  monthTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    textTransform: "capitalize",
+  },
+  todayButton: {
+    alignItems: "center",
+    alignSelf: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  todayButtonText: {
+    color: palette.accent,
     fontWeight: "800",
   },
 });

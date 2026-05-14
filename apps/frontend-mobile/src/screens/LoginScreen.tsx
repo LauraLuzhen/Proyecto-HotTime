@@ -37,7 +37,7 @@ export function LoginScreen() {
       await auth.login(email.trim(), password);
     } catch (err) {
       const e = err as ApiClientError;
-      setError(e.message ?? "No se pudo iniciar sesion.");
+      setError(e.message ?? "No se pudo iniciar sesión.");
     } finally {
       setLoading(false);
     }
@@ -53,24 +53,11 @@ export function LoginScreen() {
         style={styles.flex}
       >
         <View style={styles.container}>
-          <View style={styles.hero}>
-            <Text style={styles.kicker}>HotTime</Text>
-            <Text style={styles.title}>Tu jornada, tus turnos y tus fichajes, en un solo lugar.</Text>
-            <Text style={styles.subtitle}>
-              Entra para ver tu calendario, fichar entrada y salida, y organizar la semana con una interfaz limpia y tranquila.
-            </Text>
-
-            <View style={styles.pillRow}>
-              <Pill label="Calendario" />
-              <Pill label="Turnos" />
-              <Pill label="Fichajes" />
-            </View>
-          </View>
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Iniciar sesiÃ³n</Text>
-              <Text style={styles.cardSubtitle}>Accede con tu email y contraseÃ±a de HotTime.</Text>
+              <Text style={styles.cardTitle}>Iniciar sesión</Text>
+              <Text style={styles.cardSubtitle}>Accede con tu email y contraseña de HotTime.</Text>
             </View>
 
             <View style={styles.field}>
@@ -100,7 +87,7 @@ export function LoginScreen() {
               />
             </View>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={styles.error}>El correo o la contraseña no son válidas</Text> : null}
 
             <Pressable
               style={[styles.button, loading && styles.buttonDisabled]}
@@ -114,9 +101,6 @@ export function LoginScreen() {
               )}
             </Pressable>
 
-            <Text style={styles.footerNote}>
-              Un acceso pensado para que empieces a trabajar rapido, con el mismo tono visual del resto de la app.
-            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>

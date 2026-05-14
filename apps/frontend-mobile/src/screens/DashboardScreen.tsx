@@ -20,6 +20,8 @@ import { BrandBackdrop } from "../components/BrandBackdrop";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 
 const CLOCK_IN_WINDOW_MS = 30 * 60 * 1000;
 const CLOCK_OUT_GRACE_MS = 60 * 60 * 1000;
@@ -67,22 +69,14 @@ function pickActiveShift(shifts: ShiftResponse[], attendances: AttendanceEntity[
 }
 
 function dayTitle(date: Date) {
-  return new Intl.DateTimeFormat("es-ES", {
-    weekday: "short",
-    day: "2-digit",
-  }).format(date);
-}
+  const days = ["D", "L", "M", "X", "J", "V", "S"];
 
-function dayShiftPreview(shift: ShiftResponse) {
-  return new Intl.DateTimeFormat("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(shift.startsAt));
+  return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function shiftSummary(shift: ShiftResponse | null) {
   if (!shift) return "No hay turno prÃ³ximo.";
-  return `${formatDay(shift.startsAt)} Â· ${formatRange(shift)}`;
+  return `${formatDay(shift.startsAt)} · ${formatRange(shift)}`;
 }
 
 export function DashboardScreen() {
@@ -99,6 +93,16 @@ export function DashboardScreen() {
   const [clockLoading, setClockLoading] = useState(false);
   const [planningError, setPlanningError] = useState<string | null>(null);
   const [clockMessage, setClockMessage] = useState<string | null>(null);
+  const [selectedWeekDay, setSelectedWeekDay] = useState(() => startOfWeek(new Date()));
+  const selectedDayShifts = weekShifts.filter((shift) =>
+    sameDay(shift.startsAt, selectedWeekDay ?? new Date())
+  );
+
+  useEffect(() => {
+    if (!selectedWeekDay) {
+      setSelectedWeekDay(startOfWeek(new Date()));
+    }
+  }, [weekStart]);
 
   async function loadPlanning() {
     setPlanningLoading(true);
@@ -223,33 +227,27 @@ export function DashboardScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={planningLoading || weekLoading} onRefresh={refreshDashboard} />}
       >
-        <View style={styles.hero}>
-          <Text style={styles.kicker}>HotTime</Text>
-          <Text style={styles.title}>Tu jornada hoy</Text>
-          <Text style={styles.subtitle}>AquÃ­ tienes el prÃ³ximo fichaje, el calendario semanal y tu informaciÃ³n principal.</Text>
-        </View>
-
         <View style={styles.panel}>
           <Text style={styles.panelTitle}>Usuario logueado</Text>
           <View style={styles.infoGrid}>
             <InfoCard label="Nombre" value={u?.fullName} />
             <InfoCard label="Rol" value={u?.role} />
             <InfoCard label="Email" value={u?.email} />
-            <InfoCard label="Organizacion" value={u?.organization.name} />
+            <InfoCard label="Organización" value={u?.organization.name} />
           </View>
         </View>
 
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Fichaje</Text>
-            <Text style={styles.panelHint}>Entrada y salida con control de ubicaciÃ³n</Text>
+            <Text style={styles.panelHint}>Entrada y salida con control de ubicación</Text>
           </View>
           {planningLoading ? (
             <ActivityIndicator color={palette.accent} />
           ) : activeShift ? (
             <>
               <Text style={styles.nextShiftTitle}>{shiftSummary(activeShift)}</Text>
-              <Text style={styles.nextShiftMeta}>{categoryName(activeShift)} Â· {statusLabel(activeShift.status)}</Text>
+              <Text style={styles.nextShiftMeta}>{categoryName(activeShift)} · {statusLabel(activeShift.status)}</Text>
               {showClockIn || showClockOut ? (
                 <Pressable
                   style={[styles.clockButton, clockLoading && styles.clockButtonDisabled]}
@@ -257,15 +255,15 @@ export function DashboardScreen() {
                   onPress={() => void clock(showClockOut ? "OUT" : "IN")}
                 >
                   <Text style={styles.clockButtonText}>
-                    {clockLoading ? "Comprobando ubicacion..." : showClockOut ? "Fichar salida" : "Fichar entrada"}
+                    {clockLoading ? "Comprobando ubicación..." : showClockOut ? "Fichar salida" : "Fichar entrada"}
                   </Text>
                 </Pressable>
               ) : (
-                <Text style={styles.muted}>El botÃ³n aparece 30 minutos antes y la salida se mantiene hasta 1 hora despuÃ©s del fin del turno.</Text>
+                <Text style={styles.muted}>El botón aparece 30 minutos antes y la salida se mantiene hasta 1 hora después del fin del turno.</Text>
               )}
             </>
           ) : (
-            <Text style={styles.muted}>No hay turnos prÃ³ximos publicados.</Text>
+            <Text style={styles.muted}>No hay turnos próximos publicados.</Text>
           )}
           {clockMessage ? <Text style={styles.successText}>{clockMessage}</Text> : null}
           {planningError ? <Text style={styles.errorText}>{planningError}</Text> : null}
@@ -273,18 +271,17 @@ export function DashboardScreen() {
 
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Horario semanal</Text>
-            <Text style={styles.panelHint}>{formatDay(weekStart)} - {formatDay(weekEnd)}</Text>
+            <Text style={styles.panelTitle}>Horario semanal · {formatDay(weekStart)} - {formatDay(weekEnd)}</Text>
           </View>
           <View style={styles.weekControls}>
             <Pressable style={styles.smallButton} onPress={() => setWeekStart((current) => addDays(current, -7))}>
-              <Text style={styles.smallButtonText}>Anterior</Text>
+              <MaterialIcons name="arrow-back-ios" size={16} color={palette.accent} />
             </Pressable>
             <Pressable style={styles.smallButton} onPress={() => setWeekStart(startOfWeek(new Date()))}>
               <Text style={styles.smallButtonText}>Hoy</Text>
             </Pressable>
             <Pressable style={styles.smallButton} onPress={() => setWeekStart((current) => addDays(current, 7))}>
-              <Text style={styles.smallButtonText}>Siguiente</Text>
+              <MaterialIcons name="arrow-forward-ios" size={16} color={palette.accent} />
             </Pressable>
           </View>
 
@@ -295,23 +292,49 @@ export function DashboardScreen() {
               {weekDays.map((day) => {
                 const items = weekShifts.filter((shift) => sameDay(shift.startsAt, day));
                 return (
-                  <View key={day.toISOString()} style={styles.weekDayCard}>
+                  <Pressable
+                    key={day.toISOString()}
+                    style={[
+                      styles.weekDayCard,
+                      selectedWeekDay && sameDay(day, selectedWeekDay) && styles.weekDayCardSelected,
+                    ]}
+                    onPress={() => setSelectedWeekDay(day)}
+                  >
                     <Text style={styles.weekDayTitle}>{dayTitle(day)}</Text>
-                    <Text style={styles.weekDayCount}>{items.length ? `${items.length} turno(s)` : "Libre"}</Text>
-                    {items.slice(0, 2).map((shift) => (
-                      <View key={shift.id} style={styles.weekShiftChip}>
-                        <Text style={styles.weekShiftChipTime}>{dayShiftPreview(shift)}</Text>
-                        <Text style={styles.weekShiftChipStatus}>{statusLabel(shift.status)}</Text>
-                      </View>
-                    ))}
-                    {items.length > 2 ? <Text style={styles.weekShiftMore}>+{items.length - 2} mÃ¡s</Text> : null}
-                  </View>
+                    <Text style={styles.weekDayCount}>
+                      {items.length ? `${items.length} T` : "Libre"}
+                    </Text>
+                  </Pressable>
                 );
               })}
             </View>
           ) : (
             <Text style={styles.muted}>No hay turnos publicados en esta semana.</Text>
           )}
+            {selectedDayShifts.length ? (
+              <View style={styles.shiftList}>
+                {selectedDayShifts.map((shift) => (
+                  <View key={shift.id} style={styles.shiftCard}>
+                    <Text style={styles.shiftTime}>
+                      {formatRange(shift)}
+                    </Text>
+
+                    <Text style={styles.shiftMeta}>
+                      Estado · {statusLabel(shift.status)}
+                    </Text>
+
+                    <Text style={styles.shiftMeta}>
+                      Inicio exacto {formatDateTime(shift.startsAt)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              
+              <Text style={styles.muted}>
+                No hay turnos en este día.
+              </Text>
+            )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -373,6 +396,7 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 18,
     fontWeight: "800",
+    marginBottom: 12,
   },
   panelHint: {
     color: palette.muted,
@@ -432,6 +456,7 @@ const styles = StyleSheet.create({
   muted: {
     color: palette.muted,
     lineHeight: 20,
+    marginTop: 12,
   },
   successText: {
     color: palette.success,
@@ -542,5 +567,34 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 12,
   },
+  weekDayCardSelected: {
+    borderColor: palette.accent,
+    backgroundColor: "#eaf2ff",
+    transform: [{ scale: 1.02 }],
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+
+  shiftList: {
+    gap: 10,
+    marginTop: 10,
+  },
+
+  shiftCard: {
+    backgroundColor: "#fff",
+    borderColor: palette.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  }
 });
 

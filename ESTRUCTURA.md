@@ -61,12 +61,3 @@ Reglas de arquitectura recomendadas:
 - `repository.ts`: Prisma y SQL raw si hace falta.
 
 @expo/ngrok
-
-FRONTEND
-Mostrar botón ENTRADA
-now >= shift.startsAt - 30min
-&& now <= shift.endsAt
-&& !clockIn
-&& shift.status !== "MISSED"
-Mostrar botón SALIDA
-clockIn && !clockOut

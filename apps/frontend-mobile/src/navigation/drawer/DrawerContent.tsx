@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View, Image  } from "react-native";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 
@@ -60,9 +60,9 @@ export function DrawerContent(props: DrawerContentComponentProps) {
   ], []);
 
   const adminItems: Item[] = useMemo(() => [
-    { label: "Plan schedule", route: "PlanSchedules", icon: "event-available" },
-    { label: "Plan attendance", route: "PlanAttendance", icon: "how-to-reg" },
-    { label: "Enviar comunicación", route: "Communication", icon: "send" },
+    { label: "Horarios", route: "PlanSchedules", icon: "event-available" },
+    { label: "Fichajes", route: "PlanAttendance", icon: "how-to-reg" },
+    { label: "Enviar comunicado", route: "Communication", icon: "send" },
     ...(isAdmin ? [{ label: "Administración", route: "Administration", icon: "admin-panel-settings" as const }] : []),
     ...(isAdmin ? [{ label: "Organización", route: "Organization", icon: "business" as const }] : []),
   ], [isAdmin]);
@@ -76,7 +76,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
       <View style={styles.topBlock}>
         <View style={styles.brandRow}>
           <View style={styles.brandMark}>
-            <Text style={styles.brandMarkText}>H</Text>
+            <Image source={require("../../img/logo.png")} style={styles.brandMark} />
           </View>
           <View style={styles.brandCopy}>
             <Text style={styles.brandTitle}>HotTime</Text>

@@ -14,10 +14,11 @@ import {
 import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, GeneralUserResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
-import { normalizeSearchText } from "../lib/schedule";
+import { normalizeSearchText, palette } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 type RecipientMode = NonNullable<CreateCommunicationDto["recipientMode"]>;
 type FieldErrors = Partial<Record<"title", string>>;
@@ -292,10 +293,8 @@ export function SendCommunicationScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadRecipients()} />}
       >
         <View style={styles.panel}>
-          <Text style={styles.title}>Enviar comunicado</Text>
-
           <View style={styles.field}>
-            <Text style={styles.label}>Titulo</Text>
+            <Text style={styles.label}>Título</Text>
             <TextInput
               onChangeText={(value) => {
                 setTitle(value);
@@ -399,8 +398,12 @@ export function SendCommunicationScreen() {
                         style={[styles.row, selected && styles.rowSelected]}
                         onPress={() => toggleUser(user.id)}
                       >
-                        <View style={styles.checkbox}>
-                          <Text style={styles.checkboxText}>{selected ? "x" : ""}</Text>
+                        <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                          <MaterialIcons
+                            name={selected ? "check" : "radio-button-unchecked"}
+                            size={16}
+                            color={selected ? "#fff" : palette.muted}
+                          />
                         </View>
                         <View style={styles.rowText}>
                           <Text style={styles.rowTitle} numberOfLines={1}>{user.fullName}</Text>
@@ -802,6 +805,10 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "#fff",
     fontWeight: "700",
+  },
+  checkboxSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
   },
 });
 

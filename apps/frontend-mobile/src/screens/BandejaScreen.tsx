@@ -139,7 +139,6 @@ export function BandejaScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
         <View style={styles.headerPanel}>
-          <Text style={styles.title}>Bandeja</Text>
           <View style={styles.countsRow}>
             <View style={styles.countBox}>
               <Text style={styles.countValue}>{totalCount}</Text>
@@ -147,11 +146,11 @@ export function BandejaScreen() {
             </View>
             <View style={styles.countBox}>
               <Text style={styles.countValue}>{unreadCount}</Text>
-              <Text style={styles.countLabel}>No leidos</Text>
+              <Text style={styles.countLabel}>No leídos</Text>
             </View>
             <View style={styles.countBox}>
               <Text style={styles.countValue}>{readCount}</Text>
-              <Text style={styles.countLabel}>Leidos</Text>
+              <Text style={styles.countLabel}>Leídos</Text>
             </View>
           </View>
           <View style={styles.filterRow}>
@@ -165,13 +164,13 @@ export function BandejaScreen() {
               style={[styles.filterButton, filter === "UNREAD" && styles.filterButtonActive]}
               onPress={() => void changeFilter("UNREAD")}
             >
-              <Text style={[styles.filterText, filter === "UNREAD" && styles.filterTextActive]}>Unread</Text>
+              <Text style={[styles.filterText, filter === "UNREAD" && styles.filterTextActive]}>No leídos</Text>
             </Pressable>
             <Pressable
               style={[styles.filterButton, filter === "READ" && styles.filterButtonActive]}
               onPress={() => void changeFilter("READ")}
             >
-              <Text style={[styles.filterText, filter === "READ" && styles.filterTextActive]}>Read</Text>
+              <Text style={[styles.filterText, filter === "READ" && styles.filterTextActive]}>Leídos</Text>
             </Pressable>
           </View>
         </View>
@@ -208,7 +207,7 @@ export function BandejaScreen() {
                 <View style={styles.metaRow}>
                   <Text style={styles.dateText}>{formatDate(communication.sentAt)}</Text>
                   <Text style={[styles.readState, !communication.read && styles.unreadState]}>
-                    {communication.read ? "Leido" : "No leido"}
+                    {communication.read ? "Leído" : "No leído"}
                   </Text>
                 </View>
               </Pressable>

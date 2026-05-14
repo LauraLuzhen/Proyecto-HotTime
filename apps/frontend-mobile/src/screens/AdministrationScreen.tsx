@@ -715,7 +715,6 @@ export function AdministrationScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData(currentFilters())} />}
       >
         <View style={styles.searchPanel}>
-          <Text style={styles.title}>Administracion</Text>
           <View style={styles.searchRow}>
             <TextInput
               autoCapitalize="words"
@@ -1052,15 +1051,15 @@ export function AdministrationScreen() {
         {fabOpen ? (
           <View style={styles.fabMenu}>
             <Pressable style={styles.fabMenuButton} onPress={openCreateUser}>
-              <Text style={styles.fabMenuText}>+ user</Text>
+              <Text style={styles.fabMenuText}>+ Usuario</Text>
             </Pressable>
             <Pressable style={styles.fabMenuButton} onPress={openCreateCategory}>
-              <Text style={styles.fabMenuText}>+ category</Text>
+              <Text style={styles.fabMenuText}>+ Categoria</Text>
             </Pressable>
           </View>
         ) : null}
         <Pressable style={styles.fab} onPress={() => setFabOpen((current) => !current)}>
-          <Text style={styles.fabText}>{fabOpen ? "X" : "+ AÃ±adir"}</Text>
+          <Text style={styles.fabText}>{fabOpen ? "Cancelar" : "+ Añadir"}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

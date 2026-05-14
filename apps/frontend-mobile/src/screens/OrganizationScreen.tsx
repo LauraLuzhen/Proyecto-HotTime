@@ -144,9 +144,6 @@ export function OrganizationScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadOrganization()} />}
       >
-        <Text style={styles.title}>Organizacion</Text>
-        <Text style={styles.subtitle}>Configura el punto y radio permitido para fichar.</Text>
-
         {loading ? (
           <View style={styles.panel}>
             <ActivityIndicator color="#5f6df5" />

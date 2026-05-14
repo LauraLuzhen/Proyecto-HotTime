@@ -26,12 +26,12 @@ import {
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 function dayTitle(date: Date) {
-  return new Intl.DateTimeFormat("es-ES", {
-    weekday: "short",
-    day: "2-digit",
-  }).format(date);
+  const days = ["D", "L", "M", "X", "J", "V", "S"];
+
+  return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function shiftStartLabel(shift: ShiftResponse) {
@@ -101,25 +101,19 @@ export function MyScheduleScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
       >
-        <View style={styles.hero}>
-          <Text style={styles.kicker}>HotTime</Text>
-          <Text style={styles.title}>Mi horario</Text>
-          <Text style={styles.subtitle}>Calendario mensual con el detalle del dÃ­a seleccionado y un resumen semanal abajo.</Text>
-        </View>
 
         <View style={styles.panel}>
           <View style={styles.monthHeader}>
             <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
-              <Text style={styles.navButtonText}>Anterior</Text>
+                <MaterialIcons name="arrow-back-ios" size={16} color={palette.accent} />
             </Pressable>
             <View style={styles.monthCenter}>
               <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
                 <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
               </Pressable>
-              <Text style={styles.monthSubtitle}>{formatDay(startOfMonth(month))} - {formatDay(endOfDay(new Date(month.getFullYear(), month.getMonth() + 1, 0)))}</Text>
             </View>
             <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
-              <Text style={styles.navButtonText}>Siguiente</Text>
+              <MaterialIcons name="arrow-forward-ios" size={16} color={palette.accent} />
             </Pressable>
           </View>
 
@@ -182,7 +176,7 @@ export function MyScheduleScreen() {
                     <Text style={styles.shiftTime}>{formatRange(shift)}</Text>
                     <Text style={[styles.badge, !shift.published && styles.badgeDraft]}>{shift.published ? "Publicado" : "Borrador"}</Text>
                   </View>
-                  <Text style={styles.shiftMeta}>{categoryName(shift)} Â· {statusLabel(shift.status)}</Text>
+                  <Text style={styles.shiftMeta}>{categoryName(shift)} · {statusLabel(shift.status)}</Text>
                   <Text style={styles.shiftMeta}>Inicio exacto {formatDateTime(shift.startsAt)}</Text>
                 </View>
               ))}
@@ -190,31 +184,6 @@ export function MyScheduleScreen() {
           ) : (
             <Text style={styles.muted}>No tienes turnos publicados este dÃ­a.</Text>
           )}
-        </View>
-
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.sectionTitle}>Semana seleccionada</Text>
-            <Text style={styles.panelHint}>Resumen de {formatDay(weekStart)} - {formatDay(addDays(weekStart, 6))}</Text>
-          </View>
-          <View style={styles.weekCalendar}>
-            {weekDays.map((day) => {
-              const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
-              return (
-                <View key={day.toISOString()} style={styles.weekDayCard}>
-                  <Text style={styles.weekDayTitle}>{dayTitle(day)}</Text>
-                  <Text style={styles.weekDayCount}>{dayShifts.length ? `${dayShifts.length} turno(s)` : "Libre"}</Text>
-                  {dayShifts.slice(0, 2).map((shift) => (
-                    <View key={shift.id} style={styles.weekShiftChip}>
-                      <Text style={styles.weekShiftChipTime}>{shiftStartLabel(shift)}</Text>
-                      <Text style={styles.weekShiftChipStatus}>{statusLabel(shift.status)}</Text>
-                    </View>
-                  ))}
-                  {dayShifts.length > 2 ? <Text style={styles.weekShiftMore}>+{dayShifts.length - 2} mÃ¡s</Text> : null}
-                </View>
-              );
-            })}
-          </View>
         </View>
       </ScrollView>
 
@@ -324,7 +293,6 @@ const styles = StyleSheet.create({
   todayButton: {
     alignItems: "center",
     alignSelf: "center",
-    marginTop: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -351,19 +319,21 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
     marginTop: 8,
+    marginHorizontal: -2,
   },
   dayCell: {
     alignItems: "center",
+    justifyContent: "center",
     aspectRatio: 1,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: "13.0%",
+    margin: 2,
     backgroundColor: palette.backgroundSoft,
     borderColor: palette.border,
-    borderRadius: 16,
     borderWidth: 1,
-    justifyContent: "center",
-    position: "relative",
-    width: "13.1%",
+    borderRadius: 16,
   },
   dayCellMuted: {
     opacity: 0.5,
