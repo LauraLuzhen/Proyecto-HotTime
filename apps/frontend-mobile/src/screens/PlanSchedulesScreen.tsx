@@ -171,7 +171,7 @@ export function PlanSchedulesScreen() {
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<CreateMode>("USER");
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [createStartsAt, setCreateStartsAt] = useState(() => buildDefaultRange(new Date()).start);
   const [createEndsAt, setCreateEndsAt] = useState(() => buildDefaultRange(new Date()).end);
@@ -265,7 +265,7 @@ export function PlanSchedulesScreen() {
 
   const assignedUserIds = useMemo(() => {
     if (createMode === "USER") {
-      return selectedUserId ? [selectedUserId] : [];
+      return selectedUserIds;
     }
 
     if (selectedCategoryId === null) {
@@ -273,7 +273,7 @@ export function PlanSchedulesScreen() {
     }
 
     return userIdsForCategory(users, selectedCategoryId);
-  }, [createMode, selectedCategoryId, selectedUserId, users]);
+  }, [createMode, selectedCategoryId, selectedUserIds, users]);
 
   const assignedUsers = useMemo(() => {
     return assignedUserIds
@@ -283,15 +283,19 @@ export function PlanSchedulesScreen() {
 
   const assignedLabel = useMemo(() => {
     if (createMode === "USER") {
-      if (!selectedUserId) return "Sin usuario";
-      return usersById.get(selectedUserId)?.fullName ?? `Usuario ${selectedUserId}`;
+      if (selectedUserIds.length === 0) return "Sin usuarios";
+      if (selectedUserIds.length === 1) {
+        const userId = selectedUserIds[0];
+        return usersById.get(userId)?.fullName ?? `Usuario ${userId}`;
+      }
+      return `${selectedUserIds.length} usuarios seleccionados`;
     }
 
     if (selectedCategoryId === null) return "Sin categoría";
     const category = categoriesById.get(selectedCategoryId);
     const count = userIdsForCategory(users, selectedCategoryId).length;
     return category ? `${category.name} (${count} usuarios)` : `Categoría #${selectedCategoryId}`;
-  }, [categoriesById, createMode, selectedCategoryId, selectedUserId, users, usersById]);
+  }, [categoriesById, createMode, selectedCategoryId, selectedUserIds, users, usersById]);
 
   const overlapUsers = useMemo(() => {
     const activeIds = new Set(assignedUserIds);
@@ -317,16 +321,18 @@ export function PlanSchedulesScreen() {
     if (!createOpen) return null;
     if (createEndsAt <= createStartsAt) return "La salida debe ser posterior a la entrada.";
     if (createMode === "USER") {
-      if (!selectedUserId) return "Selecciona un usuario.";
+      if (selectedUserIds.length === 0) return "Selecciona al menos un usuario.";
     } else if (selectedCategoryId === null) {
       return "Selecciona una categoría.";
+    } else if ((usersByCategoryId.get(selectedCategoryId)?.length ?? 0) === 0) {
+      return "La categoría seleccionada no tiene usuarios.";
     }
     if (overlapUsers.length > 0) {
       const names = overlapUsers.map((user) => user.fullName).join(", ");
       return `Solapa con turno existente en: ${names}.`;
     }
     return null;
-  }, [createEndsAt, createMode, createOpen, createStartsAt, overlapUsers.length, overlapUsers, selectedCategoryId, selectedUserId]);
+  }, [createEndsAt, createMode, createOpen, createStartsAt, overlapUsers.length, overlapUsers, selectedCategoryId, selectedUserIds, usersByCategoryId]);
 
   const editValidationError = useMemo(() => {
     if (!editOpen) return null;
@@ -421,7 +427,7 @@ export function PlanSchedulesScreen() {
     setCreateEndsAt(defaults.end);
     setCreatePublished(false);
     setCreateMode("USER");
-    setSelectedUserId(users[0]?.id ?? null);
+    setSelectedUserIds(users[0]?.id ? [users[0].id] : []);
     setSelectedCategoryId(categories[0]?.id ?? null);
     setSearchText("");
     setSubmitError(null);
@@ -460,7 +466,7 @@ export function PlanSchedulesScreen() {
   function resetCreateModal() {
     setCreateOpen(false);
     setCreateMode("USER");
-    setSelectedUserId(null);
+    setSelectedUserIds([]);
     setSelectedCategoryId(null);
     setCreateStartsAt(buildDefaultRange(selectedDay).start);
     setCreateEndsAt(buildDefaultRange(selectedDay).end);
@@ -471,8 +477,12 @@ export function PlanSchedulesScreen() {
     setSearchText("");
   }
 
-  function selectUser(userId: number) {
-    setSelectedUserId(userId);
+  function toggleUser(userId: number) {
+    setSelectedUserIds((current) => (
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
+    ));
   }
 
   function selectCategory(categoryId: number | null) {
@@ -550,11 +560,11 @@ export function PlanSchedulesScreen() {
 
     try {
       if (createMode === "USER") {
-        await api.planning.createShiftForUser({
+        await api.planning.createShiftForUsers({
           startsAt: formatBackendDateTime(createStartsAt) as unknown as Date,
           endsAt: formatBackendDateTime(createEndsAt) as unknown as Date,
           published: createPublished,
-          userId: selectedUserId!,
+          userIds: selectedUserIds,
         });
       } else {
         await api.planning.createShiftForCategory({
@@ -885,15 +895,21 @@ export function PlanSchedulesScreen() {
                 <View style={styles.segmentRow}>
                   <Pressable
                     style={[styles.segmentButton, createMode === "USER" && styles.segmentButtonActive]}
-                    onPress={() => setCreateMode("USER")}
+                    onPress={() => {
+                      setCreateMode("USER");
+                      setSubmitError(null);
+                    }}
                   >
-                    <Text style={[styles.segmentText, createMode === "USER" && styles.segmentTextActive]}>Un usuario</Text>
+                    <Text style={[styles.segmentText, createMode === "USER" && styles.segmentTextActive]}>Por usuario</Text>
                   </Pressable>
 
 
                   <Pressable
                     style={[styles.segmentButton, createMode === "CATEGORY" && styles.segmentButtonActive]}
-                    onPress={() => setCreateMode("CATEGORY")}
+                    onPress={() => {
+                      setCreateMode("CATEGORY");
+                      setSubmitError(null);
+                    }}
                   >
                     <Text style={[styles.segmentText, createMode === "CATEGORY" && styles.segmentTextActive]}>Por categoria</Text>
                   </Pressable>
@@ -908,14 +924,14 @@ export function PlanSchedulesScreen() {
                       style={styles.input}
                       value={searchText}
                     />
-                    <Text style={styles.selectionCount}>Usuario seleccionado</Text>
+                    <Text style={styles.selectionCount}>{selectedUserIds.length} usuario(s) seleccionados</Text>
 
                     {filteredUsers.length === 0 ? (
                       <EmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
                     ) : (
                       <View style={styles.list}>
                         {filteredUsers.map((user) => {
-                          const selected = selectedUserId === user.id;
+                          const selected = selectedUserIds.includes(user.id);
                           const categoriesLabel = user.categories.length
                             ? user.categories.map((category) => category.name).join(", ")
                             : "Sin categoría";
@@ -924,11 +940,11 @@ export function PlanSchedulesScreen() {
                             <Pressable
                               key={user.id}
                               style={[styles.row, selected && styles.rowSelected]}
-                              onPress={() => selectUser(user.id)}
+                              onPress={() => toggleUser(user.id)}
                             >
                               <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
                                 <MaterialIcons
-                                  name={selected ? "check" : "radio-button-unchecked"}
+                                  name={selected ? "check" : "check-box-outline-blank"}
                                   size={16}
                                   color={selected ? "#fff" : palette.muted}
                                 />
