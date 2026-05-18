@@ -2,7 +2,6 @@
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   Platform,
@@ -17,6 +16,7 @@ import {
 } from "react-native";
 import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role, UpdateUsersDto } from "@hottime/types";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError, createApi } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
@@ -324,6 +324,7 @@ function MultiSelectField({
 
 export function AdministrationScreen() {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [users, setUsers] = useState<GeneralUserResponse[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
@@ -671,31 +672,39 @@ export function AdministrationScreen() {
   function confirmDeleteUser() {
     if (!selectedUser) return;
 
-    Alert.alert("Eliminar usuario", "Seguro que quieres eliminar este usuario?", [
-      { text: "No", style: "cancel" },
-      {
-        text: "Si",
-        style: "destructive",
-        onPress: () => {
-          void deleteUser();
+    appAlert.showAlert({
+      title: "Eliminar usuario",
+      message: "¿Seguro que quieres eliminar este usuario?",
+      buttons: [
+        { text: "No", style: "cancel" },
+        {
+          text: "Sí, eliminar",
+          style: "destructive",
+          onPress: () => {
+            void deleteUser();
+          },
         },
-      },
-    ]);
+      ],
+    });
   }
 
   function confirmDeleteCategory() {
     if (!selectedCategory) return;
 
-    Alert.alert("Eliminar categoria", "Seguro que quieres eliminar esta categoria?", [
-      { text: "No", style: "cancel" },
-      {
-        text: "Si",
-        style: "destructive",
-        onPress: () => {
-          void deleteCategory();
+    appAlert.showAlert({
+      title: "Eliminar categoria",
+      message: "Seguro que quieres eliminar esta categoria?",
+      buttons: [
+        { text: "No", style: "cancel" },
+        {
+          text: "Sí, eliminar",
+          style: "destructive",
+          onPress: () => {
+            void deleteCategory();
+          },
         },
-      },
-    ]);
+      ],
+    });
   }
 
   async function deleteUser() {
@@ -707,7 +716,10 @@ export function AdministrationScreen() {
       closePreview();
     } catch (err) {
       const e = err as ApiClientError;
-      Alert.alert("No se ha podido eliminar", e.message ?? "Prueba de nuevo.");
+      appAlert.showAlert({
+        title: "No se ha podido eliminar",
+        message: e.message ?? "Prueba de nuevo.",
+      });
     }
   }
 
@@ -720,7 +732,10 @@ export function AdministrationScreen() {
       await loadData(currentFilters());
     } catch (err) {
       const e = err as ApiClientError;
-      Alert.alert("No se ha podido eliminar", e.message ?? "Prueba de nuevo.");
+      appAlert.showAlert({
+        title: "No se ha podido eliminar",
+        message: e.message ?? "Prueba de nuevo.",
+      });
     }
   }
 

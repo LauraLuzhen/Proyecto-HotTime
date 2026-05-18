@@ -1,7 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Modal,
@@ -17,6 +16,7 @@ import {
 import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role } from "@hottime/types";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError, createApi } from "../lib/api";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
@@ -126,6 +126,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 }
 
 export function ContactsScreen() {
+  const appAlert = useAppAlert();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [users, setUsers] = useState<GeneralUserResponse[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
@@ -233,7 +234,10 @@ export function ContactsScreen() {
     try {
       await Linking.openURL(`tel:${phone}`);
     } catch {
-      Alert.alert("No se puede llamar", "No se ha podido abrir la aplicacion de telefono.");
+      appAlert.showAlert({
+        title: "No se puede llamar",
+        message: "No se ha podido abrir la aplicación de teléfono.",
+      });
     }
   }
 
@@ -250,7 +254,10 @@ export function ContactsScreen() {
 
       await Linking.openURL(mailtoUrl);
     } catch {
-      Alert.alert("No se puede abrir email", "No se ha podido abrir la aplicacion de correo.");
+      appAlert.showAlert({
+        title: "No se puede abrir email",
+        message: "No se ha podido abrir la aplicacion de correo.",
+      });
     }
   }
 

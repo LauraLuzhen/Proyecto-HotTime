@@ -1,7 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, GeneralUserResponse } from "@hottime/types";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError, createApi } from "../lib/api";
 import { communicationTone, normalizeSearchText, palette } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
@@ -46,6 +46,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 
 export function SendCommunicationScreen() {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -225,17 +226,26 @@ export function SendCommunicationScreen() {
     }
 
     if (!trimmedContent) {
-      Alert.alert("Contenido incompleto", "Escribe el contenido del comunicado.");
+      appAlert.showAlert({
+        title: "Contenido incompleto",
+        message: "Escribe el contenido del comunicado.",
+      });
       return;
     }
 
     if (recipientMode === "USERS" && selectedUserIds.length === 0) {
-      Alert.alert("Sin destinatarios", "Selecciona al menos un usuario.");
+      appAlert.showAlert({
+        title: "Sin destinatarios",
+        message: "Selecciona al menos un usuario.",
+      });
       return;
     }
 
     if (recipientMode === "CATEGORIES" && categoryRecipientIds.size === 0) {
-      Alert.alert("Sin categorias", "Selecciona al menos una categoria.");
+      appAlert.showAlert({
+        title: "Sin categorias",
+        message: "Selecciona al menos una categoria.",
+      });
       return;
     }
 
@@ -268,7 +278,10 @@ export function SendCommunicationScreen() {
       setExcludedCategoryUserIds([]);
       setSearchText("");
       setFieldErrors({});
-      Alert.alert("Comunicado enviado", "El comunicado se ha enviado correctamente.");
+      appAlert.showAlert({
+        title: "Comunicado enviado",
+        message: "El comunicado se ha enviado correctamente.",
+      });
     } catch (err) {
       const e = err as ApiClientError;
       setError(e.message ?? "No se ha podido enviar el comunicado.");

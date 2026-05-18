@@ -2,7 +2,6 @@
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import {
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError, createApi } from "../lib/api";
 import { MonthYearPicker } from "../components/MonthYearPicker";
 import { BrandBackdrop } from "../components/BrandBackdrop";
@@ -158,6 +158,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 
 export function PlanSchedulesScreen() {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
 
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
@@ -605,16 +606,20 @@ export function PlanSchedulesScreen() {
   }
 
   function confirmDeleteShift(shift: ShiftResponse) {
-    Alert.alert("Eliminar turno", "Seguro que quieres eliminar este turno?", [
-      { text: "No", style: "cancel" },
-      {
-        text: "Sí",
-        style: "destructive",
-        onPress: () => {
-          void deleteShift(shift);
+    appAlert.showAlert({
+      title: "Eliminar turno",
+      message: "¿Seguro que quieres eliminar este turno?",
+      buttons: [
+        { text: "No", style: "cancel" },
+        {
+          text: "Sí, eliminar",
+          style: "destructive",
+          onPress: () => {
+            void deleteShift(shift);
+          },
         },
-      },
-    ]);
+      ],
+    });
   }
 
   async function deleteShift(shift: ShiftResponse) {

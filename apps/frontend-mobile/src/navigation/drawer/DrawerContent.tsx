@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Alert, Pressable, StyleSheet, Text, View, Image  } from "react-native";
+import { Pressable, StyleSheet, Text, View, Image  } from "react-native";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 
+import { useAppAlert } from "../../components/AppAlert";
 import { palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
 
@@ -45,6 +46,7 @@ function DrawerButton({
 
 export function DrawerContent(props: DrawerContentComponentProps) {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const isAdminOrManager = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
   const isAdmin = auth.user?.role === "ADMIN";
@@ -129,16 +131,20 @@ export function DrawerContent(props: DrawerContentComponentProps) {
 
       <Pressable
         onPress={() => {
-          Alert.alert("Cerrar sesión", "¿Seguro que quieres cerrar sesión?", [
-            { text: "No", style: "cancel" },
-            {
-              text: "Sí",
-              style: "destructive",
-              onPress: () => {
-                void auth.logout();
+          appAlert.showAlert({
+            title: "Cerrar sesión",
+            message: "¿Seguro que quieres cerrar sesión?",
+            buttons: [
+              { text: "No", style: "cancel" },
+              {
+                text: "Sí, cerrar",
+                style: "destructive",
+                onPress: () => {
+                  void auth.logout();
+                },
               },
-            },
-          ]);
+            ],
+          });
         }}
         style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
       >

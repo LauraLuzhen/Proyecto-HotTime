@@ -1,7 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   RefreshControl,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError, createApi } from "../lib/api";
 import { communicationTone } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
@@ -59,6 +59,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 
 export function BandejaScreen() {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [communications, setCommunications] = useState<CommunicationInboxResponse[]>([]);
   const [filter, setFilter] = useState<InboxFilter>("ALL");
@@ -155,7 +156,10 @@ export function BandejaScreen() {
 
   function toggleSelectionMode() {
     if (communications.length === 0) {
-      Alert.alert("Sin comunicados", "No hay comunicados que puedas eliminar.");
+      appAlert.showAlert({
+        title: "Sin comunicados",
+        message: "No hay comunicados que puedas eliminar.",
+      });
       return;
     }
 
@@ -167,15 +171,18 @@ export function BandejaScreen() {
 
   async function applySelectedRemoval() {
     if (!selectedIds.length) {
-      Alert.alert("Sin selección", "Selecciona al menos un comunicado.");
+      appAlert.showAlert({
+        title: "Sin selección",
+        message: "Selecciona al menos un comunicado.",
+      });
       return;
     }
 
     if (canDeleteGlobally) {
-      Alert.alert(
-        "Elegir acción",
-        "Quieres quitarlo solo de tu bandeja o eliminarlo de la base de datos?",
-        [
+      appAlert.showAlert({
+        title: "Elegir acción",
+        message: "¿Quieres quitarlo de tu bandeja o eliminarlo para todos?",
+        buttons: [
           { text: "Cancelar", style: "cancel" },
           {
             text: "Quitar de mi bandeja",
@@ -184,14 +191,14 @@ export function BandejaScreen() {
             },
           },
           {
-            text: "Eliminar de la BBDD",
+            text: "Eliminar comunicado",
             style: "destructive",
             onPress: () => {
               confirmDeleteFromDatabase();
             },
           },
-        ]
-      );
+        ],
+      });
       return;
     }
 
@@ -233,10 +240,10 @@ export function BandejaScreen() {
   }
 
   function confirmDeleteFromDatabase() {
-    Alert.alert(
-      "¿Estás seguro?",
-      "Se borrará el comunicado de la base de datos para todos los usuarios. Esta acción no se puede deshacer.",
-      [
+    appAlert.showAlert({
+      title: "¿Estás seguro?",
+      message: "Se borrará el comunicado definitivamente para todos los usuarios. Esta acción no se puede deshacer.",
+      buttons: [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Sí, eliminar",
@@ -245,8 +252,8 @@ export function BandejaScreen() {
             void runDeleteSelected();
           },
         },
-      ]
-    );
+      ],
+    });
   }
 
   const totalCount = readCount + unreadCount;

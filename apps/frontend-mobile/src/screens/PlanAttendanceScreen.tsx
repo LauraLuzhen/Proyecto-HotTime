@@ -1,8 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { ActivityIndicator, Alert, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError, createApi } from "../lib/api";
 import { MonthYearPicker } from "../components/MonthYearPicker";
 import { BrandBackdrop } from "../components/BrandBackdrop";
@@ -58,6 +59,7 @@ function formatDistance(value: number) {
 
 export function PlanAttendanceScreen() {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const isPlanner = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
 
@@ -251,10 +253,14 @@ export function PlanAttendanceScreen() {
 
   function confirmDelete(attendance: AttendanceEntity) {
     const user = usersById[attendance.userId]?.fullName ?? (attendance.userId === auth.user?.id ? auth.user.fullName : `Usuario ${attendance.userId}`);
-    Alert.alert("Eliminar fichaje", `Eliminar ${attendanceLabel(attendance.type)} de ${user}?`, [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Eliminar", style: "destructive", onPress: () => void deleteAttendance(attendance) },
-    ]);
+    appAlert.showAlert({
+      title: "Eliminar fichaje",
+      message: `¿Eliminar ${attendanceLabel(attendance.type)} de ${user}?`,
+      buttons: [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Eliminar", style: "destructive", onPress: () => void deleteAttendance(attendance) },
+      ],
+    });
   }
 
   async function deleteAttendance(attendance: AttendanceEntity) {

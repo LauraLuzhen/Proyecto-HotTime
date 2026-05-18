@@ -3,7 +3,6 @@ import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -18,6 +17,7 @@ import {
   View,
 } from "react-native";
 
+import { useAppAlert } from "../components/AppAlert";
 import { ApiClientError } from "../lib/api";
 import { useAuth } from "../state/auth/AuthContext";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
@@ -214,6 +214,7 @@ function DateField({
 
 export function ProfileScreen() {
   const auth = useAuth();
+  const appAlert = useAppAlert();
   const user = auth.user;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -262,7 +263,10 @@ export function ProfileScreen() {
   async function pickImage() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permiso necesario", "Activa el acceso a la galeria para elegir una foto.");
+      appAlert.showAlert({
+        title: "Permiso necesario",
+        message: "Activa el acceso a la galeria para elegir una foto.",
+      });
       return;
     }
 
