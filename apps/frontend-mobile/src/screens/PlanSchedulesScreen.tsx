@@ -38,7 +38,7 @@ import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
 const PAGE_SIZE = 100;
-type CreateMode = "USER" | "USERS" | "CATEGORY";
+type CreateMode = "USER" | "CATEGORY";
 type PickerTarget = {
   owner: "create" | "edit";
   field: "startsAt" | "endsAt";
@@ -171,8 +171,7 @@ export function PlanSchedulesScreen() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<CreateMode>("USER");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null | undefined>(undefined);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [createStartsAt, setCreateStartsAt] = useState(() => buildDefaultRange(new Date()).start);
   const [createEndsAt, setCreateEndsAt] = useState(() => buildDefaultRange(new Date()).end);
   const [createPublished, setCreatePublished] = useState(false);
@@ -206,10 +205,6 @@ export function PlanSchedulesScreen() {
 
     return groups;
   }, [categories, users]);
-
-  const usersWithoutCategory = useMemo(() => {
-    return users.filter((user) => user.categories.length === 0);
-  }, [users]);
 
   const filteredUsers = useMemo(() => {
     const query = normalizeSearchText(searchText);
@@ -263,33 +258,45 @@ export function PlanSchedulesScreen() {
     return publishableDayShifts.length;
   }, [publishableDayShifts]);
 
-  const selectedRecipientIds = useMemo(() => {
+  const categoriesById = useMemo(() => {
+    return new Map(categories.map((category) => [category.id, category] as const));
+  }, [categories]);
+
+  const assignedUserIds = useMemo(() => {
     if (createMode === "USER") {
       return selectedUserId ? [selectedUserId] : [];
     }
 
-    if (createMode === "USERS") {
-      return selectedUserIds;
-    }
-
-    if (selectedCategoryId === undefined) {
+    if (selectedCategoryId === null) {
       return [];
     }
 
     return userIdsForCategory(users, selectedCategoryId);
-  }, [createMode, selectedCategoryId, selectedUserId, selectedUserIds, users]);
+  }, [createMode, selectedCategoryId, selectedUserId, users]);
 
-  const selectedRecipientUsers = useMemo(() => {
-    return selectedRecipientIds
+  const assignedUsers = useMemo(() => {
+    return assignedUserIds
       .map((userId) => usersById.get(userId))
       .filter((user): user is GeneralUserResponse => Boolean(user));
-  }, [selectedRecipientIds, usersById]);
+  }, [assignedUserIds, usersById]);
+
+  const assignedLabel = useMemo(() => {
+    if (createMode === "USER") {
+      if (!selectedUserId) return "Sin usuario";
+      return usersById.get(selectedUserId)?.fullName ?? `Usuario ${selectedUserId}`;
+    }
+
+    if (selectedCategoryId === null) return "Sin categoría";
+    const category = categoriesById.get(selectedCategoryId);
+    const count = userIdsForCategory(users, selectedCategoryId).length;
+    return category ? `${category.name} (${count} usuarios)` : `Categoría #${selectedCategoryId}`;
+  }, [categoriesById, createMode, selectedCategoryId, selectedUserId, users, usersById]);
 
   const overlapUsers = useMemo(() => {
-    const activeIds = new Set(selectedRecipientIds);
+    const activeIds = new Set(assignedUserIds);
     const conflictingIds = new Set<number>();
 
-    if (createEndsAt <= createStartsAt) {
+    if (createEndsAt <= createStartsAt || activeIds.size === 0) {
       return [];
     }
 
@@ -303,14 +310,14 @@ export function PlanSchedulesScreen() {
     return [...conflictingIds]
       .map((userId) => usersById.get(userId))
       .filter((user): user is GeneralUserResponse => Boolean(user));
-  }, [createEndsAt, createStartsAt, selectedRecipientIds, shifts, usersById]);
+  }, [assignedUserIds, createEndsAt, createStartsAt, shifts, usersById]);
 
   const createValidationError = useMemo(() => {
     if (!createOpen) return null;
     if (createEndsAt <= createStartsAt) return "La salida debe ser posterior a la entrada.";
-    if (selectedRecipientIds.length === 0) {
-      if (createMode === "USER") return "Selecciona un usuario.";
-      if (createMode === "USERS") return "Selecciona al menos un usuario.";
+    if (createMode === "USER") {
+      if (!selectedUserId) return "Selecciona un usuario.";
+    } else if (selectedCategoryId === null) {
       return "Selecciona una categoría.";
     }
     if (overlapUsers.length > 0) {
@@ -318,7 +325,7 @@ export function PlanSchedulesScreen() {
       return `Solapa con turno existente en: ${names}.`;
     }
     return null;
-  }, [createEndsAt, createMode, createOpen, createStartsAt, overlapUsers.length, overlapUsers]);
+  }, [createEndsAt, createMode, createOpen, createStartsAt, overlapUsers.length, overlapUsers, selectedCategoryId, selectedUserId]);
 
   const editValidationError = useMemo(() => {
     if (!editOpen) return null;
@@ -337,14 +344,6 @@ export function PlanSchedulesScreen() {
 
     return null;
   }, [editEndsAt, editOpen, editShift, editStartsAt, shifts]);
-
-  const createPreviewLabel = useMemo(() => {
-    if (selectedRecipientUsers.length === 0) return "Sin usuarios";
-    if (selectedRecipientUsers.length <= 3) {
-      return selectedRecipientUsers.map((user) => user.fullName).join(", ");
-    }
-    return `${selectedRecipientUsers.slice(0, 3).map((user) => user.fullName).join(", ")} +${selectedRecipientUsers.length - 3}`;
-  }, [selectedRecipientUsers]);
 
   async function loadMonth(targetMonth = month) {
     setLoading(true);
@@ -422,8 +421,7 @@ export function PlanSchedulesScreen() {
     setCreatePublished(false);
     setCreateMode("USER");
     setSelectedUserId(users[0]?.id ?? null);
-    setSelectedUserIds([]);
-    setSelectedCategoryId(categories[0]?.id ?? undefined);
+    setSelectedCategoryId(categories[0]?.id ?? null);
     setSearchText("");
     setSubmitError(null);
     setPickerTarget(null);
@@ -462,8 +460,7 @@ export function PlanSchedulesScreen() {
     setCreateOpen(false);
     setCreateMode("USER");
     setSelectedUserId(null);
-    setSelectedUserIds([]);
-    setSelectedCategoryId(undefined);
+    setSelectedCategoryId(null);
     setCreateStartsAt(buildDefaultRange(selectedDay).start);
     setCreateEndsAt(buildDefaultRange(selectedDay).end);
     setCreatePublished(false);
@@ -473,17 +470,8 @@ export function PlanSchedulesScreen() {
     setSearchText("");
   }
 
-  function toggleSelectedUser(userId: number) {
-    if (createMode === "USER") {
-      setSelectedUserId(userId);
-      return;
-    }
-
-    setSelectedUserIds((current) => (
-      current.includes(userId)
-        ? current.filter((id) => id !== userId)
-        : [...current, userId]
-    ));
+  function selectUser(userId: number) {
+    setSelectedUserId(userId);
   }
 
   function selectCategory(categoryId: number | null) {
@@ -491,7 +479,7 @@ export function PlanSchedulesScreen() {
   }
 
   function onPickerChange(event: DateTimePickerEvent, value?: Date) {
-    if (event.type === "dismissed" || !value) {
+    if (event?.type === "dismissed" || !value) {
       setPickerTarget(null);
       setPickerStage(null);
       return;
@@ -566,13 +554,6 @@ export function PlanSchedulesScreen() {
           endsAt: formatBackendDateTime(createEndsAt) as unknown as Date,
           published: createPublished,
           userId: selectedUserId!,
-        });
-      } else if (createMode === "USERS") {
-        await api.planning.createShiftForUsers({
-          startsAt: formatBackendDateTime(createStartsAt) as unknown as Date,
-          endsAt: formatBackendDateTime(createEndsAt) as unknown as Date,
-          published: createPublished,
-          userIds: selectedUserIds,
         });
       } else {
         await api.planning.createShiftForCategory({
@@ -903,12 +884,8 @@ export function PlanSchedulesScreen() {
                   >
                     <Text style={[styles.segmentText, createMode === "USER" && styles.segmentTextActive]}>Un usuario</Text>
                   </Pressable>
-                  <Pressable
-                    style={[styles.segmentButton, createMode === "USERS" && styles.segmentButtonActive]}
-                    onPress={() => setCreateMode("USERS")}
-                  >
-                    <Text style={[styles.segmentText, createMode === "USERS" && styles.segmentTextActive]}>Varios usuarios</Text>
-                  </Pressable>
+
+
                   <Pressable
                     style={[styles.segmentButton, createMode === "CATEGORY" && styles.segmentButtonActive]}
                     onPress={() => setCreateMode("CATEGORY")}
@@ -917,7 +894,7 @@ export function PlanSchedulesScreen() {
                   </Pressable>
                 </View>
 
-                {createMode === "USER" || createMode === "USERS" ? (
+                {createMode === "USER" ? (
                   <View style={styles.selectorBlock}>
                     <TextInput
                       autoCapitalize="none"
@@ -926,37 +903,31 @@ export function PlanSchedulesScreen() {
                       style={styles.input}
                       value={searchText}
                     />
-                    <Text style={styles.selectionCount}>
-                      {createMode === "USER"
-                        ? (selectedUserId ? 1 : 0)
-                        : selectedUserIds.length} usuario(s) seleccionado(s)
-                    </Text>
+                    <Text style={styles.selectionCount}>Usuario seleccionado</Text>
 
                     {filteredUsers.length === 0 ? (
                       <EmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
                     ) : (
                       <View style={styles.list}>
                         {filteredUsers.map((user) => {
-                          const selected = createMode === "USER"
-                            ? selectedUserId === user.id
-                            : selectedUserIds.includes(user.id);
+                          const selected = selectedUserId === user.id;
                           const categoriesLabel = user.categories.length
                             ? user.categories.map((category) => category.name).join(", ")
-                            : "Sin categor\u00eda";
+                            : "Sin categoría";
 
                           return (
                             <Pressable
                               key={user.id}
                               style={[styles.row, selected && styles.rowSelected]}
-                              onPress={() => toggleSelectedUser(user.id)}
+                              onPress={() => selectUser(user.id)}
                             >
-                          <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                            <MaterialIcons
-                              name={selected ? "check" : "radio-button-unchecked"}
-                              size={16}
-                              color={selected ? "#fff" : palette.muted}
-                            />
-                          </View>
+                              <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                                <MaterialIcons
+                                  name={selected ? "check" : "radio-button-unchecked"}
+                                  size={16}
+                                  color={selected ? "#fff" : palette.muted}
+                                />
+                              </View>
                               <View style={styles.rowText}>
                                 <Text style={styles.rowTitle} numberOfLines={1}>{user.fullName}</Text>
                                 <Text style={styles.rowDetail} numberOfLines={1}>{user.email}</Text>
@@ -971,26 +942,12 @@ export function PlanSchedulesScreen() {
                 ) : (
                   <View style={styles.selectorBlock}>
                     <Text style={styles.selectionCount}>
-                      {selectedCategoryId === undefined
-                        ? "Selecciona una categor\u00eda"
-                        : `${selectedCategoryId === null
-                          ? usersWithoutCategory.length
-                          : (usersByCategoryId.get(selectedCategoryId)?.length ?? 0)} usuario(s) en la categor\u00eda`}
+                      {selectedCategoryId === null
+                        ? "Selecciona una categoría"
+                        : `${usersByCategoryId.get(selectedCategoryId)?.length ?? 0} usuario(s) en la categoría`}
                     </Text>
 
                     <View style={styles.list}>
-                      <Pressable
-                        style={[styles.categoryRow, selectedCategoryId === null && styles.categoryRowSelected]}
-                        onPress={() => selectCategory(null)}
-                      >
-                        <View style={styles.categoryMeta}>
-                          <Text style={styles.rowTitle}>Sin categoria</Text>
-                          <Text style={styles.rowDetail}>
-                            {usersWithoutCategory.length} usuario(s)
-                          </Text>
-                        </View>
-                      </Pressable>
-
                       {categories.map((category) => {
                         const count = usersByCategoryId.get(category.id)?.length ?? 0;
                         const selected = selectedCategoryId === category.id;
@@ -1017,8 +974,8 @@ export function PlanSchedulesScreen() {
                 <Text style={styles.sectionTitle}>Vista previa</Text>
                 <Text style={styles.previewRow}>Horario: {formatDateTime(createStartsAt)} - {formatDateTime(createEndsAt)}</Text>
                 <Text style={styles.previewRow}>Estado: {createPublished ? "Publicado" : "Borrador"}</Text>
-                <Text style={styles.previewRow}>Usuarios: {selectedRecipientUsers.length}</Text>
-                <Text style={styles.previewRow}>Asignados: {createPreviewLabel}</Text>
+                <Text style={styles.previewRow}>Usuarios asignados: {assignedUsers.length}</Text>
+                <Text style={styles.previewRow}>Asignación: {assignedLabel}</Text>
               </View>
 
               {pickerTarget?.owner === "create" ? (
@@ -2000,6 +1957,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+
+
+
+
+
+
 
 
 

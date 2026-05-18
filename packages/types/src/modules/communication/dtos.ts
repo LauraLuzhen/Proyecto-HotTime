@@ -18,6 +18,9 @@ export interface CreateCommunicationDto {
 export interface CommunicationInboxQueryDto {
   read?: boolean;
 }
+export interface DeleteInboxCommunicationsDto {
+  communicationIds: number[];
+}
 export interface CommunicationInboxResponse extends CommunicationBase {
   sender: CommunicationSender;
   read: boolean;
@@ -39,4 +42,8 @@ export interface CommunicationDetailResponse extends CommunicationBase {
 }
 export interface CommunicationCountResponse {
   count: number;
+}
+export interface CommunicationDeleteResponse {
+  success: boolean;
+  affected: number;
 }

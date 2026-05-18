@@ -1,6 +1,7 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   RefreshControl,
@@ -13,6 +14,8 @@ import {
 import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
+import { communicationTone } from "../lib/schedule";
+import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 
@@ -55,16 +58,26 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
 }
 
 export function BandejaScreen() {
+  const auth = useAuth();
   const api = useMemo(() => createApi(() => tokenStorage.get()), []);
   const [communications, setCommunications] = useState<CommunicationInboxResponse[]>([]);
   const [filter, setFilter] = useState<InboxFilter>("ALL");
   const [readCount, setReadCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedCommunication, setSelectedCommunication] = useState<CommunicationDetailResponse | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canDeleteGlobally = auth.user?.role === "ADMIN" || auth.user?.role === "MANAGER";
+
+  function clearSelection() {
+    setSelectionMode(false);
+    setSelectedIds([]);
+  }
 
   const loadInbox = useCallback(
     async (nextFilter: InboxFilter, showSpinner = true) => {
@@ -105,6 +118,7 @@ export function BandejaScreen() {
 
   async function changeFilter(nextFilter: InboxFilter) {
     setFilter(nextFilter);
+    clearSelection();
     await loadInbox(nextFilter);
   }
 
@@ -115,6 +129,15 @@ export function BandejaScreen() {
   }
 
   async function openCommunication(communicationId: number) {
+    if (selectionMode) {
+      setSelectedIds((current) => (
+        current.includes(communicationId)
+          ? current.filter((id) => id !== communicationId)
+          : [...current, communicationId]
+      ));
+      return;
+    }
+
     setDetailLoading(true);
     setError(null);
 
@@ -130,7 +153,104 @@ export function BandejaScreen() {
     }
   }
 
+  function toggleSelectionMode() {
+    if (communications.length === 0) {
+      Alert.alert("Sin comunicados", "No hay comunicados que puedas eliminar.");
+      return;
+    }
+
+    setSelectionMode((current) => {
+      if (current) setSelectedIds([]);
+      return !current;
+    });
+  }
+
+  async function applySelectedRemoval() {
+    if (!selectedIds.length) {
+      Alert.alert("Sin selección", "Selecciona al menos un comunicado.");
+      return;
+    }
+
+    if (canDeleteGlobally) {
+      Alert.alert(
+        "Elegir acción",
+        "Quieres quitarlo solo de tu bandeja o eliminarlo de la base de datos?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Quitar de mi bandeja",
+            onPress: () => {
+              void runHideSelected();
+            },
+          },
+          {
+            text: "Eliminar de la BBDD",
+            style: "destructive",
+            onPress: () => {
+              confirmDeleteFromDatabase();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    await runHideSelected();
+  }
+
+  async function runHideSelected() {
+    setBulkLoading(true);
+    setError(null);
+
+    try {
+      await api.communication.hideInbox({ communicationIds: selectedIds });
+      clearSelection();
+      setSelectedCommunication(null);
+      await loadInbox(filter, false);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setError(e.message ?? "No se han podido quitar los comunicados.");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function runDeleteSelected() {
+    setBulkLoading(true);
+    setError(null);
+
+    try {
+      await api.communication.delete({ communicationIds: selectedIds });
+      clearSelection();
+      setSelectedCommunication(null);
+      await loadInbox(filter, false);
+    } catch (err) {
+      const e = err as ApiClientError;
+      setError(e.message ?? "No se han podido eliminar los comunicados.");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  function confirmDeleteFromDatabase() {
+    Alert.alert(
+      "¿Estás seguro?",
+      "Se borrará el comunicado de la base de datos para todos los usuarios. Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sí, eliminar",
+          style: "destructive",
+          onPress: () => {
+            void runDeleteSelected();
+          },
+        },
+      ]
+    );
+  }
+
   const totalCount = readCount + unreadCount;
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -186,35 +306,85 @@ export function BandejaScreen() {
           <EmptyState title="Sin comunicados" detail="No hay comunicados para este filtro." />
         ) : (
           <View style={styles.list}>
-            {communications.map((communication) => (
-              <Pressable
-                key={communication.id}
-                style={[styles.card, !communication.read && styles.cardUnread]}
-                onPress={() => void openCommunication(communication.id)}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardTitleWrap}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{communication.title}</Text>
-                    <Text style={styles.sender} numberOfLines={1}>{communication.sender.fullName}</Text>
+            {communications.map((communication) => {
+              const tone = communicationTone(communication.type);
+              const selected = selectedSet.has(communication.id);
+
+              return (
+                <Pressable
+                  key={communication.id}
+                  style={[
+                    styles.card,
+                    selectionMode && styles.cardSelectable,
+                    selected && styles.cardSelected,
+                    !communication.read && { borderColor: tone.fill },
+                  ]}
+                  onPress={() => void openCommunication(communication.id)}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardTitleWrap}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>{communication.title}</Text>
+                      <Text style={styles.sender} numberOfLines={1}>{communication.sender.fullName}</Text>
+                    </View>
+                    <View style={[styles.typePill, { backgroundColor: tone.soft, borderColor: tone.border }]}>
+                      <Text style={[styles.typeText, { color: tone.fill }]}>
+                        {typeLabel(communication.type)}
+                      </Text>
+                    </View>
+                    {selectionMode ? (
+                      <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                        <Text style={[styles.checkboxText, selected && styles.checkboxTextSelected]}>
+                          {selected ? "✓" : ""}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                  <View style={[styles.typePill, communication.type === "URGENT" && styles.typePillUrgent]}>
-                    <Text style={[styles.typeText, communication.type === "URGENT" && styles.typeTextUrgent]}>
-                      {typeLabel(communication.type)}
+                  <Text style={styles.preview}>{previewText(communication.content)}</Text>
+                  <View style={styles.metaRow}>
+                    <Text style={styles.dateText}>{formatDate(communication.sentAt)}</Text>
+                    <Text style={[styles.readState, !communication.read && styles.unreadState]}>
+                      {communication.read ? "Leído" : "No leído"}
                     </Text>
                   </View>
-                </View>
-                <Text style={styles.preview}>{previewText(communication.content)}</Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.dateText}>{formatDate(communication.sentAt)}</Text>
-                  <Text style={[styles.readState, !communication.read && styles.unreadState]}>
-                    {communication.read ? "Leído" : "No leído"}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </ScrollView>
+
+      {selectionMode ? (
+        <View style={styles.selectionBar}>
+          <Text style={styles.selectionText}>{selectedIds.length} seleccionados</Text>
+          <View style={styles.selectionActions}>
+            <Pressable style={styles.cancelSelectionButton} onPress={clearSelection} disabled={bulkLoading}>
+              <Text style={styles.cancelSelectionText}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.confirmSelectionButton, bulkLoading && styles.confirmSelectionButtonDisabled]}
+              onPress={() => void applySelectedRemoval()}
+              disabled={bulkLoading}
+            >
+              {bulkLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.confirmSelectionText}>
+                  {canDeleteGlobally ? "Eliminar" : "Quitar"}
+                </Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.fabContainer}>
+        <Pressable
+          style={[styles.fab, communications.length === 0 && styles.fabDisabled]}
+          onPress={toggleSelectionMode}
+        >
+          <Text style={styles.fabText}>{selectionMode ? "Salir" : "Eliminar"}</Text>
+        </Pressable>
+      </View>
 
       {detailLoading ? (
         <View style={styles.detailLoading}>
@@ -260,7 +430,7 @@ const styles = StyleSheet.create({
   content: {
     gap: 16,
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 132,
   },
   headerPanel: {
     backgroundColor: "#fff",
@@ -362,6 +532,13 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
   },
+  cardSelectable: {
+    borderStyle: "dashed",
+  },
+  cardSelected: {
+    backgroundColor: "#f7f4ff",
+    borderColor: "#5f6df5",
+  },
   cardUnread: {
     borderColor: "#5f6df5",
   },
@@ -384,21 +561,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   typePill: {
-    backgroundColor: "#f7f8ff",
-    borderRadius: 8,
+    borderRadius: 999,
+    borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  typePillUrgent: {
-    backgroundColor: "#fde9e7",
-  },
   typeText: {
-    color: "#5f6df5",
     fontSize: 12,
     fontWeight: "700",
   },
-  typeTextUrgent: {
-    color: "#b42318",
+  checkbox: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: "#c9d0ff",
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: "center",
+    marginLeft: 2,
+    width: 22,
+  },
+  checkboxSelected: {
+    backgroundColor: "#5f6df5",
+    borderColor: "#5f6df5",
+  },
+  checkboxText: {
+    color: "#5f6df5",
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 14,
+  },
+  checkboxTextSelected: {
+    color: "#fff",
   },
   preview: {
     color: "#393934",
@@ -490,6 +684,89 @@ const styles = StyleSheet.create({
     color: "#222",
     fontSize: 16,
     lineHeight: 23,
+  },
+  selectionBar: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: "#d7ddff",
+    borderRadius: 14,
+    borderWidth: 1,
+    bottom: 88,
+    flexDirection: "row",
+    gap: 12,
+    left: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    position: "absolute",
+    right: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  selectionText: {
+    color: "#1f1f1d",
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  selectionActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  cancelSelectionButton: {
+    alignItems: "center",
+    borderColor: "#d7ddff",
+    borderRadius: 10,
+    borderWidth: 1,
+    minWidth: 88,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  cancelSelectionText: {
+    color: "#3d3d39",
+    fontWeight: "700",
+  },
+  confirmSelectionButton: {
+    alignItems: "center",
+    backgroundColor: "#5f6df5",
+    borderRadius: 10,
+    minWidth: 88,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  confirmSelectionButtonDisabled: {
+    opacity: 0.8,
+  },
+  confirmSelectionText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  fabContainer: {
+    bottom: 24,
+    position: "absolute",
+    right: 16,
+  },
+  fab: {
+    alignItems: "center",
+    backgroundColor: "#5f6df5",
+    borderRadius: 999,
+    elevation: 4,
+    minWidth: 112,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: "#000",
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+  },
+  fabDisabled: {
+    opacity: 0.45,
+  },
+  fabText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });
 

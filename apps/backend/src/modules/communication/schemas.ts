@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { CreateCommunicationDto } from "@hottime/types";
+import type { CreateCommunicationDto, DeleteInboxCommunicationsDto } from "@hottime/types";
 
 const readQueryValue = z.preprocess((value) => {
   if (value === undefined) return undefined;
@@ -24,6 +24,11 @@ export type CreateCommunicationInput = CreateCommunicationDto;
 export const getInboxSchema = z.object({
   read: readQueryValue,
 }).strict();
+
+export const deleteInboxSchema = z.object({
+  communicationIds: z.array(z.coerce.number().int().positive()).min(1),
+}).strict();
+export type DeleteInboxCommunicationsInput = DeleteInboxCommunicationsDto;
 
 export const getCommunicationIdSchema = z.object({
   id: z.coerce.number().int().positive(),

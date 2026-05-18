@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { ActivityIndicator, Alert, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
@@ -161,13 +161,56 @@ export function PlanAttendanceScreen() {
   }
 
   function onPickerChange(event: DateTimePickerEvent, value?: Date) {
-    if (event.type === "dismissed" || !value) {
+    if (event?.type === "dismissed" || !value) {
       setPickerTarget(null);
       return;
     }
 
     if (pickerTarget === "occurredAt") setOccurredAt(value);
     setPickerTarget(null);
+  }
+
+  function openOccurredAtPicker() {
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value: occurredAt,
+        mode: "date",
+        is24Hour: true,
+        onChange: (dateEvent, selectedDate) => {
+          if (dateEvent?.type !== "set" || !selectedDate) {
+            return;
+          }
+
+          const pickedDay = selectedDate;
+
+          DateTimePickerAndroid.open({
+            value: occurredAt,
+            mode: "time",
+            is24Hour: true,
+            onChange: (timeEvent, selectedTime) => {
+              if (timeEvent?.type !== "set" || !selectedTime) {
+                return;
+              }
+
+              setOccurredAt(
+                new Date(
+                  pickedDay.getFullYear(),
+                  pickedDay.getMonth(),
+                  pickedDay.getDate(),
+                  selectedTime.getHours(),
+                  selectedTime.getMinutes(),
+                  0,
+                  0
+                )
+              );
+            },
+          });
+        },
+      });
+      return;
+    }
+
+    setPickerTarget("occurredAt");
   }
 
   async function saveAttendance() {
@@ -383,7 +426,7 @@ export function PlanAttendanceScreen() {
           </View>
 
           <View style={styles.formGrid}>
-            <FieldButton label="Fecha y hora" value={formatDateTime(occurredAt)} onPress={() => setPickerTarget("occurredAt")} />
+            <FieldButton label="Fecha y hora" value={formatDateTime(occurredAt)} onPress={openOccurredAtPicker} />
           </View>
 
           <View style={styles.actionRow}>
@@ -407,7 +450,7 @@ export function PlanAttendanceScreen() {
         onSelect={goToMonth}
       />
 
-      {pickerTarget ? (
+      {pickerTarget && Platform.OS === "ios" ? (
         <DateTimePicker
           value={occurredAt}
           mode="datetime"

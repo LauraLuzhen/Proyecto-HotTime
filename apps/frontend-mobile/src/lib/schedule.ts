@@ -1,4 +1,4 @@
-import type { ShiftResponse } from "@hottime/types";
+import type { CommunicationType, ShiftResponse } from "@hottime/types";
 
 export const dayNames = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
 export const calendarDayNames = ["L", "M", "X", "J", "V", "S", "D"];
@@ -34,6 +34,40 @@ export const brandPalette = [
   palette.brandE,
   palette.brandF,
 ];
+
+export function communicationTone(type: CommunicationType) {
+  switch (type) {
+    case "INFO":
+      return {
+        border: "#9ebcff",
+        fill: "#2f64d6",
+        soft: "#dfe9ff",
+        text: "#2f64d6",
+      };
+    case "WARNING":
+      return {
+        border: "#f0d48d",
+        fill: "#d99a2b",
+        soft: "#fff1cf",
+        text: "#8a5d00",
+      };
+    case "URGENT":
+      return {
+        border: "#efc0ba",
+        fill: "#b42318",
+        soft: "#fde9e7",
+        text: "#b42318",
+      };
+    case "GENERAL":
+    default:
+      return {
+        border: "#bbc4ff",
+        fill: "#454ce0",
+        soft: "#e4e7ff",
+        text: "#454ce0",
+      };
+  }
+}
 
 export function startOfWeek(value: Date) {
   const date = new Date(value);

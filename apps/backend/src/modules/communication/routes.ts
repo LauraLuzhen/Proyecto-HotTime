@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { httpError } from "@/lib/httpError";
 import { authenticate } from "@/plugins/auth";
+import { requireRole } from "@/plugins/roles";
 import * as service from "@/modules/communication/service";
-import { createCommunicationSchema, getCommunicationIdSchema, getInboxSchema } from "./schemas";
+import { createCommunicationSchema, deleteInboxSchema, getCommunicationIdSchema, getInboxSchema } from "./schemas";
 
 export async function communicationRoutes(app: FastifyInstance) {
   // Create communication
@@ -52,6 +53,35 @@ export async function communicationRoutes(app: FastifyInstance) {
   // Get count unread communications
   app.get("/inbox/count/unread", { preHandler: [authenticate] }, async (req, reply) => {
     const result = await service.countInboxCommunications(req.user.id, req.user.organizationId, false);
+    return reply.send(result);
+  });
+
+  // Hide selected inbox communications for the current user
+  app.post("/inbox/hide", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = deleteInboxSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid communication data", 400, "VALIDATION_ERROR"));
+
+    const result = await service.hideInboxCommunications(
+      req.user.id,
+      req.user.organizationId,
+      parsed.data
+    );
+
+    return reply.send(result);
+  });
+
+  // Delete communications from database by ADMIN or MANAGER
+  app.post("/delete", { preHandler: [authenticate, requireRole(["ADMIN", "MANAGER"])] }, async (req, reply) => {
+    const parsed = deleteInboxSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid communication data", 400, "VALIDATION_ERROR"));
+
+    const result = await service.deleteCommunications(
+      req.user.id,
+      req.user.organizationId,
+      req.user.role,
+      parsed.data
+    );
+
     return reply.send(result);
   });
 

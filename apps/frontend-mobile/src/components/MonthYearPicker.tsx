@@ -14,7 +14,7 @@ type Props = {
 
 export function MonthYearPicker({ visible, value, title = "Elegir mes", onClose, onSelect }: Props) {
   function onChange(event: DateTimePickerEvent, date?: Date) {
-    if (event.type === "dismissed" || !date) {
+    if (event?.type === "dismissed" || !date) {
       onClose();
       return;
     }

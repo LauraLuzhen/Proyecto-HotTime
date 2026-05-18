@@ -30,7 +30,7 @@ import { PlanAttendanceScreen } from "../screens/PlanAttendanceScreen";
 import { MyScheduleScreen } from "../screens/MyScheduleScreen";
 import { MyAttendanceScreen } from "../screens/MyAttendanceScreen";
 import { ApiClientError, createApi } from "../lib/api";
-import { palette } from "../lib/schedule";
+import { communicationTone, palette } from "../lib/schedule";
 import { tokenStorage } from "../state/auth/storage";
 
 const Stack = createNativeStackNavigator();
@@ -138,24 +138,32 @@ function HeaderInboxButton({ navigation }: { navigation: any }) {
               <Text style={styles.emptyText}>No tienes comunicados.</Text>
             ) : (
               <View style={styles.latestList}>
-                {items.map((item) => (
-                  <Pressable
-                    key={item.id}
-                    style={[styles.latestItem, !item.read && styles.latestItemUnread]}
-                    onPress={() => void openCommunication(item.id)}
-                  >
-                    <View style={styles.latestTopRow}>
-                      <Text style={styles.latestTitle} numberOfLines={1}>{item.title}</Text>
-                      <Text style={[styles.latestState, !item.read && styles.latestStateUnread]}>
-                        {item.read ? "Leido" : "Nuevo"}
+                {items.map((item) => {
+                  const tone = communicationTone(item.type);
+
+                  return (
+                    <Pressable
+                      key={item.id}
+                      style={[
+                        styles.latestItem,
+                        { backgroundColor: tone.soft, borderColor: tone.border },
+                        !item.read && styles.latestItemUnread,
+                      ]}
+                      onPress={() => void openCommunication(item.id)}
+                    >
+                      <View style={styles.latestTopRow}>
+                        <Text style={styles.latestTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={[styles.latestState, { color: tone.fill }, !item.read && styles.latestStateUnread]}>
+                          {item.read ? "Leido" : "Nuevo"}
+                        </Text>
+                      </View>
+                      <Text style={[styles.latestMeta, { color: tone.text }]} numberOfLines={1}>
+                        {item.sender.fullName} - {typeLabel(item.type)} - {formatDate(item.sentAt)}
                       </Text>
-                    </View>
-                    <Text style={styles.latestMeta} numberOfLines={1}>
-                      {item.sender.fullName} - {typeLabel(item.type)} - {formatDate(item.sentAt)}
-                    </Text>
-                    <Text style={styles.latestPreview}>{previewText(item.content)}</Text>
-                  </Pressable>
-                ))}
+                      <Text style={styles.latestPreview}>{previewText(item.content)}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             )}
 
@@ -355,15 +363,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   latestItem: {
-    borderColor: "#e8ecff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 5,
     padding: 10,
   },
   latestItemUnread: {
-    backgroundColor: "#f7f8ff",
-    borderColor: "#5f6df5",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   latestTopRow: {
     alignItems: "center",
@@ -377,12 +387,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   latestState: {
-    color: "#6a6a64",
     fontSize: 12,
     fontWeight: "700",
   },
   latestStateUnread: {
-    color: "#5f6df5",
+    fontWeight: "800",
   },
   latestMeta: {
     color: "#64645e",

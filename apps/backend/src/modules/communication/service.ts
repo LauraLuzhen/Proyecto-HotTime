@@ -1,4 +1,4 @@
-import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationOutboxResponse, CountInboxCommunicationsFn, CreateCommunicationFn, GetCommunicationByIdFn, GetInboxCommunicationsFn, GetOutboxCommunicationsFn, } from "@hottime/types";
+import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationOutboxResponse, CountInboxCommunicationsFn, CreateCommunicationFn, DeleteCommunicationsFn, GetCommunicationByIdFn, GetInboxCommunicationsFn, GetOutboxCommunicationsFn, HideInboxCommunicationsFn, } from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import * as repo from "@/modules/communication/repository";
 
@@ -98,4 +98,40 @@ export const countInboxCommunications: CountInboxCommunicationsFn = async (userI
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
   const count = await repo.countInbox(userId, organizationId, read);
   return { count };
+};
+
+// Hide selected inbox communications for the current user
+export const hideInboxCommunications: HideInboxCommunicationsFn = async (userId, organizationId, data) => {
+  const user = await repo.findUserById(userId);
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
+
+  const communicationIds = [...new Set(data.communicationIds)].filter((id) => Number.isInteger(id) && id > 0);
+  if (!communicationIds.length) {
+    throw httpError("Select at least one communication", 400, "NO_COMMUNICATIONS_SELECTED");
+  }
+
+  const affected = await repo.hideInboxCommunications(userId, organizationId, communicationIds);
+
+  return { success: true, affected };
+};
+
+// Delete communications from database
+export const deleteCommunications: DeleteCommunicationsFn = async (userId, organizationId, role, data) => {
+  const user = await repo.findUserById(userId);
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
+  if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
+
+  if (role !== "ADMIN" && role !== "MANAGER") {
+    throw httpError("Forbidden", 403, "FORBIDDEN");
+  }
+
+  const communicationIds = [...new Set(data.communicationIds)].filter((id) => Number.isInteger(id) && id > 0);
+  if (!communicationIds.length) {
+    throw httpError("Select at least one communication", 400, "NO_COMMUNICATIONS_SELECTED");
+  }
+
+  const affected = await repo.deleteInboxCommunications(organizationId, communicationIds);
+
+  return { success: true, affected };
 };

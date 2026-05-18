@@ -9,7 +9,12 @@ async function main() {
   // Contraseña común de todos los usuarios
   const hash = await bcrypt.hash("Password1.", 10);
 
-  // Clean BD
+  // Clean BD from children to parents
+  await prisma.communicationUser.deleteMany();
+  await prisma.communication.deleteMany();
+  await prisma.attendance.deleteMany();
+  await prisma.shiftCategory.deleteMany();
+  await prisma.shift.deleteMany();
   await prisma.userCategory.deleteMany();
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();

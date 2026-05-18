@@ -151,6 +151,7 @@ export function findInbox(userId: number, organizationId: number, filters: Commu
   return prisma.communicationUser.findMany({
     where: {
       userId,
+      hiddenAt: null,
       read: filters.read,
       communication: {
         organizationId,
@@ -190,6 +191,7 @@ export function findRecipientCommunication(communicationId: number, userId: numb
     where: {
       communicationId,
       userId,
+      hiddenAt: null,
       communication: {
         organizationId,
       },
@@ -232,11 +234,87 @@ export function countInbox(userId: number, organizationId: number, read: boolean
   return prisma.communicationUser.count({
     where: {
       userId,
+      hiddenAt: null,
       read,
       communication: {
         organizationId,
         NOT: { senderId: userId },
       },
     },
+  });
+}
+
+export async function hideInboxCommunications(userId: number, organizationId: number, communicationIds: number[]) {
+  const validCommunications = await prisma.communication.findMany({
+    where: {
+      id: { in: uniqueIds(communicationIds) },
+      organizationId,
+      NOT: { senderId: userId },
+    },
+    select: { id: true },
+  });
+
+  if (!validCommunications.length) {
+    return 0;
+  }
+
+  const recipients = await prisma.communicationUser.findMany({
+    where: {
+      userId,
+      hiddenAt: null,
+      communicationId: { in: validCommunications.map((communication) => communication.id) },
+    },
+    select: { id: true },
+  });
+
+  if (!recipients.length) {
+    return 0;
+  }
+
+  const result = await prisma.communicationUser.updateMany({
+    where: {
+      id: { in: recipients.map((recipient) => recipient.id) },
+    },
+    data: {
+      hiddenAt: new Date(),
+    },
+  });
+
+  return result.count;
+}
+
+export async function deleteInboxCommunications(organizationId: number, communicationIds: number[]) {
+  const ids = uniqueIds(communicationIds);
+  if (!ids.length) return 0;
+
+  return prisma.$transaction(async (tx) => {
+    const validCommunications = await tx.communication.findMany({
+      where: {
+        id: { in: ids },
+        organizationId,
+      },
+      select: { id: true },
+    });
+
+    if (!validCommunications.length) {
+      return 0;
+    }
+
+    const validIds = validCommunications.map((communication) => communication.id);
+
+    await tx.communicationUser.deleteMany({
+      where: {
+        communicationId: { in: validIds },
+      },
+    });
+
+    const result = await tx.communication.deleteMany({
+      where: {
+        id: { in: validIds },
+        organizationId,
+      },
+    });
+
+    return result.count;
   });
 }

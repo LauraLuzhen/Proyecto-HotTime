@@ -39,8 +39,13 @@ Instalar dependencias pnpm. El proyecto queda como monorepo para que varios comp
         prueba: pnpm dev
         visualizacion BD: npx prisma studio
         formatear schema: npx prisma format
-    pnpm --filter @hottime/types build: montar types    
-    ctrl + shift + p --> TypeScript: Restart TS Server
+pnpm --filter @hottime/types build: montar types    
+ctrl + shift + p --> TypeScript: Restart TS Server
+
+pnpm --filter backend exec prisma migrate reset --force --skip-seed
+pnpm --filter backend exec prisma generate
+pnpm --filter backend exec prisma db push --force-reset
+pnpm --filter backend exec prisma db seed
 
 pnpm --filter backend dev
 pnpm --filter frontend-mobile dev

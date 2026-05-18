@@ -14,7 +14,7 @@ import {
 import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, GeneralUserResponse } from "@hottime/types";
 
 import { ApiClientError, createApi } from "../lib/api";
-import { normalizeSearchText, palette } from "../lib/schedule";
+import { communicationTone, normalizeSearchText, palette } from "../lib/schedule";
 import { useAuth } from "../state/auth/AuthContext";
 import { tokenStorage } from "../state/auth/storage";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
@@ -310,15 +310,35 @@ export function SendCommunicationScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>Tipo</Text>
             <View style={styles.segmentRow}>
-              {communicationTypes.map((item) => (
-                <Pressable
-                  key={item}
-                  style={[styles.segmentButton, type === item && styles.segmentButtonActive]}
-                  onPress={() => setType(item)}
-                >
-                  <Text style={[styles.segmentText, type === item && styles.segmentTextActive]}>{typeLabel(item)}</Text>
-                </Pressable>
-              ))}
+              {communicationTypes.map((item) => {
+                const tone = communicationTone(item);
+                const selected = type === item;
+
+                return (
+                  <Pressable
+                    key={item}
+                    style={[
+                      styles.segmentButton,
+                      selected && {
+                        backgroundColor: tone.soft,
+                        borderColor: tone.fill,
+                      },
+                    ]}
+                    onPress={() => setType(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        selected && {
+                          color: tone.fill,
+                        },
+                      ]}
+                    >
+                      {typeLabel(item)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 

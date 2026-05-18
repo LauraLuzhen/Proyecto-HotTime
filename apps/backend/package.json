@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "predev": "prisma generate",
     "dev": "ts-node-dev --files -r tsconfig-paths/register src/server.ts",
+    "prebuild": "prisma generate",
     "build": "tsc",
     "start": "node -r tsconfig-paths/register dist/server.js"
   },

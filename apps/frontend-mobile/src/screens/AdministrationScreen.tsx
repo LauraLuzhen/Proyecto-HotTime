@@ -39,9 +39,34 @@ function initials(name?: string) {
   return `${first}${second}`.toUpperCase();
 }
 
-function placeholderAvatarUri(name?: string) {
-  const text = encodeURIComponent(initials(name));
-  return `https://ui-avatars.com/api/?name=${text}&background=2f5f5b&color=ffffff&size=128&bold=true`;
+function Avatar({ uri, name, size }: { uri?: string | null; name?: string; size: number }) {
+  const radius = size / 2;
+
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: radius, backgroundColor: "#e4e7ff" }}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: "#c4b5fd",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ color: "#fff", fontSize: size * 0.32, fontWeight: "700" }}>
+        {initials(name)}
+      </Text>
+    </View>
+  );
 }
 
 function roleLabel(role: Role) {
@@ -779,13 +804,10 @@ export function AdministrationScreen() {
                             style={styles.userRow}
                             onPress={() => setSelectedUser(user)}
                           >
-                            <Image
-                              source={{ uri: user.imgProfile || placeholderAvatarUri(user.fullName) }}
-                              style={styles.avatar}
-                            />
-                            <Text style={styles.userName} numberOfLines={1}>
-                              {user.fullName}
-                            </Text>
+                              <Avatar uri={user.imgProfile} name={user.fullName} size={40} />
+                              <Text style={styles.userName} numberOfLines={1}>
+                                {user.fullName}
+                              </Text>
                             <Text style={styles.userRole}>{roleLabel(user.role)}</Text>
                           </Pressable>
                         ))}
@@ -814,10 +836,7 @@ export function AdministrationScreen() {
                 </Pressable>
 
                 <View style={styles.previewHeader}>
-                  <Image
-                    source={{ uri: selectedUser.imgProfile || placeholderAvatarUri(selectedUser.fullName) }}
-                    style={styles.previewAvatar}
-                  />
+                  <Avatar uri={selectedUser.imgProfile} name={selectedUser.fullName} size={96} />
                   <Text style={styles.previewName}>{selectedUser.fullName}</Text>
                   <Text style={styles.previewRole}>{roleLabel(selectedUser.role)}</Text>
                 </View>
