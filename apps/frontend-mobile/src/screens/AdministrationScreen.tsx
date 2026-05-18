@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
@@ -311,7 +312,14 @@ function MultiSelectField({
                   style={styles.option}
                   onPress={() => onToggle(option.value)}
                 >
-                  <Text style={styles.optionText}>{selected ? "x " : ""}{option.label}</Text>
+                  <View style={styles.optionRow}>
+                    <MaterialIcons
+                      name={selected ? "check-box" : "check-box-outline-blank"}
+                      size={18}
+                      color={selected ? "#5f6df5" : "#8f96b8"}
+                    />
+                    <Text style={styles.optionText}>{option.label}</Text>
+                  </View>
                 </Pressable>
               );
             })}
@@ -1414,6 +1422,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  optionRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
   },
   optionText: {
     color: "#1f1f1d",
