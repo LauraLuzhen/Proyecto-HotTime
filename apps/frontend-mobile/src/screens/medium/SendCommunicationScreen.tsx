@@ -13,6 +13,7 @@ import {
 import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, GeneralUserResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { ScreenEmptyState } from "../../components/ScreenEmptyState";
 import { ApiClientError, createApi } from "../../lib/api";
 import { communicationTone, normalizeSearchText, palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
@@ -33,15 +34,6 @@ function typeLabel(type: CommunicationType) {
     URGENT: "Urgente",
   };
   return labels[type];
-}
-
-function EmptyState({ title, detail }: { title: string; detail: string }) {
-  return (
-    <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyDetail}>{detail}</Text>
-    </View>
-  );
 }
 
 export function SendCommunicationScreen() {
@@ -293,7 +285,10 @@ export function SendCommunicationScreen() {
   if (auth.user?.role === "EMPLOYEE") {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <EmptyState title="Acceso denegado" detail="Esta pantalla solo esta disponible para administradores y managers." />
+        <ScreenEmptyState
+          title="Acceso denegado"
+          detail="Esta pantalla solo esta disponible para administradores y managers."
+        />
       </SafeAreaView>
     );
   }
@@ -397,7 +392,7 @@ export function SendCommunicationScreen() {
               <Text style={styles.loadingText}>Cargando destinatarios...</Text>
             </View>
           ) : error ? (
-            <EmptyState title="No se han podido cargar datos" detail={error} />
+            <ScreenEmptyState title="No se han podido cargar datos" detail={error} />
           ) : recipientMode === "ALL_USERS" ? (
             <View style={styles.infoBox}>
               <Text style={styles.infoTitle}>Todos los usuarios</Text>
@@ -416,7 +411,7 @@ export function SendCommunicationScreen() {
               />
               <Text style={styles.selectionCount}>{selectedUserIds.length} usuarios seleccionados</Text>
               {filteredUsers.length === 0 ? (
-                <EmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
+                <ScreenEmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
               ) : (
                 <View style={styles.list}>
                   {filteredUsers.map((user) => {
@@ -801,25 +796,6 @@ const styles = StyleSheet.create({
   rowDetail: {
     color: "#676760",
     fontSize: 13,
-  },
-  empty: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 6,
-    padding: 20,
-  },
-  emptyTitle: {
-    color: "#1f1f1d",
-    fontSize: 17,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  emptyDetail: {
-    color: "#6a6a64",
-    textAlign: "center",
   },
   formError: {
     color: "#b42318",

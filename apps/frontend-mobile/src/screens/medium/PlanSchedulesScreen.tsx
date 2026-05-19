@@ -17,6 +17,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { ScreenEmptyState } from "../../components/ScreenEmptyState";
+import { ScreenFieldButton } from "../../components/ScreenFieldButton";
 import { ApiClientError, createApi } from "../../lib/api";
 import { MonthYearPicker } from "../../components/MonthYearPicker";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
@@ -145,15 +147,6 @@ function userIdsForCategory(users: GeneralUserResponse[], categoryId: number | n
         : user.categories.some((category) => category.id === categoryId)
     ))
     .map((user) => user.id);
-}
-
-function EmptyState({ title, detail }: { title: string; detail: string }) {
-  return (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyStateTitle}>{title}</Text>
-      <Text style={styles.emptyStateDetail}>{detail}</Text>
-    </View>
-  );
 }
 
 export function PlanSchedulesScreen() {
@@ -832,7 +825,7 @@ export function PlanSchedulesScreen() {
                 })}
               </View>
             ) : (
-              <EmptyState title="No hay turnos" detail="No hay turnos para este día." />
+              <ScreenEmptyState title="No hay turnos" detail="No hay turnos para este día." />
             )}
           </View>
         </ScrollView>
@@ -861,7 +854,7 @@ export function PlanSchedulesScreen() {
                 <Text style={styles.sectionTitle}>Horario</Text>
 
                 <View style={styles.formRow}>
-                  <FieldButton
+                  <ScreenFieldButton
                     label="Inicio"
                     value={formatDateTime(createStartsAt)}
                     onPress={() => {
@@ -869,7 +862,7 @@ export function PlanSchedulesScreen() {
                       setPickerStage("date");
                     }}
                   />
-                  <FieldButton
+                  <ScreenFieldButton
                     label="Fin"
                     value={formatDateTime(createEndsAt)}
                     onPress={() => {
@@ -927,7 +920,7 @@ export function PlanSchedulesScreen() {
                     <Text style={styles.selectionCount}>{selectedUserIds.length} usuario(s) seleccionados</Text>
 
                     {filteredUsers.length === 0 ? (
-                      <EmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
+                      <ScreenEmptyState title="Sin resultados" detail="Prueba otro nombre o email." />
                     ) : (
                       <View style={styles.list}>
                         {filteredUsers.map((user) => {
@@ -1117,7 +1110,7 @@ export function PlanSchedulesScreen() {
                 <Text style={styles.sectionTitle}>Horario</Text>
 
                 <View style={styles.formRow}>
-                  <FieldButton
+                  <ScreenFieldButton
                     label="StartsAt"
                     value={formatDateTime(editStartsAt)}
                     onPress={() => {
@@ -1125,7 +1118,7 @@ export function PlanSchedulesScreen() {
                       setPickerStage("date");
                     }}
                   />
-                  <FieldButton
+                  <ScreenFieldButton
                     label="EndsAt"
                     value={formatDateTime(editEndsAt)}
                     onPress={() => {
@@ -1197,23 +1190,6 @@ export function PlanSchedulesScreen() {
         onSelect={goToMonth}
       />
     </SafeAreaView>
-  );
-}
-
-function FieldButton({
-  label,
-  value,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={styles.fieldButton} onPress={onPress}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{value}</Text>
-    </Pressable>
   );
 }
 
@@ -1552,25 +1528,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-  emptyState: {
-    alignItems: "center",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 24,
-  },
-  emptyStateTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  emptyStateDetail: {
-    color: palette.muted,
-    textAlign: "center",
-  },
   muted: {
     color: palette.muted,
     lineHeight: 20,
@@ -1678,28 +1635,6 @@ const styles = StyleSheet.create({
   formRow: {
     flexDirection: "row",
     gap: 8,
-  },
-  fieldButton: {
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
-    gap: 4,
-    minHeight: 68,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
-  },
-  fieldLabel: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  fieldValue: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: "800",
   },
   publishToggle: {
     alignItems: "center",

@@ -789,3 +789,49 @@ export const administrationStyles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
+export const screenSharedStyles = StyleSheet.create({
+  emptyState: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: "#d7ddff",
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+    padding: 20,
+  },
+  emptyStateDashed: {
+    borderStyle: "dashed",
+  },
+  emptyStateTitle: {
+    color: "#1f1f1d",
+    fontSize: 17,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  emptyStateDetail: {
+    color: "#6a6a64",
+    textAlign: "center",
+  },
+  fieldButton: {
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    gap: 4,
+    minHeight: 68,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    backgroundColor: palette.backgroundSoft,
+  },
+  fieldLabel: {
+    color: palette.muted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  fieldValue: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+});

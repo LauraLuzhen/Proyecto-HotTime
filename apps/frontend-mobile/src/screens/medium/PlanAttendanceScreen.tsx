@@ -4,6 +4,7 @@ import { ActivityIndicator, Platform, Pressable, RefreshControl, SafeAreaView, S
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { ScreenFieldButton } from "../../components/ScreenFieldButton";
 import { ApiClientError, createApi } from "../../lib/api";
 import { MonthYearPicker } from "../../components/MonthYearPicker";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
@@ -432,7 +433,7 @@ export function PlanAttendanceScreen() {
           </View>
 
           <View style={styles.formGrid}>
-            <FieldButton label="Fecha y hora" value={formatDateTime(occurredAt)} onPress={openOccurredAtPicker} />
+            <ScreenFieldButton label="Fecha y hora" value={formatDateTime(occurredAt)} onPress={openOccurredAtPicker} />
           </View>
 
           <View style={styles.actionRow}>
@@ -465,15 +466,6 @@ export function PlanAttendanceScreen() {
         />
       ) : null}
     </SafeAreaView>
-  );
-}
-
-function FieldButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
-  return (
-    <Pressable style={styles.fieldButton} onPress={onPress}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{value}</Text>
-    </Pressable>
   );
 }
 
@@ -802,27 +794,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginTop: 12,
-  },
-  fieldButton: {
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
-    gap: 4,
-    minHeight: 68,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    backgroundColor: palette.backgroundSoft,
-  },
-  fieldLabel: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  fieldValue: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: "800",
   },
   actionRow: {
     flexDirection: "row",
