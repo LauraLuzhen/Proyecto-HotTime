@@ -1,13 +1,15 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { ActivityIndicator, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { CalendarPanel } from "../../components/CalendarPanel";
 import { ScreenFieldButton } from "../../components/ScreenFieldButton";
 import { ApiClientError, createApi } from "../../lib/api";
 import { MonthYearPicker } from "../../components/MonthYearPicker";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
+import { screenSharedStyles as calendarDayStyles } from "../../lib/mobileStyles";
 import {
   addDays,
   buildMonthDays,
@@ -22,7 +24,6 @@ import {
   formatTime,
   palette,
   sameDay,
-  sameMonth,
   startOfDay,
   startOfMonth,
   startOfWeek,
@@ -301,67 +302,54 @@ export function PlanAttendanceScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadData(month, selectedDay)} />}
       >
-        <View style={styles.panel}>
-          <View style={styles.monthHeader}>
-            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
-              <Text style={styles.navButtonText}>Anterior</Text>
-            </Pressable>
-            <View style={styles.monthCenter}>
-              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
-                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+        <CalendarPanel
+          days={days}
+          error={error}
+          loading={loading}
+          loadingLabel="Cargando fichajes..."
+          month={month}
+          monthLabel={formatMonth(month)}
+          onNextMonth={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+          onOpenMonthPicker={() => setMonthPickerOpen(true)}
+          onPrevMonth={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+          onToday={() => {
+            const today = new Date();
+            setMonth(startOfMonth(today));
+            setSelectedDay(today);
+          }}
+          selectedDay={selectedDay}
+          weekdayLabels={calendarDayNames}
+          renderDay={(day, meta) => {
+            const count = monthAttendances.filter((attendance) => sameDay(attendance.occurredAt, day)).length;
+
+            return (
+              <Pressable
+                key={day.toISOString()}
+                style={[
+                  calendarDayStyles.calendarDayCell,
+                  !meta.inMonth && calendarDayStyles.calendarDayCellMuted,
+                  meta.selected && calendarDayStyles.calendarDayCellSelected,
+                ]}
+                onPress={() => setSelectedDay(day)}
+              >
+                <Text
+                  style={[
+                    calendarDayStyles.calendarDayNumber,
+                    !meta.inMonth && calendarDayStyles.calendarDayNumberMuted,
+                    meta.selected && calendarDayStyles.calendarDayNumberSelected,
+                  ]}
+                >
+                  {day.getDate()}
+                </Text>
+                <Text style={[calendarDayStyles.calendarDayHint, meta.selected && calendarDayStyles.calendarDayHintSelected]}>
+                  {count ? `${count} fichajes` : "Libre"}
+                </Text>
               </Pressable>
-            </View>
-            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
-              <Text style={styles.navButtonText}>Siguiente</Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={styles.todayButton}
-            onPress={() => {
-              const today = new Date();
-              setMonth(startOfMonth(today));
-              setSelectedDay(today);
-            }}
-          >
-            <Text style={styles.todayButtonText}>Volver a hoy</Text>
-          </Pressable>
-
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={palette.accent} />
-              <Text style={styles.muted}>Cargando fichajes...</Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.weekRow}>
-                {calendarDayNames.map((day) => <Text key={day} style={styles.weekLabel}>{day}</Text>)}
-              </View>
-              <View style={styles.calendarGrid}>
-                {days.map((day) => {
-                  const count = monthAttendances.filter((attendance) => sameDay(attendance.occurredAt, day)).length;
-                  const inMonth = sameMonth(day, month);
-                  const selected = sameDay(day, selectedDay);
-                  return (
-                    <Pressable
-                      key={day.toISOString()}
-                      style={[styles.dayCell, !inMonth && styles.dayCellMuted, selected && styles.dayCellSelected]}
-                      onPress={() => setSelectedDay(day)}
-                    >
-                      <Text style={[styles.dayNumber, !inMonth && styles.dayNumberMuted, selected && styles.dayNumberSelected]}>
-                        {day.getDate()}
-                      </Text>
-                      <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>{count ? `${count} fichajes` : "Libre"}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            );
+          }}
+        >
           {message ? <Text style={styles.successText}>{message}</Text> : null}
-        </View>
+        </CalendarPanel>
 
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
@@ -511,119 +499,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 1,
     padding: 14,
-  },
-  monthHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-  },
-  monthCenter: {
-    flex: 1,
-    gap: 2,
-  },
-  monthTitleButton: {
-    alignSelf: "center",
-  },
-  monthTitle: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "center",
-    textTransform: "capitalize",
-  },
-  monthSubtitle: {
-    color: palette.muted,
-    fontSize: 12,
-    textAlign: "center",
-  },
-  navButton: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    minHeight: 40,
-    minWidth: 86,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  navButtonText: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  todayButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  todayButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-  loadingBox: {
-    alignItems: "center",
-    gap: 8,
-    padding: 24,
-  },
-  weekRow: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  weekLabel: {
-    color: palette.muted,
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 8,
-    marginHorizontal: -2,
-  },
-
-  dayCell: {
-    alignItems: "center",
-    justifyContent: "center",
-    aspectRatio: 1,
-    flexGrow: 0,
-    flexShrink: 0,
-    flexBasis: "13.0%",
-    margin: 2,
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 16,
-  },
-  dayCellMuted: {
-    opacity: 0.5,
-  },
-  dayCellSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-  dayNumber: {
-    color: palette.text,
-    fontWeight: "800",
-  },
-  dayNumberMuted: {
-    color: palette.muted,
-  },
-  dayNumberSelected: {
-    color: "#fff",
-  },
-  dayHint: {
-    color: palette.muted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  dayHintSelected: {
-    color: "#e7f4f1",
   },
   panelHeader: {
     gap: 4,

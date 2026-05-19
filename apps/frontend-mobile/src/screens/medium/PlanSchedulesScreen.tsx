@@ -17,22 +17,30 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { CalendarPanel } from "../../components/CalendarPanel";
 import { ScreenEmptyState } from "../../components/ScreenEmptyState";
 import { ScreenFieldButton } from "../../components/ScreenFieldButton";
 import { ApiClientError, createApi } from "../../lib/api";
 import { MonthYearPicker } from "../../components/MonthYearPicker";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
+import { screenSharedStyles as calendarDayStyles } from "../../lib/mobileStyles";
 import {
   buildMonthDays,
   calendarDayNames,
+  addHours,
   endOfDay,
   formatDateTime,
   formatLongDate,
   formatMonth,
   formatRange,
+  formatBackendDateTime,
+  buildDefaultRange,
+  dayKey,
+  mergeDate,
+  mergeTime,
   palette,
   normalizeSearchText,
-  sameMonth,
+  shiftOverlaps,
   startOfMonth,
 } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
@@ -46,74 +54,9 @@ type PickerTarget = {
   field: "startsAt" | "endsAt";
 } | null;
 
-function dayKey(value: Date | string) {
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function isPastUnpublishedShift(shift: ShiftResponse | null) {
   if (!shift) return false;
   return !shift.published && new Date(shift.endsAt).getTime() < Date.now();
-}
-
-function addHours(value: Date, hours: number) {
-  const next = new Date(value);
-  next.setHours(next.getHours() + hours);
-  return next;
-}
-
-function formatBackendDateTime(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  const hours = String(value.getHours()).padStart(2, "0");
-  const minutes = String(value.getMinutes()).padStart(2, "0");
-  const seconds = String(value.getSeconds()).padStart(2, "0");
-  const offsetMinutes = -value.getTimezoneOffset();
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const offsetHours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, "0");
-  const offsetMins = String(Math.abs(offsetMinutes) % 60).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMins}`;
-}
-
-function setHoursMinutes(value: Date, hours: number, minutes = 0) {
-  const next = new Date(value);
-  next.setHours(hours, minutes, 0, 0);
-  return next;
-}
-
-function mergeDate(base: Date, nextDate: Date) {
-  return new Date(
-    nextDate.getFullYear(),
-    nextDate.getMonth(),
-    nextDate.getDate(),
-    base.getHours(),
-    base.getMinutes(),
-    base.getSeconds(),
-    0
-  );
-}
-
-function mergeTime(base: Date, nextTime: Date) {
-  return new Date(
-    base.getFullYear(),
-    base.getMonth(),
-    base.getDate(),
-    nextTime.getHours(),
-    nextTime.getMinutes(),
-    nextTime.getSeconds(),
-    0
-  );
-}
-
-function buildDefaultRange(baseDay: Date) {
-  const start = setHoursMinutes(baseDay, 9, 0);
-  const end = setHoursMinutes(baseDay, 17, 0);
-  return { start, end };
 }
 
 function userName(user: GeneralUserResponse | undefined, userId: number, currentUser?: { id: number; fullName: string } | null) {
@@ -133,10 +76,6 @@ function statusColor(status: ShiftResponse["status"]) {
     default:
       return palette.accent;
   }
-}
-
-function overlaps(left: { startsAt: Date; endsAt: Date }, right: { startsAt: Date | string; endsAt: Date | string }) {
-  return left.startsAt < new Date(right.endsAt) && left.endsAt > new Date(right.startsAt);
 }
 
 function userIdsForCategory(users: GeneralUserResponse[], categoryId: number | null) {
@@ -300,7 +239,7 @@ export function PlanSchedulesScreen() {
 
     for (const shift of shifts) {
       if (!activeIds.has(shift.userId)) continue;
-      if (overlaps({ startsAt: createStartsAt, endsAt: createEndsAt }, shift)) {
+      if (shiftOverlaps({ startsAt: createStartsAt, endsAt: createEndsAt }, shift)) {
         conflictingIds.add(shift.userId);
       }
     }
@@ -335,7 +274,7 @@ export function PlanSchedulesScreen() {
     const conflict = shifts.find((shift) => (
       shift.id !== editShift.id &&
       shift.userId === editShift.userId &&
-      overlaps({ startsAt: editStartsAt, endsAt: editEndsAt }, shift)
+      shiftOverlaps({ startsAt: editStartsAt, endsAt: editEndsAt }, shift)
     ));
 
     if (conflict) {
@@ -660,11 +599,9 @@ export function PlanSchedulesScreen() {
     }
   }
 
-  function renderDayPreview(day: Date, selected: boolean) {
-    const items = shiftsByDay.get(dayKey(day)) ?? [];
-
+  function renderDayPreview(items: ShiftResponse[], selected: boolean) {
     if (!items.length) {
-      return <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>Libre</Text>;
+      return <Text style={[calendarDayStyles.calendarDayHint, selected && calendarDayStyles.calendarDayHintSelected]}>Libre</Text>;
     }
 
     return (
@@ -696,81 +633,50 @@ export function PlanSchedulesScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
         >
-          <View style={styles.panel}>
-          <View style={styles.monthHeader}>
-            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
-                <MaterialIcons name="arrow-back-ios" size={16} color={palette.accent} />
-            </Pressable>
-            <View style={styles.monthCenter}>
-              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
-                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
-              </Pressable>
-            </View>
-            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
-              <MaterialIcons name="arrow-forward-ios" size={16} color={palette.accent} />
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={styles.todayButton}
-            onPress={() => {
+          <CalendarPanel
+            days={days}
+            error={error}
+            loading={loading}
+            loadingLabel="Cargando planificación..."
+            month={month}
+            monthLabel={formatMonth(month)}
+            onNextMonth={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+            onOpenMonthPicker={() => setMonthPickerOpen(true)}
+            onPrevMonth={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+            onToday={() => {
               const today = new Date();
               setMonth(startOfMonth(today));
               setSelectedDay(today);
             }}
-          >
-            <Text style={styles.todayButtonText}>Volver a hoy</Text>
-          </Pressable>
+            selectedDay={selectedDay}
+            weekdayLabels={calendarDayNames}
+            renderDay={(day, meta) => {
+              const items = shiftsByDay.get(dayKey(day)) ?? [];
 
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={palette.accent} />
-                <Text style={styles.muted}>Cargando planificación...</Text>
-              </View>
-            ) : (
-              <>
-                <View style={styles.weekRow}>
-                  {calendarDayNames.map((day) => (
-                    <Text key={day} style={styles.weekLabel}>
-                      {day}
-                    </Text>
-                  ))}
-                </View>
-
-                <View style={styles.calendarGrid}>
-                  {days.map((day) => {
-                    const inMonth = sameMonth(day, month);
-                    const selected = dayKey(day) === dayKey(selectedDay);
-
-                    return (
-                      <Pressable
-                        key={day.toISOString()}
-                        style={[
-                          styles.dayCell,
-                          !inMonth && styles.dayCellMuted,
-                          selected && styles.dayCellSelected,
-                        ]}
-                        onPress={() => setSelectedDay(day)}
-                      >
-                        <Text
-                          style={[
-                            styles.dayNumber,
-                            !inMonth && styles.dayNumberMuted,
-                            selected && styles.dayNumberSelected,
-                          ]}
-                        >
-                          {day.getDate()}
-                        </Text>
-                        {renderDayPreview(day, selected)}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </View>
+              return (
+                <Pressable
+                  key={day.toISOString()}
+                  style={[
+                    calendarDayStyles.calendarDayCell,
+                    !meta.inMonth && calendarDayStyles.calendarDayCellMuted,
+                    meta.selected && calendarDayStyles.calendarDayCellSelected,
+                  ]}
+                  onPress={() => setSelectedDay(day)}
+                >
+                  <Text
+                    style={[
+                      calendarDayStyles.calendarDayNumber,
+                      !meta.inMonth && calendarDayStyles.calendarDayNumberMuted,
+                      meta.selected && calendarDayStyles.calendarDayNumberSelected,
+                    ]}
+                  >
+                    {day.getDate()}
+                  </Text>
+                  {renderDayPreview(items, meta.selected)}
+                </Pressable>
+              );
+            }}
+          />
 
           <View style={styles.panel}>
             <View style={styles.sectionHeader}>
@@ -1284,22 +1190,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "capitalize",
   },
-  navButton: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 42,
-    minWidth: 82,
-    paddingHorizontal: 12,
-  },
-  navButtonText: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: "800",
-  },
   quickRow: {
     flexDirection: "row",
     gap: 8,
@@ -1337,68 +1227,6 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 11,
     fontWeight: "700",
-  },
-  loadingBox: {
-    alignItems: "center",
-    gap: 8,
-    padding: 24,
-  },
-  weekRow: {
-    flexDirection: "row",
-    marginTop: 14,
-  },
-  weekLabel: {
-    color: palette.muted,
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 8,
-    marginHorizontal: -2,
-  },
-
-  dayCell: {
-    alignItems: "center",
-    justifyContent: "center",
-    aspectRatio: 1,
-    flexGrow: 0,
-    flexShrink: 0,
-    flexBasis: "13.0%",
-    margin: 2,
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 16,
-  },
-  dayCellMuted: {
-    opacity: 0.5,
-  },
-  dayCellSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-  dayNumber: {
-    color: palette.text,
-    fontWeight: "800",
-  },
-  dayNumberMuted: {
-    color: palette.muted,
-  },
-  dayNumberSelected: {
-    color: "#fff",
-  },
-  dayHint: {
-    color: palette.muted,
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  dayHintSelected: {
-    color: "#e7f4f1",
   },
   dayPreviewRow: {
     alignItems: "center",
@@ -1880,36 +1708,6 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: "#fff",
-    fontWeight: "800",
-  },
-  monthHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-  },
-  monthCenter: {
-    flex: 1,
-    gap: 2,
-  },
-  monthTitleButton: {
-    alignSelf: "center",
-  },
-  monthTitle: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "center",
-    textTransform: "capitalize",
-  },
-  todayButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  todayButtonText: {
-    color: palette.accent,
     fontWeight: "800",
   },
 });

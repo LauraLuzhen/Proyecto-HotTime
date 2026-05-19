@@ -1,12 +1,13 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ShiftResponse } from "@hottime/types";
 
+import { screenSharedStyles as calendarDayStyles } from "../../lib/mobileStyles";
+import { CalendarPanel } from "../../components/CalendarPanel";
 import { ApiClientError, createApi } from "../../lib/api";
 import { MonthYearPicker } from "../../components/MonthYearPicker";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
 import {
-  addDays,
   buildMonthDays,
   calendarDayNames,
   categoryName,
@@ -16,23 +17,15 @@ import {
   formatDateTime,
   formatMonth,
   formatRange,
+  dayTitle,
   palette,
   sameDay,
-  sameMonth,
   startOfMonth,
-  startOfWeek,
   statusLabel,
 } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
 import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-
-function dayTitle(date: Date) {
-  const days = ["D", "L", "M", "X", "J", "V", "S"];
-
-  return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, "0")}`;
-}
 
 function shiftStartLabel(shift: ShiftResponse) {
   return new Intl.DateTimeFormat("es-ES", {
@@ -91,9 +84,6 @@ export function MyScheduleScreen() {
 
   const days = buildMonthDays(month);
   const selectedShifts = shifts.filter((shift) => sameDay(shift.startsAt, selectedDay));
-  const weekStart = startOfWeek(selectedDay);
-  const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <BrandBackdrop />
@@ -102,66 +92,52 @@ export function MyScheduleScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadMonth(month)} />}
       >
 
-        <View style={styles.panel}>
-          <View style={styles.monthHeader}>
-            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>
-                <MaterialIcons name="arrow-back-ios" size={16} color={palette.accent} />
-            </Pressable>
-            <View style={styles.monthCenter}>
-              <Pressable style={styles.monthTitleButton} onPress={() => setMonthPickerOpen(true)}>
-                <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
+        <CalendarPanel
+          days={days}
+          error={error}
+          loading={loading}
+          loadingLabel="Cargando horario..."
+          month={month}
+          monthLabel={formatMonth(month)}
+          onNextMonth={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+          onOpenMonthPicker={() => setMonthPickerOpen(true)}
+          onPrevMonth={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+          onToday={() => {
+            const today = new Date();
+            setMonth(startOfMonth(today));
+            setSelectedDay(today);
+          }}
+          selectedDay={selectedDay}
+          weekdayLabels={calendarDayNames}
+          renderDay={(day, meta) => {
+            const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
+
+            return (
+              <Pressable
+                key={day.toISOString()}
+                style={[
+                  calendarDayStyles.calendarDayCell,
+                  !meta.inMonth && calendarDayStyles.calendarDayCellMuted,
+                  meta.selected && calendarDayStyles.calendarDayCellSelected,
+                ]}
+                onPress={() => setSelectedDay(day)}
+              >
+                <Text
+                  style={[
+                    calendarDayStyles.calendarDayNumber,
+                    !meta.inMonth && calendarDayStyles.calendarDayNumberMuted,
+                    meta.selected && calendarDayStyles.calendarDayNumberSelected,
+                  ]}
+                >
+                  {day.getDate()}
+                </Text>
+                <Text style={[calendarDayStyles.calendarDayHint, meta.selected && calendarDayStyles.calendarDayHintSelected]}>
+                  {dayShifts.length ? `${dayShifts.length} turnos` : "Libre"}
+                </Text>
               </Pressable>
-            </View>
-            <Pressable style={styles.navButton} onPress={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>
-              <MaterialIcons name="arrow-forward-ios" size={16} color={palette.accent} />
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={styles.todayButton}
-            onPress={() => {
-              const today = new Date();
-              setMonth(startOfMonth(today));
-              setSelectedDay(today);
-            }}
-          >
-            <Text style={styles.todayButtonText}>Volver a hoy</Text>
-          </Pressable>
-
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={palette.accent} />
-              <Text style={styles.muted}>Cargando horario...</Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.weekRow}>
-                {calendarDayNames.map((day) => <Text key={day} style={styles.weekLabel}>{day}</Text>)}
-              </View>
-              <View style={styles.calendarGrid}>
-                {days.map((day) => {
-                  const dayShifts = shifts.filter((shift) => sameDay(shift.startsAt, day));
-                  const inMonth = sameMonth(day, month);
-                  const selected = sameDay(day, selectedDay);
-                  return (
-                    <Pressable
-                      key={day.toISOString()}
-                      style={[styles.dayCell, !inMonth && styles.dayCellMuted, selected && styles.dayCellSelected]}
-                      onPress={() => setSelectedDay(day)}
-                    >
-                      <Text style={[styles.dayNumber, !inMonth && styles.dayNumberMuted, selected && styles.dayNumberSelected]}>
-                        {day.getDate()}
-                      </Text>
-                      <Text style={[styles.dayHint, selected && styles.dayHintSelected]}>{dayShifts.length ? `${dayShifts.length} turnos` : "Libre"}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        </View>
+            );
+          }}
+        />
 
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
@@ -249,117 +225,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
   },
-  monthHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-  },
-  monthCenter: {
-    flex: 1,
-    gap: 2,
-  },
-  monthTitleButton: {
-    alignSelf: "center",
-  },
-  monthTitle: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "center",
-    textTransform: "capitalize",
-  },
-  monthSubtitle: {
-    color: palette.muted,
-    fontSize: 12,
-    textAlign: "center",
-  },
-  navButton: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    minHeight: 40,
-    minWidth: 86,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  navButtonText: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  todayButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  todayButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-  loadingBox: {
-    alignItems: "center",
-    gap: 8,
-    padding: 24,
-  },
-  weekRow: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  weekLabel: {
-    color: palette.muted,
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 8,
-    marginHorizontal: -2,
-  },
-  dayCell: {
-    alignItems: "center",
-    justifyContent: "center",
-    aspectRatio: 1,
-    flexGrow: 0,
-    flexShrink: 0,
-    flexBasis: "13.0%",
-    margin: 2,
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 16,
-  },
-  dayCellMuted: {
-    opacity: 0.5,
-  },
-  dayCellSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-  dayNumber: {
-    color: palette.text,
-    fontWeight: "800",
-  },
-  dayNumberMuted: {
-    color: palette.muted,
-  },
-  dayNumberSelected: {
-    color: "#fff",
-  },
-  dayHint: {
-    color: palette.muted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  dayHintSelected: {
-    color: "#e7f4f1",
-  },
   shiftList: {
     gap: 10,
   },
@@ -402,11 +267,6 @@ const styles = StyleSheet.create({
   muted: {
     color: palette.muted,
     lineHeight: 20,
-  },
-  errorText: {
-    color: palette.danger,
-    marginTop: 10,
-    fontWeight: "700",
   },
   weekCalendar: {
     flexDirection: "row",

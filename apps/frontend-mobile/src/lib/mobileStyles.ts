@@ -834,4 +834,89 @@ export const screenSharedStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
   },
+  infoRow: {
+    borderTopColor: "#e8ecff",
+    borderTopWidth: 1,
+    gap: 4,
+    paddingVertical: 10,
+  },
+  infoLabel: {
+    color: "#6a6a64",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  infoValue: {
+    color: "#222",
+    fontSize: 16,
+  },
+  fieldBlock: {
+    gap: 6,
+  },
+  textInput: {
+    borderColor: "#d7ddff",
+    borderRadius: 8,
+    borderWidth: 1,
+    color: "#1f1f1d",
+    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dateFieldButton: {
+    borderColor: "#d7ddff",
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  dateFieldText: {
+    color: "#1f1f1d",
+    fontSize: 16,
+  },
+  dateFieldPlaceholder: {
+    color: "#777",
+  },
+  fieldError: {
+    color: "#b42318",
+    fontSize: 12,
+  },
+  calendarDayCell: {
+    alignItems: "center",
+    justifyContent: "center",
+    aspectRatio: 1,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: "13.0%",
+    margin: 2,
+    backgroundColor: palette.backgroundSoft,
+    borderColor: palette.border,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  calendarDayCellMuted: {
+    opacity: 0.5,
+  },
+  calendarDayCellSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  calendarDayNumber: {
+    color: palette.text,
+    fontWeight: "800",
+  },
+  calendarDayNumberMuted: {
+    color: palette.muted,
+  },
+  calendarDayNumberSelected: {
+    color: "#fff",
+  },
+  calendarDayHint: {
+    color: palette.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  calendarDayHintSelected: {
+    color: "#e7f4f1",
+  },
 });

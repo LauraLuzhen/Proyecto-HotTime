@@ -91,10 +91,44 @@ export function addDays(value: Date, days: number) {
   return date;
 }
 
+export function communicationTypeLabel(type: CommunicationType) {
+  const labels: Record<CommunicationType, string> = {
+    GENERAL: "General",
+    INFO: "Info",
+    WARNING: "Aviso",
+    URGENT: "Urgente",
+  };
+  return labels[type];
+}
+
+export function truncateText(value: string, maxLength = 110) {
+  const clean = value.replace(/\s+/g, " ").trim();
+  return clean.length > maxLength ? `${clean.slice(0, maxLength)}...` : clean;
+}
+
+export function addHours(value: Date, hours: number) {
+  const date = new Date(value);
+  date.setHours(date.getHours() + hours);
+  return date;
+}
+
 export function addMonths(value: Date, months: number) {
   const date = new Date(value);
   date.setMonth(date.getMonth() + months);
   return date;
+}
+
+export function dayTitle(date: Date) {
+  const days = ["D", "L", "M", "X", "J", "V", "S"];
+  return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function dayKey(value: Date | string) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function sameDay(left: Date | string, right: Date) {
@@ -122,6 +156,57 @@ export function endOfDay(value: Date) {
   const date = new Date(value);
   date.setHours(23, 59, 59, 999);
   return date;
+}
+
+export function setHoursMinutes(value: Date, hours: number, minutes = 0) {
+  const next = new Date(value);
+  next.setHours(hours, minutes, 0, 0);
+  return next;
+}
+
+export function mergeDate(base: Date, nextDate: Date) {
+  return new Date(
+    nextDate.getFullYear(),
+    nextDate.getMonth(),
+    nextDate.getDate(),
+    base.getHours(),
+    base.getMinutes(),
+    base.getSeconds(),
+    0
+  );
+}
+
+export function mergeTime(base: Date, nextTime: Date) {
+  return new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate(),
+    nextTime.getHours(),
+    nextTime.getMinutes(),
+    nextTime.getSeconds(),
+    0
+  );
+}
+
+export function buildDefaultRange(baseDay: Date) {
+  const start = setHoursMinutes(baseDay, 9, 0);
+  const end = setHoursMinutes(baseDay, 17, 0);
+  return { start, end };
+}
+
+export function formatBackendDateTime(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  const hours = String(value.getHours()).padStart(2, "0");
+  const minutes = String(value.getMinutes()).padStart(2, "0");
+  const seconds = String(value.getSeconds()).padStart(2, "0");
+  const offsetMinutes = -value.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const offsetHours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, "0");
+  const offsetMins = String(Math.abs(offsetMinutes) % 60).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMins}`;
 }
 
 export function formatDay(value: Date | string) {

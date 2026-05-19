@@ -10,26 +10,18 @@ import {
   Text,
   View,
 } from "react-native";
-import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
+import type { CommunicationDetailResponse, CommunicationInboxResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { ScreenEmptyState } from "../../components/ScreenEmptyState";
+import { ScreenSegmentedButtons } from "../../components/ScreenSegmentedButtons";
 import { ApiClientError, createApi } from "../../lib/api";
-import { communicationTone } from "../../lib/schedule";
+import { communicationTone, communicationTypeLabel, truncateText } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
 import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 type InboxFilter = "ALL" | "READ" | "UNREAD";
-
-function typeLabel(type: CommunicationType) {
-  const labels: Record<CommunicationType, string> = {
-    GENERAL: "General",
-    INFO: "Info",
-    WARNING: "Aviso",
-    URGENT: "Urgente",
-  };
-  return labels[type];
-}
 
 function formatDate(value: Date | string | null) {
   if (!value) return "-";
@@ -41,20 +33,6 @@ function formatDate(value: Date | string | null) {
     month: "2-digit",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function previewText(value: string) {
-  const clean = value.replace(/\s+/g, " ").trim();
-  return clean.length > 110 ? `${clean.slice(0, 110)}...` : clean;
-}
-
-function EmptyState({ title, detail }: { title: string; detail: string }) {
-  return (
-    <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyDetail}>{detail}</Text>
-    </View>
-  );
 }
 
 export function BandejaScreen() {
@@ -280,26 +258,15 @@ export function BandejaScreen() {
               <Text style={styles.countLabel}>Leídos</Text>
             </View>
           </View>
-          <View style={styles.filterRow}>
-            <Pressable
-              style={[styles.filterButton, filter === "ALL" && styles.filterButtonActive]}
-              onPress={() => void changeFilter("ALL")}
-            >
-              <Text style={[styles.filterText, filter === "ALL" && styles.filterTextActive]}>Todos</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.filterButton, filter === "UNREAD" && styles.filterButtonActive]}
-              onPress={() => void changeFilter("UNREAD")}
-            >
-              <Text style={[styles.filterText, filter === "UNREAD" && styles.filterTextActive]}>No leídos</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.filterButton, filter === "READ" && styles.filterButtonActive]}
-              onPress={() => void changeFilter("READ")}
-            >
-              <Text style={[styles.filterText, filter === "READ" && styles.filterTextActive]}>Leídos</Text>
-            </Pressable>
-          </View>
+          <ScreenSegmentedButtons
+            items={[
+              { label: "Todos", value: "ALL" },
+              { label: "No leídos", value: "UNREAD" },
+              { label: "Leídos", value: "READ" },
+            ]}
+            value={filter}
+            onChange={(nextFilter) => void changeFilter(nextFilter)}
+          />
         </View>
 
         {loading ? (
@@ -308,9 +275,9 @@ export function BandejaScreen() {
             <Text style={styles.loadingText}>Cargando comunicados...</Text>
           </View>
         ) : error ? (
-          <EmptyState title="No se ha podido cargar" detail={error} />
+          <ScreenEmptyState title="No se ha podido cargar" detail={error} />
         ) : communications.length === 0 ? (
-          <EmptyState title="Sin comunicados" detail="No hay comunicados para este filtro." />
+          <ScreenEmptyState title="Sin comunicados" detail="No hay comunicados para este filtro." />
         ) : (
           <View style={styles.list}>
             {communications.map((communication) => {
@@ -335,7 +302,7 @@ export function BandejaScreen() {
                     </View>
                     <View style={[styles.typePill, { backgroundColor: tone.soft, borderColor: tone.border }]}>
                       <Text style={[styles.typeText, { color: tone.fill }]}>
-                        {typeLabel(communication.type)}
+                        {communicationTypeLabel(communication.type)}
                       </Text>
                     </View>
                     {selectionMode ? (
@@ -346,7 +313,7 @@ export function BandejaScreen() {
                       </View>
                     ) : null}
                   </View>
-                  <Text style={styles.preview}>{previewText(communication.content)}</Text>
+                  <Text style={styles.preview}>{truncateText(communication.content)}</Text>
                   <View style={styles.metaRow}>
                     <Text style={styles.dateText}>{formatDate(communication.sentAt)}</Text>
                     <Text style={[styles.readState, !communication.read && styles.unreadState]}>
@@ -477,30 +444,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
-  filterRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  filterButton: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 40,
-    paddingVertical: 10,
-  },
-  filterButtonActive: {
-    backgroundColor: "#5f6df5",
-    borderColor: "#5f6df5",
-  },
-  filterText: {
-    color: "#5f6df5",
-    fontWeight: "700",
-  },
-  filterTextActive: {
-    color: "#fff",
-  },
   loading: {
     alignItems: "center",
     gap: 8,
@@ -508,25 +451,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#666",
-  },
-  empty: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 6,
-    padding: 24,
-  },
-  emptyTitle: {
-    color: "#1f1f1d",
-    fontSize: 17,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  emptyDetail: {
-    color: "#6a6a64",
-    textAlign: "center",
   },
   list: {
     gap: 10,

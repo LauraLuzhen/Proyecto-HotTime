@@ -1,27 +1,12 @@
 ﻿import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import { ApiClientError } from "../../lib/api";
-import { brandPalette, palette } from "../../lib/schedule";
+import { palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
-
-function Pill({ label }: { label: string }) {
-  return (
-    <View style={styles.pill}>
-      <Text style={styles.pillText}>{label}</Text>
-    </View>
-  );
-}
-
-function Ornament() {
-  return (
-    <>
-      <View style={styles.ornamentTop} />
-      <View style={styles.ornamentBottom} />
-    </>
-  );
-}
+import { LoginOrnaments } from "../../components/LoginOrnaments";
+import { ProfileTextField } from "../../components/ProfileFields";
 
 export function LoginScreen() {
   const auth = useAuth();
@@ -46,7 +31,7 @@ export function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <BrandBackdrop />
-      <Ornament />
+      <LoginOrnaments />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -60,32 +45,24 @@ export function LoginScreen() {
               <Text style={styles.cardSubtitle}>Accede con tu email y contraseña de HotTime.</Text>
             </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                placeholder="usuario@correo.com"
-                placeholderTextColor="#8a7f74"
-                style={styles.input}
-                value={email}
-              />
-            </View>
+            <ProfileTextField
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="usuario@correo.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              inputProps={{ autoComplete: "email", placeholderTextColor: "#8a7f74" }}
+            />
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                autoComplete="password"
-                onChangeText={setPassword}
-                placeholder="Tu contrasena"
-                placeholderTextColor="#8a7f74"
-                secureTextEntry
-                style={styles.input}
-                value={password}
-              />
-            </View>
+            <ProfileTextField
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Tu contrasena"
+              secureTextEntry
+              inputProps={{ autoComplete: "password", placeholderTextColor: "#8a7f74" }}
+            />
 
             {error ? <Text style={styles.error}>El correo o la contraseña no son válidas</Text> : null}
 
@@ -123,50 +100,6 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     gap: 18,
   },
-  hero: {
-    backgroundColor: "#5f89c6",
-    borderRadius: 28,
-    gap: 12,
-    overflow: "hidden",
-    padding: 20,
-  },
-  kicker: {
-    color: "#d8ece7",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-  },
-  title: {
-    color: "#fff",
-    fontSize: 30,
-    fontWeight: "900",
-    lineHeight: 36,
-  },
-  subtitle: {
-    color: "#e6f2ef",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  pillRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 4,
-  },
-  pill: {
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  pillText: {
-    color: "#f5fbf8",
-    fontSize: 12,
-    fontWeight: "800",
-  },
   card: {
     backgroundColor: palette.surfaceElevated,
     borderColor: palette.border,
@@ -187,27 +120,6 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 13,
     lineHeight: 19,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  input: {
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    color: palette.text,
-    fontSize: 16,
-    minHeight: 52,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
   },
   button: {
     alignItems: "center",
@@ -234,34 +146,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     paddingHorizontal: 12,
     paddingVertical: 10,
-  },
-  footerNote: {
-    color: palette.muted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  ornamentTop: {
-    backgroundColor: brandPalette[0],
-    borderBottomLeftRadius: 220,
-    borderBottomRightRadius: 220,
-    height: 220,
-    opacity: 0.85,
-    position: "absolute",
-    right: -110,
-    top: -70,
-    width: 220,
-  },
-  ornamentBottom: {
-    backgroundColor: brandPalette[4],
-    borderTopLeftRadius: 220,
-    borderTopRightRadius: 220,
-    bottom: -110,
-    height: 250,
-    left: -110,
-    opacity: 0.75,
-    position: "absolute",
-    width: 250,
   },
 });
 

@@ -42,21 +42,28 @@ Instalar dependencias pnpm. El proyecto queda como monorepo para que varios comp
 pnpm --filter @hottime/types build: montar types    
 ctrl + shift + p --> TypeScript: Restart TS Server
 
+
+pnpm install
+docker compose up -d
+.env en /apps/frontend y /apps/backend
+
 pnpm --filter backend exec prisma migrate reset --force --skip-seed
 pnpm --filter backend exec prisma generate
 pnpm --filter backend exec prisma db push --force-reset
 pnpm --filter backend exec prisma db seed
-
+pnpm --filter @hottime/types build
+ctrl + shift + p --> TypeScript: Restart TS Server
 pnpm --filter backend dev
 pnpm --filter frontend-mobile dev
+modo: pnpm --filter frontend-mobile dev:tunnel
 
 puertos
 netstat -ano | findstr :8081
 taskkill /F /PID 1234
 
-
 problemas
-pnpm --filter frontend-mobile exec expo start -c --tunnel
+pnpm --filter frontend-mobile exec expo start -c
+modo: pnpm --filter frontend-mobile exec expo start -c --tunnel
 
 
 Reglas de arquitectura recomendadas:
@@ -65,4 +72,13 @@ Reglas de arquitectura recomendadas:
 - `service.ts`: logica de negocio.
 - `repository.ts`: Prisma y SQL raw si hace falta.
 
-@expo/ngrok
+
+.env
+setup 
+build
+db:reset
+backend
+frontend
+frontend:tunnel
+
+

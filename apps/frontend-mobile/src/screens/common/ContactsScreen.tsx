@@ -1,9 +1,7 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Linking,
-  Modal,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -17,112 +15,17 @@ import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role } 
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { ScreenEmptyState } from "../../components/ScreenEmptyState";
+import { ScreenSelectField } from "../../components/ScreenSelectField";
+import { UserAvatar } from "../../components/UserAvatar";
 import { ApiClientError, createApi } from "../../lib/api";
 import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 const roles: Role[] = ["ADMIN", "MANAGER", "EMPLOYEE"];
 
-function initials(name?: string) {
-  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  const first = parts[0]?.[0] ?? "U";
-  const second = parts[1]?.[0] ?? "";
-  return `${first}${second}`.toUpperCase();
-}
-
-function Avatar({ uri, name, size }: { uri?: string | null; name?: string; size: number }) {
-  const radius = size / 2;
-
-  if (uri) {
-    return (
-      <Image
-        source={{ uri }}
-        style={{ width: size, height: size, borderRadius: radius, backgroundColor: "#e4e7ff" }}
-      />
-    );
-  }
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: radius,
-        backgroundColor: "#c4b5fd",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Text style={{ color: "#fff", fontSize: size * 0.32, fontWeight: "700" }}>
-        {initials(name)}
-      </Text>
-    </View>
-  );
-}
-
-function placeholderAvatarUri(name?: string) {
-  const text = encodeURIComponent(initials(name));
-  return `https://ui-avatars.com/api/?name=${text}&background=2f5f5b&color=ffffff&size=128&bold=true`;
-}
-
 function roleLabel(role: Role) {
   return role.charAt(0) + role.slice(1).toLowerCase();
-}
-
-function SelectField<TValue extends string | number>({
-  label,
-  placeholder,
-  valueLabel,
-  options,
-  onSelect,
-}: {
-  label: string;
-  placeholder: string;
-  valueLabel?: string;
-  options: { label: string; value: TValue | null }[];
-  onSelect: (value: TValue | null) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <View style={styles.filterField}>
-      <Text style={styles.filterLabel}>{label}</Text>
-      <Pressable style={styles.selectButton} onPress={() => setOpen(true)}>
-        <Text style={[styles.selectText, !valueLabel && styles.placeholder]} numberOfLines={1}>
-          {valueLabel ?? placeholder}
-        </Text>
-        <MaterialIcons name="keyboard-arrow-down" size={20} color="#6a6a64" />
-      </Pressable>
-
-      <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setOpen(false)}>
-          <View style={styles.optionsBox}>
-            {options.map((option) => (
-              <Pressable
-                key={`${option.label}-${option.value ?? "all"}`}
-                style={styles.option}
-                onPress={() => {
-                  onSelect(option.value);
-                  setOpen(false);
-                }}
-              >
-                <Text style={styles.optionText}>{option.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
-  );
-}
-
-function EmptyState({ title, detail }: { title: string; detail: string }) {
-  return (
-    <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyDetail}>{detail}</Text>
-    </View>
-  );
 }
 
 export function ContactsScreen() {
@@ -281,14 +184,14 @@ export function ContactsScreen() {
           </View>
 
           <View style={styles.filtersRow}>
-            <SelectField
+            <ScreenSelectField
               label="Categoria"
               options={categoryOptions}
               placeholder="Elegir categoria"
               valueLabel={selectedCategoryLabel}
               onSelect={setCategoryId}
             />
-            <SelectField
+            <ScreenSelectField
               label="Rol"
               options={roleOptions}
               placeholder="Elegir rol"
@@ -313,9 +216,9 @@ export function ContactsScreen() {
             <Text style={styles.loadingText}>Cargando usuarios...</Text>
           </View>
         ) : error ? (
-          <EmptyState title="No se han podido cargar los usuarios" detail={error} />
+          <ScreenEmptyState title="No se han podido cargar los usuarios" detail={error} />
         ) : users.length === 0 ? (
-          <EmptyState
+          <ScreenEmptyState
             title="No se han encontrado resultados"
             detail="Prueba a limpiar los filtros o buscar otro nombre."
           />
@@ -334,7 +237,7 @@ export function ContactsScreen() {
                   onPress={() => setExpandedUserId(expanded ? null : user.id)}
                 >
                   <View style={styles.userMain}>
-                    <Avatar uri={user.imgProfile} name={user.fullName} size={40} />
+                    <UserAvatar uri={user.imgProfile} name={user.fullName} size={40} />
                     <Text style={styles.userName} numberOfLines={1}>
                       {user.fullName}
                     </Text>
@@ -387,11 +290,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
   },
-  title: {
-    color: "#151515",
-    fontSize: 22,
-    fontWeight: "700",
-  },
   filterField: {
     flex: 1,
     gap: 6,
@@ -414,54 +312,6 @@ const styles = StyleSheet.create({
   filtersRow: {
     flexDirection: "row",
     gap: 10,
-  },
-  selectButton: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-    minHeight: 44,
-    paddingHorizontal: 12,
-  },
-  selectText: {
-    color: "#1f1f1d",
-    flex: 1,
-    fontSize: 15,
-  },
-  placeholder: {
-    color: "#777",
-  },
-  selectIcon: {
-    color: "#64645e",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  modalOverlay: {
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  optionsBox: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    maxHeight: "70%",
-    overflow: "hidden",
-    width: "100%",
-  },
-  option: {
-    borderBottomColor: "#e8ecff",
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  optionText: {
-    color: "#1f1f1d",
-    fontSize: 16,
   },
   actions: {
     flexDirection: "row",
@@ -498,25 +348,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#666",
   },
-  empty: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 6,
-    padding: 24,
-  },
-  emptyTitle: {
-    color: "#1f1f1d",
-    fontSize: 17,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  emptyDetail: {
-    color: "#6a6a64",
-    textAlign: "center",
-  },
   list: {
     gap: 10,
   },
@@ -531,12 +362,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 10,
-  },
-  avatar: {
-    backgroundColor: "#e4e7ff",
-    borderRadius: 20,
-    height: 40,
-    width: 40,
   },
   userName: {
     color: "#1f1f1d",
@@ -584,12 +409,6 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: "center",
     width: 32,
-  },
-  detailActionText: {
-    color: "#5f6df5",
-    fontSize: 20,
-    fontWeight: "700",
-    lineHeight: 22,
   },
 });
 

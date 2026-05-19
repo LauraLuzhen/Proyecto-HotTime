@@ -3,10 +3,12 @@ import * as Location from "expo-location";
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, ShiftResponse } from "@hottime/types";
 
+import { DashboardInfoCard } from "../../components/DashboardInfoCard";
 import { ApiClientError, createApi } from "../../lib/api";
 import {
   addDays,
   categoryName,
+  dayTitle,
   formatDay,
   formatDateTime,
   formatRange,
@@ -66,12 +68,6 @@ function isCurrentShift(shift: ShiftResponse, attendances: AttendanceEntity[]) {
 function pickActiveShift(shifts: ShiftResponse[], attendances: AttendanceEntity[]) {
   const sorted = [...shifts].sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
   return sorted.find((shift) => isCurrentShift(shift, attendances)) ?? null;
-}
-
-function dayTitle(date: Date) {
-  const days = ["D", "L", "M", "X", "J", "V", "S"];
-
-  return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function shiftSummary(shift: ShiftResponse | null) {
@@ -230,10 +226,10 @@ export function DashboardScreen() {
         <View style={styles.panel}>
           <Text style={styles.panelTitle}>Usuario logueado</Text>
           <View style={styles.infoGrid}>
-            <InfoCard label="Nombre" value={u?.fullName} />
-            <InfoCard label="Rol" value={u?.role} />
-            <InfoCard label="Email" value={u?.email} />
-            <InfoCard label="Organización" value={u?.organization.name} />
+            <DashboardInfoCard label="Nombre" value={u?.fullName} />
+            <DashboardInfoCard label="Rol" value={u?.role} />
+            <DashboardInfoCard label="Email" value={u?.email} />
+            <DashboardInfoCard label="Organización" value={u?.organization.name} />
           </View>
         </View>
 
@@ -341,15 +337,6 @@ export function DashboardScreen() {
   );
 }
 
-function InfoCard({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <View style={styles.infoCard}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value ?? "-"}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: "#eef3ff",
@@ -406,27 +393,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-  },
-  infoCard: {
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexGrow: 1,
-    gap: 4,
-    minWidth: "48%",
-    padding: 12,
-  },
-  infoLabel: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  infoValue: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: "800",
   },
   nextShiftTitle: {
     color: palette.text,

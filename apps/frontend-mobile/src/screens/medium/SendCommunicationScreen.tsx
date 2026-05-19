@@ -15,7 +15,7 @@ import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, Gen
 import { useAppAlert } from "../../components/AppAlert";
 import { ScreenEmptyState } from "../../components/ScreenEmptyState";
 import { ApiClientError, createApi } from "../../lib/api";
-import { communicationTone, normalizeSearchText, palette } from "../../lib/schedule";
+import { communicationTone, communicationTypeLabel, normalizeSearchText, palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
 import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
@@ -25,16 +25,6 @@ type RecipientMode = NonNullable<CreateCommunicationDto["recipientMode"]>;
 type FieldErrors = Partial<Record<"title", string>>;
 
 const communicationTypes: CommunicationType[] = ["GENERAL", "INFO", "WARNING", "URGENT"];
-
-function typeLabel(type: CommunicationType) {
-  const labels: Record<CommunicationType, string> = {
-    GENERAL: "General",
-    INFO: "Info",
-    WARNING: "Aviso",
-    URGENT: "Urgente",
-  };
-  return labels[type];
-}
 
 export function SendCommunicationScreen() {
   const auth = useAuth();
@@ -342,7 +332,7 @@ export function SendCommunicationScreen() {
                         },
                       ]}
                     >
-                      {typeLabel(item)}
+                      {communicationTypeLabel(item)}
                     </Text>
                   </Pressable>
                 );
