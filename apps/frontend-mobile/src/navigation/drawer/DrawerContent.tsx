@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Pressable, StyleSheet, Text, View, Image  } from "react-native";
+import { Pressable, Text, View, Image } from "react-native";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 
 import { useAppAlert } from "../../components/AppAlert";
+import { drawerStyles as styles } from "../../lib/mobileStyles";
 import { palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
 
@@ -154,117 +155,3 @@ export function DrawerContent(props: DrawerContentComponentProps) {
     </DrawerContentScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingBottom: 18,
-  },
-  topBlock: {
-    gap: 14,
-    paddingHorizontal: 8,
-    paddingTop: 8,
-  },
-  brandRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  brandMark: {
-    alignItems: "center",
-    backgroundColor: palette.accentSoft,
-    borderRadius: 16,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  brandMarkText: {
-    color: palette.accent,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  brandCopy: {
-    flex: 1,
-  },
-  brandTitle: {
-    color: palette.text,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  brandSubtitle: {
-    color: palette.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  menuBlock: {
-    gap: 8,
-  },
-  item: {
-    alignItems: "center",
-    borderRadius: 16,
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  itemActive: {
-    backgroundColor: palette.accent,
-  },
-  itemPressed: {
-    backgroundColor: palette.accentSoft,
-  },
-  itemText: {
-    color: palette.text,
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  itemTextActive: {
-    color: "#fff",
-  },
-  advancedBlock: {
-    borderTopColor: palette.border,
-    borderTopWidth: 1,
-    marginTop: 4,
-    paddingTop: 10,
-  },
-  advancedToggle: {
-    alignItems: "center",
-    borderRadius: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  advancedLabel: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  advancedList: {
-    gap: 8,
-    paddingLeft: 0,
-    paddingTop: 8,
-  },
-  logoutButton: {
-    alignItems: "center",
-    backgroundColor: palette.danger,
-    borderRadius: 18,
-    flexDirection: "row",
-    gap: 10,
-    marginHorizontal: 16,
-    marginTop: "auto",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  logoutButtonPressed: {
-    backgroundColor: "#8f1c13",
-  },
-  logoutText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-});

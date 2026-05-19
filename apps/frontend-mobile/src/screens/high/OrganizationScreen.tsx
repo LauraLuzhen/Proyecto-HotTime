@@ -1,8 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import * as Location from "expo-location";
-import { ActivityIndicator, Linking, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, RefreshControl, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
 
 import { ApiClientError, createApi } from "../../lib/api";
+import { organizationStyles as styles } from "../../lib/mobileStyles";
 import { useAuth } from "../../state/auth/AuthContext";
 import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
@@ -206,92 +207,5 @@ export function OrganizationScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#eef3ff",
-  },
-  content: {
-    gap: 14,
-    padding: 16,
-  },
-  title: {
-    color: "#151515",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  subtitle: {
-    color: "#62625c",
-    marginTop: -8,
-  },
-  panel: {
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 10,
-    padding: 16,
-  },
-  grid: {
-    gap: 10,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    color: "#595952",
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    color: "#151515",
-    minHeight: 44,
-    paddingHorizontal: 12,
-  },
-  actions: {
-    gap: 8,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: "#5f6df5",
-    borderRadius: 8,
-    minHeight: 46,
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: "#5f6df5",
-    borderRadius: 8,
-    borderWidth: 1,
-    minHeight: 42,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: "#5f6df5",
-    fontWeight: "700",
-  },
-  disabledButton: {
-    opacity: 0.65,
-  },
-  muted: {
-    color: "#62625c",
-  },
-  successText: {
-    color: "#217a3f",
-  },
-  errorText: {
-    color: "#b42318",
-  },
-});
 
 
