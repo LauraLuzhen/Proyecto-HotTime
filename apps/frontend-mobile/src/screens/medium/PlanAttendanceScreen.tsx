@@ -3,10 +3,10 @@ import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from 
 import { ActivityIndicator, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
-import { useAppAlert } from "../components/AppAlert";
-import { ApiClientError, createApi } from "../lib/api";
-import { MonthYearPicker } from "../components/MonthYearPicker";
-import { BrandBackdrop } from "../components/BrandBackdrop";
+import { useAppAlert } from "../../components/AppAlert";
+import { ApiClientError, createApi } from "../../lib/api";
+import { MonthYearPicker } from "../../components/MonthYearPicker";
+import { BrandBackdrop } from "../../components/BrandBackdrop";
 import {
   addDays,
   buildMonthDays,
@@ -25,10 +25,10 @@ import {
   startOfDay,
   startOfMonth,
   startOfWeek,
-} from "../lib/schedule";
-import { useAuth } from "../state/auth/AuthContext";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+} from "../../lib/schedule";
+import { useAuth } from "../../state/auth/AuthContext";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 type PickerTarget = "occurredAt" | null;
 

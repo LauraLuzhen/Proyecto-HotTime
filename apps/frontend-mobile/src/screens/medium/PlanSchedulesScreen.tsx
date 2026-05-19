@@ -16,10 +16,10 @@ import {
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
-import { useAppAlert } from "../components/AppAlert";
-import { ApiClientError, createApi } from "../lib/api";
-import { MonthYearPicker } from "../components/MonthYearPicker";
-import { BrandBackdrop } from "../components/BrandBackdrop";
+import { useAppAlert } from "../../components/AppAlert";
+import { ApiClientError, createApi } from "../../lib/api";
+import { MonthYearPicker } from "../../components/MonthYearPicker";
+import { BrandBackdrop } from "../../components/BrandBackdrop";
 import {
   buildMonthDays,
   calendarDayNames,
@@ -32,10 +32,10 @@ import {
   normalizeSearchText,
   sameMonth,
   startOfMonth,
-} from "../lib/schedule";
-import { useAuth } from "../state/auth/AuthContext";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+} from "../../lib/schedule";
+import { useAuth } from "../../state/auth/AuthContext";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 const PAGE_SIZE = 100;
 type CreateMode = "USER" | "CATEGORY";

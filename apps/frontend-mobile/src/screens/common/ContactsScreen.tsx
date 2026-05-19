@@ -16,10 +16,10 @@ import {
 import type { CategoriesResponse, GeneralUserResponse, GetUsersQueryDto, Role } from "@hottime/types";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { useAppAlert } from "../components/AppAlert";
-import { ApiClientError, createApi } from "../lib/api";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import { useAppAlert } from "../../components/AppAlert";
+import { ApiClientError, createApi } from "../../lib/api";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 const roles: Role[] = ["ADMIN", "MANAGER", "EMPLOYEE"];
 

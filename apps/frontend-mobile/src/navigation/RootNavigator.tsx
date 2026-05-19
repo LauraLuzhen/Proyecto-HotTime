@@ -14,21 +14,19 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
 
 import { useAuth } from "../state/auth/AuthContext";
-import { LoginScreen } from "../screens/LoginScreen";
-import { DashboardScreen } from "../screens/DashboardScreen";
-import { AdministrationScreen } from "../screens/AdministrationScreen";
-import { ManagerOnlyScreen } from "../screens/ManagerOnlyScreen";
-import { EmployeeOnlyScreen } from "../screens/EmployeeOnlyScreen";
-import { ProfileScreen } from "../screens/ProfileScreen";
-import { ContactsScreen } from "../screens/ContactsScreen";
+import { LoginScreen } from "../screens/common/LoginScreen";
+import { DashboardScreen } from "../screens/common/DashboardScreen";
+import { AdministrationScreen } from "../screens/high/AdministrationScreen";
+import { ProfileScreen } from "../screens/common/ProfileScreen";
+import { ContactsScreen } from "../screens/common/ContactsScreen";
 import { DrawerContent } from "./drawer/DrawerContent";
-import { SendCommunicationScreen } from "../screens/SendCommunicationScreen";
-import { BandejaScreen } from "../screens/BandejaScreen";
-import { OrganizationScreen } from "../screens/OrganizationScreen";
-import { PlanSchedulesScreen } from "../screens/PlanSchedulesScreen";
-import { PlanAttendanceScreen } from "../screens/PlanAttendanceScreen";
-import { MyScheduleScreen } from "../screens/MyScheduleScreen";
-import { MyAttendanceScreen } from "../screens/MyAttendanceScreen";
+import { SendCommunicationScreen } from "../screens/medium/SendCommunicationScreen";
+import { BandejaScreen } from "../screens/common/BandejaScreen";
+import { OrganizationScreen } from "../screens/high/OrganizationScreen";
+import { PlanSchedulesScreen } from "../screens/medium/PlanSchedulesScreen";
+import { PlanAttendanceScreen } from "../screens/medium/PlanAttendanceScreen";
+import { MyScheduleScreen } from "../screens/common/MyScheduleScreen";
+import { MyAttendanceScreen } from "../screens/common/MyAttendanceScreen";
 import { ApiClientError, createApi } from "../lib/api";
 import { communicationTone, palette } from "../lib/schedule";
 import { tokenStorage } from "../state/auth/storage";
@@ -261,8 +259,6 @@ function AppDrawer() {
       <Drawer.Screen name="PlanAttendance" component={PlanAttendanceScreen} options={({ navigation }) => ({
           title: "Fichajes",
         })}/>
-      <Drawer.Screen name="Manager" component={ManagerOnlyScreen} />
-      <Drawer.Screen name="Employee" component={EmployeeOnlyScreen} />
     </Drawer.Navigator>
   );
 }

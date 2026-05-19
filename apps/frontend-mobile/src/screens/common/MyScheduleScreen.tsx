@@ -2,9 +2,9 @@
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ShiftResponse } from "@hottime/types";
 
-import { ApiClientError, createApi } from "../lib/api";
-import { MonthYearPicker } from "../components/MonthYearPicker";
-import { BrandBackdrop } from "../components/BrandBackdrop";
+import { ApiClientError, createApi } from "../../lib/api";
+import { MonthYearPicker } from "../../components/MonthYearPicker";
+import { BrandBackdrop } from "../../components/BrandBackdrop";
 import {
   addDays,
   buildMonthDays,
@@ -22,10 +22,10 @@ import {
   startOfMonth,
   startOfWeek,
   statusLabel,
-} from "../lib/schedule";
-import { useAuth } from "../state/auth/AuthContext";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+} from "../../lib/schedule";
+import { useAuth } from "../../state/auth/AuthContext";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 function dayTitle(date: Date) {

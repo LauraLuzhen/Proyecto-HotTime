@@ -1,10 +1,10 @@
 ﻿import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { ApiClientError } from "../lib/api";
-import { brandPalette, palette } from "../lib/schedule";
-import { useAuth } from "../state/auth/AuthContext";
-import { BrandBackdrop } from "../components/BrandBackdrop";
+import { ApiClientError } from "../../lib/api";
+import { brandPalette, palette } from "../../lib/schedule";
+import { useAuth } from "../../state/auth/AuthContext";
+import { BrandBackdrop } from "../../components/BrandBackdrop";
 
 function Pill({ label }: { label: string }) {
   return (

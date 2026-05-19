@@ -17,10 +17,10 @@ import {
   View,
 } from "react-native";
 
-import { useAppAlert } from "../components/AppAlert";
-import { ApiClientError } from "../lib/api";
-import { useAuth } from "../state/auth/AuthContext";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import { useAppAlert } from "../../components/AppAlert";
+import { ApiClientError } from "../../lib/api";
+import { useAuth } from "../../state/auth/AuthContext";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "birthDate" | "password", string>>;
 

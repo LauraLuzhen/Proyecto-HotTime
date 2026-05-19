@@ -12,12 +12,12 @@ import {
 } from "react-native";
 import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationType } from "@hottime/types";
 
-import { useAppAlert } from "../components/AppAlert";
-import { ApiClientError, createApi } from "../lib/api";
-import { communicationTone } from "../lib/schedule";
-import { useAuth } from "../state/auth/AuthContext";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import { useAppAlert } from "../../components/AppAlert";
+import { ApiClientError, createApi } from "../../lib/api";
+import { communicationTone } from "../../lib/schedule";
+import { useAuth } from "../../state/auth/AuthContext";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 type InboxFilter = "ALL" | "READ" | "UNREAD";
 

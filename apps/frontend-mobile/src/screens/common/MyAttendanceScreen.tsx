@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity } from "@hottime/types";
 
-import { ApiClientError, createApi } from "../lib/api";
-import { MonthYearPicker } from "../components/MonthYearPicker";
-import { BrandBackdrop } from "../components/BrandBackdrop";
+import { ApiClientError, createApi } from "../../lib/api";
+import { MonthYearPicker } from "../../components/MonthYearPicker";
+import { BrandBackdrop } from "../../components/BrandBackdrop";
 import {
   addDays,
   buildMonthDays,
@@ -20,10 +20,10 @@ import {
   startOfMonth,
   startOfWeek,
   startOfDay,
-} from "../lib/schedule";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
-import { useAuth } from "../state/auth/AuthContext";
+} from "../../lib/schedule";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
+import { useAuth } from "../../state/auth/AuthContext";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 function attendanceLabel(type: AttendanceEntity["type"]) {

@@ -3,7 +3,7 @@ import * as Location from "expo-location";
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { AttendanceEntity, ShiftResponse } from "@hottime/types";
 
-import { ApiClientError, createApi } from "../lib/api";
+import { ApiClientError, createApi } from "../../lib/api";
 import {
   addDays,
   categoryName,
@@ -15,11 +15,11 @@ import {
   startOfDay,
   startOfWeek,
   statusLabel,
-} from "../lib/schedule";
-import { BrandBackdrop } from "../components/BrandBackdrop";
-import { useAuth } from "../state/auth/AuthContext";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+} from "../../lib/schedule";
+import { BrandBackdrop } from "../../components/BrandBackdrop";
+import { useAuth } from "../../state/auth/AuthContext";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 

@@ -12,12 +12,12 @@ import {
 } from "react-native";
 import type { CategoriesResponse, CommunicationType, CreateCommunicationDto, GeneralUserResponse } from "@hottime/types";
 
-import { useAppAlert } from "../components/AppAlert";
-import { ApiClientError, createApi } from "../lib/api";
-import { communicationTone, normalizeSearchText, palette } from "../lib/schedule";
-import { useAuth } from "../state/auth/AuthContext";
-import { tokenStorage } from "../state/auth/storage";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
+import { useAppAlert } from "../../components/AppAlert";
+import { ApiClientError, createApi } from "../../lib/api";
+import { communicationTone, normalizeSearchText, palette } from "../../lib/schedule";
+import { useAuth } from "../../state/auth/AuthContext";
+import { tokenStorage } from "../../state/auth/storage";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 type RecipientMode = NonNullable<CreateCommunicationDto["recipientMode"]>;
