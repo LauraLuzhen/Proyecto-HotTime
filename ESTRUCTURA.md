@@ -43,10 +43,10 @@ pnpm --filter @hottime/types build: montar types
 ctrl + shift + p --> TypeScript: Restart TS Server
 
 
+COMANDOS REALES
 pnpm install
 docker compose up -d
 .env en /apps/frontend y /apps/backend
-
 pnpm --filter backend exec prisma migrate reset --force --skip-seed
 pnpm --filter backend exec prisma generate
 pnpm --filter backend exec prisma db push --force-reset
@@ -72,13 +72,16 @@ Reglas de arquitectura recomendadas:
 - `service.ts`: logica de negocio.
 - `repository.ts`: Prisma y SQL raw si hace falta.
 
+COMANDOS DEL PACKAGE LOS QUE HAY QUE UTILIZAR ES LO MISMO QUE LOS REALES
+instalado y docker desktop
+del /apps/bakcned y /apps/frontend listos .env
+pnpm setup 
+pnpm build
+pnpm db:reset
+pnpm backend
+pnpm frontend
 
-.env
-setup 
-build
-db:reset
-backend
-frontend
-frontend:tunnel
+
+pnpm frontend:tunnel
 
 
