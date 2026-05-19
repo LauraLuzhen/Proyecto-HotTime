@@ -10,7 +10,6 @@ export async function categoryRoutes(app: FastifyInstance) {
   app.post("/", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
       const parsed = createCategorySchema.safeParse(req.body);
       if (!parsed.success) return reply.status(400).send(httpError("Invalid data", 400, "VALIDATION_ERROR"));
-
       const category = await service.createCategory(
         parsed.data,
         req.user.organizationId

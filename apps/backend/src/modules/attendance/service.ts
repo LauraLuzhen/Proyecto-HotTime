@@ -16,7 +16,6 @@ import type {
   UpdateAttendanceDto,
   UpdateAttendanceResponse,
 } from "@hottime/types";
-
 import * as repo from "./repository";
 
 const PRIVILEGED_ROLES = new Set(["ADMIN", "MANAGER"]);

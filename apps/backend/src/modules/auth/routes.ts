@@ -8,7 +8,6 @@ export async function authRoutes(app: FastifyInstance) {
   app.post("/login", async (req, reply) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
-
     try {
       const result = await service.login(parsed.data);
       return result;
@@ -21,7 +20,6 @@ export async function authRoutes(app: FastifyInstance) {
   app.post("/forgot-password", async (req, reply) => {
     const parsed = forgotPasswordSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
-
     try {
       const result = await service.forgotPassword(parsed.data);
       return result;
@@ -34,7 +32,6 @@ export async function authRoutes(app: FastifyInstance) {
   app.post("/reset-password", async (req, reply) => {
     const parsed = resetPasswordSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Validation error", 400, "VALIDATION_ERROR"));
-
     try {
       const result = await service.resetPassword(parsed.data);
       return result;

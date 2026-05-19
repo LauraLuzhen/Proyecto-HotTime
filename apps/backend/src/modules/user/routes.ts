@@ -6,21 +6,22 @@ import { createUserSchema, getUserIdSchema, getUsersSchema, updateMeSchema, upda
 import * as service from "@/modules/user/service";
 
 export async function userRoutes(app: FastifyInstance) {
-  // Create user by ADMIN
+  //#region Create
+  // Create user
   app.post("/", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
     const parsed = createUserSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid user data", 400, "VALIDATION_ERROR"));
-
     const user = await service.createUser(parsed.data, req.user.organizationId);
     return reply.status(201).send(user);
   });
+  //#endregion
 
+  //#region Get
   // Get me
   app.get("/me", { preHandler: [authenticate] }, async (req, reply) => {
     const user = await service.getMe(req.user.id);
     return reply.send(user);
   });
-
   // Get users
   app.get("/", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getUsersSchema.safeParse(req.query);
@@ -33,7 +34,6 @@ export async function userRoutes(app: FastifyInstance) {
     );
     return reply.send(users);
   });
-
   // Get all
     app.get("/all", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getUsersSchema.safeParse(req.query);
@@ -46,26 +46,21 @@ export async function userRoutes(app: FastifyInstance) {
     );
     return reply.send(users);
   });
+  // Get by id
+  app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
+    const parsed = getUserIdSchema.safeParse(req.params);
+    if (!parsed.success) return reply.status(400).send(httpError("Invalid user id", 400, "VALIDATION_ERROR"));
 
+    const user = await service.getUserById(
+      parsed.data.id,
+      req.user.organizationId,
+      req.user.id
+    );
+    return reply.send(user);
+  });
+  //#endregion
 
-app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
-  const parsed = getUserIdSchema.safeParse(req.params);
-
-  if (!parsed.success) {
-    return reply
-      .status(400)
-      .send(httpError("Invalid user id", 400, "VALIDATION_ERROR"));
-  }
-
-  const user = await service.getUserById(
-    parsed.data.id,
-    req.user.organizationId,
-    req.user.id
-  );
-
-  return reply.send(user);
-});
-
+  //#region Update
   // Update me
   app.patch("/me", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = updateMeSchema.safeParse(req.body);
@@ -74,8 +69,7 @@ app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
     const user = await service.updateMe(req.user.id, parsed.data);
     return reply.send(user);
   });
-
-  // Update users by ADMIN
+  // Update users
   app.patch("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
     const idParsed = getUserIdSchema.safeParse(req.params);
     if (!idParsed.success) return reply.status(400).send(httpError("Invalid user id", 400, "VALIDATION_ERROR"));
@@ -91,8 +85,9 @@ app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
     );
     return reply.send(user);
   });
+  //#endregion
 
-  // Delete user by ADMIN
+  //#region Delete
   app.delete("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
     const parsed = getUserIdSchema.safeParse(req.params);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid user data", 400, "VALIDATION_ERROR"));
@@ -102,7 +97,7 @@ app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
       req.user.organizationId,
       req.user.id
     );
-
     return reply.send(result);
   });
+  //#endregion
 }

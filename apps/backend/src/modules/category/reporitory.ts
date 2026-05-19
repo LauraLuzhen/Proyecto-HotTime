@@ -2,8 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-//#region CREATE
-// Create category by ADMIN
+//#region Create
 export function create(data: {name: string; organizationId: number}) {
   return prisma.category.create({
     data,
@@ -16,14 +15,13 @@ export function create(data: {name: string; organizationId: number}) {
 }
 //#endregion
 
-//#region GET
+//#region Get
 // Find organization by id
 export async function findOrganizationById(id: number) {
   return prisma.organization.findUnique({
     where: { id },
   });
 }
-
 // Find category by organization 
 export function findByOrganization(organizationId: number) {
   return prisma.category.findMany({
@@ -40,14 +38,12 @@ export function findByOrganization(organizationId: number) {
     },
   });
 }
-
 // Find category by id
 export function findById(id: number) {
   return prisma.category.findUnique({
     where: { id },
   });
 }
-
 // Find users by category
 export function findUsersByCategory(categoryId: number) {
   return prisma.user.findMany({
@@ -95,7 +91,6 @@ export function findUsersByCategory(categoryId: number) {
     };
   }));
 }
-
 // Find category by name and organization
 export function findByNameAndOrganization(name: string, organizationId: number) {
   return prisma.category.findFirst({
@@ -110,8 +105,7 @@ export function findByNameAndOrganization(name: string, organizationId: number) 
 }
 //#endregion
 
-//#region  UPDATE
-// Update category by ADMIN
+//#region  Update
 export function update(categoryId: number, data: { name?: string }) {
   return prisma.category.update({
     where: { id: categoryId },
@@ -123,7 +117,6 @@ export function update(categoryId: number, data: { name?: string }) {
     },
   });
 }
-
 // Delete user-category links
 export function clearUsersCategoryTx(tx: Prisma.TransactionClient, categoryId: number) {
   return tx.userCategory.deleteMany({
@@ -133,13 +126,11 @@ export function clearUsersCategoryTx(tx: Prisma.TransactionClient, categoryId: n
 //#endregion
 
 //#region DELETE
-// Delete category
 export function deleteCategoryTx(tx: Prisma.TransactionClient, categoryId: number) {
   return tx.category.delete({
     where: { id: categoryId },
   });
 }
-
 // Delete category and their users change categoryId null
 export async function deleteCategoryWithUsers(categoryId: number) {
   return prisma.$transaction(async (tx) => {

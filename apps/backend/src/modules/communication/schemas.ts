@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { CreateCommunicationDto, DeleteInboxCommunicationsDto } from "@hottime/types";
 
+// Transforma los valores de strig a boolean
 const readQueryValue = z.preprocess((value) => {
   if (value === undefined) return undefined;
   if (value === "true" || value === true) return true;
@@ -8,6 +9,7 @@ const readQueryValue = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+//#region Create
 export const createCommunicationSchema = z.object({
   title: z.string().min(3).max(150),
   content: z.string().min(1).max(10000),
@@ -20,16 +22,23 @@ export const createCommunicationSchema = z.object({
   recipientExcludedUserIds: z.array(z.coerce.number().int().positive()).default([]),
 }).strict();
 export type CreateCommunicationInput = CreateCommunicationDto;
+//#endregion
 
+//#region Get
+// Get communicationId
+export const getCommunicationIdSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+// Get inbox communications
 export const getInboxSchema = z.object({
   read: readQueryValue,
 }).strict();
+//#endregion
 
+//#region Delete
+// Delete inbox communications
 export const deleteInboxSchema = z.object({
   communicationIds: z.array(z.coerce.number().int().positive()).min(1),
 }).strict();
 export type DeleteInboxCommunicationsInput = DeleteInboxCommunicationsDto;
-
-export const getCommunicationIdSchema = z.object({
-  id: z.coerce.number().int().positive(),
-});
+//#endregion

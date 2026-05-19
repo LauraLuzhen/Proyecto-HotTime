@@ -4,15 +4,7 @@ import type { CreateUserResponse, GetUsersQueryDto } from "@hottime/types";
 
 const prisma = new PrismaClient();
 
-const categoriesSelect = {
-  category: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
-} satisfies Prisma.UserCategorySelect;
-
+// Transforma un usuario convirtiendo su relación userCategories en un array plano de categories
 function mapUserCategories<T extends { userCategories: { category: { id: number; name: string } }[] }>(user: T) {
   const { userCategories, ...rest } = user;
   return {
@@ -20,11 +12,11 @@ function mapUserCategories<T extends { userCategories: { category: { id: number;
     categories: userCategories.map((item) => item.category),
   };
 }
-
+// Elimina IDs de categorías duplicados devolviendo un array único
 function uniqueCategoryIds(categoryIds: number[]) {
   return [...new Set(categoryIds)];
 }
-
+// Normaliza texto para búsquedas eliminando acentos, pasando a minúsculas y limpiando espacios
 function normalizeSearchText(value: string) {
   return value
     .normalize("NFD")
@@ -33,6 +25,17 @@ function normalizeSearchText(value: string) {
     .trim();
 }
 
+//#region Select
+const categoriesSelect = {
+  category: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.UserCategorySelect;
+//#endregion
+
 //#region GET
 // Count users by organization id
 export async function countByOrganization(organizationId: number) {
@@ -40,18 +43,17 @@ export async function countByOrganization(organizationId: number) {
     where: { organizationId },
   });
 }
-
-// Find by email
+// Get by email
 export async function findByEmail(email: string) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   return user;
 }
+// Get by email
 export function findByEmailOrNull(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }
-
-// Find by id
+// Get by id
 export async function findById(id: number) {
   const user = await prisma.user.findUnique({
     where: { id },
@@ -75,15 +77,10 @@ export async function findById(id: number) {
       },
     },
   });
-
-  if (!user) {
-    throw httpError("User not found", 404, "USER_NOT_FOUND");
-  }
-
+  if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   return user;
 }
-
-// Find by reset token
+// Get by reset token
 export async function findByResetToken(token: string) {
   const user = await prisma.user.findFirst({
     where: {
@@ -96,14 +93,13 @@ export async function findByResetToken(token: string) {
   if (!user) throw httpError("Invalid or expired token", 400, "INVALID_TOKEN");
   return user;
 }
-
-// Find by category id
+// Get by category id
 export async function findCategoryById(id: number) {
   const category = await prisma.category.findUnique({where: { id }});
   if (!category) throw httpError("Category not found", 404, "CATEGORY_NOT_FOUND");
   return category;
 }
-
+// Get by ids
 export function findCategoriesByIds(ids: number[], organizationId: number) {
   return prisma.category.findMany({
     where: {
@@ -112,8 +108,7 @@ export function findCategoriesByIds(ids: number[], organizationId: number) {
     },
   });
 }
-
-// Find all by organization + filters
+// Get all by organization + filters
 export function findAllByOrganization(organizationId: number, filters: GetUsersQueryDto, userId: number) {
   return prisma.user.findMany({
     where: {
@@ -158,17 +153,12 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
     },
   }).then((users) => {
     const mapped = users.map(mapUserCategories);
-
-    if (!filters.fullName) {
-      return mapped;
-    }
-
+    if (!filters.fullName) return mapped;
     const query = normalizeSearchText(filters.fullName);
     return mapped.filter((user) => normalizeSearchText(user.fullName).includes(query));
   });
 }
-
-// Find All + me
+// Get All + me
 export function findAll(organizationId: number, filters: GetUsersQueryDto, userId: number) {
   return prisma.user.findMany({
     where: {
@@ -212,17 +202,12 @@ export function findAll(organizationId: number, filters: GetUsersQueryDto, userI
     },
   }).then((users) => {
     const mapped = users.map(mapUserCategories);
-
-    if (!filters.fullName) {
-      return mapped;
-    }
-
+    if (!filters.fullName) return mapped;
     const query = normalizeSearchText(filters.fullName);
     return mapped.filter((user) => normalizeSearchText(user.fullName).includes(query));
   });
 }
-
-// Find user with name category and organization
+// Get user with name category and organization
 export function findMeWithRelations(userId: number) {
   return prisma.user.findUnique({
     where: { id: userId },
@@ -272,7 +257,6 @@ export function updatePassword(userId: number, password: string) {
     data: { password },
   });
 }
-
 // Update reset token
 export function setResetToken(userId: number, token: string | null) {
   return prisma.user.update({
@@ -283,15 +267,11 @@ export function setResetToken(userId: number, token: string | null) {
     },
   });
 }
-
 // Update user
 export async function updateUser(userId: number, data: any, categoryIds?: number[]) {
   const user = await prisma.$transaction(async (tx) => {
     const uniqueIds = categoryIds ? uniqueCategoryIds(categoryIds) : [];
-
-    if (categoryIds !== undefined) {
-      await tx.userCategory.deleteMany({ where: { userId } });
-    }
+    if (categoryIds !== undefined) await tx.userCategory.deleteMany({ where: { userId } });
 
     return tx.user.update({
       where: { id: userId },
@@ -327,7 +307,6 @@ export async function updateUser(userId: number, data: any, categoryIds?: number
       },
     });
   });
-
   return mapUserCategories(user);
 }
 //#endregion
@@ -367,7 +346,6 @@ export async function create(data: CreateUserInput): Promise<CreateUserResponse>
       },
     },
   });
-
   return mapUserCategories(user);
 }
 //#endregion

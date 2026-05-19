@@ -1,13 +1,20 @@
 import { z } from "zod";
 import type { LoginDto, ForgotPasswordDto, ResetPasswordDto } from "@hottime/types";
 
+// LogIn
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
+export type LoginInput = LoginDto;
+
+// Forgot password
 export const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });
+export type ForgotPasswordInput = ForgotPasswordDto;
+
+// Reset password
 export const resetPasswordSchema = z.object({
   token: z.string(),
   password: z
@@ -18,7 +25,4 @@ export const resetPasswordSchema = z.object({
     .regex(/[0-9]/, "A number")
     .regex(/[^A-Za-z0-9]/, "A special character"),
 });
-
-export type LoginInput = LoginDto;
-export type ForgotPasswordInput = ForgotPasswordDto;
 export type ResetPasswordInput = ResetPasswordDto;

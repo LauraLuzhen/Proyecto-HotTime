@@ -12,7 +12,7 @@ export const buildApp = async () => {
   const app = Fastify({ logger: true });
 
   await app.register(cors, { origin: true });
-  
+  // Registro de las rutas de modules
   app.register(authRoutes, { prefix: "/auth" });
   app.register(userRoutes, { prefix: "/users" });
   app.register(categoryRoutes, { prefix: "/categories" });
@@ -22,15 +22,9 @@ export const buildApp = async () => {
   app.register(attendanceRoutes, { prefix: "/planning/attendance" });
 
   app.setErrorHandler((error:any, req, reply) => {
-    if (error.statusCode) {
-      return reply.status(error.statusCode).send({
-        message: error.message,
-        code: error.code,
-      });
-    }
+    if (error.statusCode) return reply.status(error.statusCode).send({message: error.message, code: error.code,});
 
     console.error(error);
-
     reply.status(500).send({
       message: "Internal server error",
       code: "INTERNAL_ERROR",

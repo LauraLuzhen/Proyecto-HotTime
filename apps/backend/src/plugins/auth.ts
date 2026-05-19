@@ -1,16 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-
 import { verifyToken } from "@/lib/jwt";
 import { httpError } from "@/lib/httpError";
 
+// Comprobación del usuario de JWT, con token válido y guardarlo en req.user
 export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return reply.status(401).send(
-      httpError("No token provided", 401, "NO_TOKEN")
-    );
-  }
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return reply.status(401).send(httpError("No token provided", 401, "NO_TOKEN"));
 
   try {
     const token = authHeader.split(" ")[1];

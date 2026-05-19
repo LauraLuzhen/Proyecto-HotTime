@@ -3,6 +3,7 @@ import { buildApp } from "@/app";
 
 dotenv.config();
 
+// Construye e inicia el servidor Fastify en el puerto configurado
 const start = async () => {
   const app = await buildApp();
   const port = Number(process.env.PORT_BACKEND) || 3001;
