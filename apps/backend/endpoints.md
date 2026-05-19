@@ -142,45 +142,38 @@ Delete por id un shift DELETE - /planning/shifts/2 ✅
 
 ### ATTENDANCE
 LogIn
-Create clockin POST - /planning/attendance/clock-in
+Create clockin POST - /planning/attendance/clock-in ✅
 {
   "shiftId": 10,
   "latitude": 37.3890924,
   "longitude": -5.9844589
 }
-Create clockout POST - /planning/attendance/clock-out
+Create clockout POST - /planning/attendance/clock-out ✅
 {
   "shiftId": 10,
   "latitude": 37.3890924,
   "longitude": -5.9844589
 }
-Create attendance POST - /planning/attendance
+Create attendance POST - /planning/attendance ✅
 {
   "shiftId": 10,
   "type": "CLOCK_IN",
   "occurredAt": "2026-05-11T20:00:00+02:00"
 }
-Get list attendance GET - /planning/attendance
+Get list attendance GET - /planning/attendance ✅
   /planning/attendance
   /planning/attendance?userId=2
   /planning/attendance?shiftId=10
   /planning/attendance?type=CLOCK_IN
   /planning/attendance?from=2026-05-11T20:00:00+02:00&to=2026-05-11T21:00:00+02:00
-Get calendar attendance GET - /planning/attendance/calendar
-Get week attendance GET - /planning/attendance/week
-Get month attendance GET - /planning/attendance/month
-Get by id GET - /planning/attendance/:attendanceId
-Update attendance PATCH - /planning/attendance/:attendanceId
+Get calendar attendance GET - /planning/attendance/calendar ✅
+Get week attendance GET - /planning/attendance/week ✅
+Get month attendance GET - /planning/attendance/month ✅
+Get by id GET - /planning/attendance/:attendanceId ✅
+Update attendance PATCH - /planning/attendance/:attendanceId ✅
 {
   "shiftId": 10,
   "type": "CLOCK_OUT",
   "occurredAt": "2026-05-11T20:00:00+02:00"
 }
-Delete attendance DELETE - /planning/attendance/:attendanceId
-
-**Notas importantes**
-- `shiftId` debe existir.
-- El `userId` no se manda en el body: se toma automáticamente del `shift`.
-- En `clock-in` y `clock-out`, el `shift` tiene que pertenecer al usuario autenticado.
-- En el CRUD manual, `ADMIN` y `MANAGER` pueden trabajar con attendances de su organización.
-- En planning, `ADMIN` y `MANAGER` gestionan turnos; `EMPLOYEE` ve solo sus calendarios.
+Delete attendance DELETE - /planning/attendance/:attendanceId ✅

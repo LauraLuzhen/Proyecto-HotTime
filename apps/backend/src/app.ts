@@ -1,6 +1,5 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-
 import { userRoutes } from "@/modules/user/routes";
 import { authRoutes } from "@/modules/auth/routes";
 import { categoryRoutes } from "@/modules/category/routes";
