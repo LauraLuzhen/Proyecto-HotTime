@@ -36,16 +36,10 @@ const communicationSelect = {
   senderId: true,
   organizationId: true,
   sentAt: true,
-  sender: {
-    select: senderSelect,
-  },
+  sender: { select: senderSelect },
   recipients: {
     select: recipientSelect,
-    orderBy: {
-      user: {
-        fullName: "asc",
-      },
-    },
+    orderBy: { user: { fullName: "asc" } },
   },
 } satisfies Prisma.CommunicationSelect;
 //#endregion
@@ -94,7 +88,6 @@ export function countInbox(userId: number, organizationId: number, read: boolean
   return prisma.communicationUser.count({
     where: {
       userId,
-      hiddenAt: null,
       read,
       communication: {
         organizationId,
@@ -108,24 +101,17 @@ export function findInbox(userId: number, organizationId: number, filters: Commu
   return prisma.communicationUser.findMany({
     where: {
       userId,
-      hiddenAt: null,
       read: filters.read,
       communication: {
         organizationId,
         NOT: { senderId: userId },
       },
     },
-    orderBy: {
-      communication: {
-        sentAt: "desc",
-      },
-    },
+    orderBy: { communication: { sentAt: "desc" } },
     select: {
       read: true,
       createdAt: true,
-      communication: {
-        select: communicationSelect,
-      },
+      communication: { select: communicationSelect },
     },
   });
 }
@@ -136,9 +122,7 @@ export function findOutbox(userId: number, organizationId: number) {
       senderId: userId,
       organizationId,
     },
-    orderBy: {
-      sentAt: "desc",
-    },
+    orderBy: { sentAt: "desc" },
     select: communicationSelect,
   });
 }
@@ -148,18 +132,13 @@ export function findRecipientCommunication(communicationId: number, userId: numb
     where: {
       communicationId,
       userId,
-      hiddenAt: null,
-      communication: {
-        organizationId,
-      },
+      communication: { organizationId },
     },
     select: {
       id: true,
       read: true,
       createdAt: true,
-      communication: {
-        select: communicationSelect,
-      },
+      communication: { select: communicationSelect },
     },
   });
 }
@@ -182,7 +161,6 @@ export async function resolveRecipientIds(data: CreateCommunicationDto, senderId
   const recipientMode = data.recipientMode ?? "ALL_USERS";
   const categoryIds = uniqueIds(data.recipientCategoryIds ?? []);
   const categoryRecipientsWhere: Prisma.UserWhereInput[] = [];
-
   if (categoryIds.length) {
     categoryRecipientsWhere.push({
       userCategories: {
@@ -193,20 +171,13 @@ export async function resolveRecipientIds(data: CreateCommunicationDto, senderId
       },
     });
   }
-
   if (data.recipientWithoutCategory) {
-    categoryRecipientsWhere.push({
-      userCategories: {
-        none: {},
-      },
-    });
+    categoryRecipientsWhere.push({ userCategories: { none: {} } });
   }
-
   const baseWhere: Prisma.UserWhereInput = {
     organizationId,
     NOT: { id: senderId },
   };
-
   const recipients = await prisma.user.findMany({
     where: {
       ...baseWhere,
@@ -219,9 +190,7 @@ export async function resolveRecipientIds(data: CreateCommunicationDto, senderId
     },
     select: { id: true },
   });
-
   const recipientIds = new Set(recipients.map((recipient) => recipient.id));
-
   const extraUserIds = uniqueIds(data.recipientExtraUserIds ?? []);
   if (extraUserIds.length) {
     const extraRecipients = await prisma.user.findMany({
@@ -231,12 +200,9 @@ export async function resolveRecipientIds(data: CreateCommunicationDto, senderId
       },
       select: { id: true },
     });
-
     extraRecipients.forEach((recipient) => recipientIds.add(recipient.id));
   }
-
   uniqueIds(data.recipientExcludedUserIds ?? []).forEach((userId) => recipientIds.delete(userId));
-
   return [...recipientIds];
 }
 // Marca como leído los comunicados y el receptor que lo ha leído
@@ -260,29 +226,19 @@ export async function hideInboxCommunications(userId: number, organizationId: nu
     },
     select: { id: true },
   });
-
   if (!validCommunications.length) return 0;
-
   const recipients = await prisma.communicationUser.findMany({
     where: {
       userId,
-      hiddenAt: null,
       communicationId: { in: validCommunications.map((communication) => communication.id) },
     },
     select: { id: true },
   });
-
   if (!recipients.length) return 0;
-
   const result = await prisma.communicationUser.updateMany({
-    where: {
-      id: { in: recipients.map((recipient) => recipient.id) },
-    },
-    data: {
-      hiddenAt: new Date(),
-    },
+    where: { id: { in: recipients.map((recipient) => recipient.id) } },
+    data: {},
   });
-
   return result.count;
 }
 //#endregion
@@ -291,7 +247,6 @@ export async function hideInboxCommunications(userId: number, organizationId: nu
 export async function deleteInboxCommunications(organizationId: number, communicationIds: number[]) {
   const ids = uniqueIds(communicationIds);
   if (!ids.length) return 0;
-
   return prisma.$transaction(async (tx) => {
     const validCommunications = await tx.communication.findMany({
       where: {
@@ -300,24 +255,17 @@ export async function deleteInboxCommunications(organizationId: number, communic
       },
       select: { id: true },
     });
-
     if (!validCommunications.length) return 0;
-
     const validIds = validCommunications.map((communication) => communication.id);
-
     await tx.communicationUser.deleteMany({
-      where: {
-        communicationId: { in: validIds },
-      },
+      where: { communicationId: { in: validIds } },
     });
-
     const result = await tx.communication.deleteMany({
       where: {
         id: { in: validIds },
         organizationId,
       },
     });
-
     return result.count;
   });
 }

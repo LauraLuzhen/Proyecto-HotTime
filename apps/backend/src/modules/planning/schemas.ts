@@ -65,24 +65,17 @@ export const getCalendarShiftsSchema = z.object({
 }).strict();
 //#endregion
 
-/* =========================
-   UPDATE SHIFT
-========================= */
-
+//#region Update
 export const updateShiftBodySchema = z.object({
   startsAt: z.coerce.date().optional(),
   endsAt: z.coerce.date().optional(),
-
   status: z.enum([
     "SCHEDULED",
     "IN_PROGRESS",
     "COMPLETED",
     "MISSED",
   ]).optional(),
-
   published: z.boolean().optional(),
 }).strict();
-
-export const shiftIdParamsSchema = z.object({
-  shiftId: z.coerce.number().int().positive(),
-});
+export const shiftIdParamsSchema = z.object({ shiftId: z.coerce.number().int().positive() });
+//#endregion

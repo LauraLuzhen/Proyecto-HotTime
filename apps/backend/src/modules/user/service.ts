@@ -1,4 +1,12 @@
-import type { CreateUserFn, DeleteUserFn, GetMeFn, GetUsersFn, GetUserByIdFn, UpdateMeFn, UpdateUsersFn } from "@hottime/types";
+import type { 
+  CreateUserFn, 
+  DeleteUserFn, 
+  GetMeFn, 
+  GetUsersFn, 
+  GetUserByIdFn, 
+  UpdateMeFn, 
+  UpdateUsersFn 
+} from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import { hashPassword } from "@/lib/hash";
 import * as repo from "@/modules/user/repository";
@@ -7,7 +15,6 @@ import * as repo from "@/modules/user/repository";
 async function validateCategoryIds(categoryIds: number[], organizationId: number) {
   const uniqueIds = [...new Set(categoryIds)];
   if (uniqueIds.length === 0) return;
-
   const categories = await repo.findCategoriesByIds(uniqueIds, organizationId);
   if (categories.length !== uniqueIds.length) throw httpError("One or more categories do not belong to your organization", 403, "CATEGORY_FORBIDDEN");
 }
@@ -17,7 +24,6 @@ export const createUser: CreateUserFn = async (data, organizationId) => {
   const existingUser = await repo.findByEmailOrNull(data.email);
   if (existingUser) throw httpError("Email already exists", 409, "EMAIL_ALREADY_EXISTS");
   await validateCategoryIds(data.categoryIds, organizationId);
-
   const hashedPassword = await hashPassword(data.password);
   const user = await repo.create({
     ...data,
@@ -49,15 +55,10 @@ export const getUsersAll: GetUsersFn = async (organizationId, filters, userId) =
   return repo.findAll(organizationId, filters, userId);
 };
 // Get user by id
-export const getUserById: GetUserByIdFn = async (
-  id,
-  organizationId,
-  currentUserId
-) => {
+export const getUserById: GetUserByIdFn = async (id, organizationId, currentUserId) => {
   const user = await repo.findById(id);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (user.organizationId !== organizationId && id !== currentUserId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-
   return {
     ...user,
     categories: user.userCategories.map((x) => x.category),
@@ -70,10 +71,8 @@ export const getUserById: GetUserByIdFn = async (
 export const updateMe: UpdateMeFn = async (userId, data) => {
   const user = await repo.findById(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
-
   const updateData: any = { ...data };
   if (data.password) updateData.password = await hashPassword(data.password);
-
   return repo.updateUser(userId, updateData);
 };
 // Update users
@@ -86,12 +85,10 @@ export const updateUsers: UpdateUsersFn = async (userId, adminOrganizationId, cu
     const existingUser = await repo.findByEmailOrNull(data.email);
     if (existingUser) throw httpError("Email already exists", 409, "EMAIL_ALREADY_EXISTS");
   }
-
   const { categoryIds, ...rest } = data;
   const updateData: any = { ...rest };
   if (data.password) updateData.password = await hashPassword(data.password);
   if (categoryIds !== undefined) await validateCategoryIds(categoryIds, adminOrganizationId);
-
   return repo.updateUser(userId, updateData, categoryIds);
 };
 //#endregion
@@ -100,10 +97,8 @@ export const updateUsers: UpdateUsersFn = async (userId, adminOrganizationId, cu
 export const deleteUser: DeleteUserFn = async (userId, organizationId, currentUserId) => {
   const user = await repo.findById(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
-
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
   if (user.id === currentUserId) throw httpError("You cannot delete your own account", 400, "CANNOT_DELETE_SELF");
-
   await repo.deleteById(userId);
   return { success: true };
 };

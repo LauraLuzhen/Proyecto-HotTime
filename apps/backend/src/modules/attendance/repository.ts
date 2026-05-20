@@ -5,7 +5,7 @@ import type { AttendanceEntity } from "@hottime/types";
 
 const prisma = new PrismaClient();
 
-//#region Entity Select
+//#region Select
 const attendanceSelect = {
   id: true,
   organizationId: true,
@@ -60,7 +60,6 @@ export async function createAttendance(data: {
     data,
     select: attendanceSelect,
   });
-
   return toAttendanceEntity(attendance);
 }
 //#endregion
@@ -91,7 +90,6 @@ export async function findAttendanceById(
     },
     select: attendanceSelect,
   });
-
   return attendance ? toAttendanceEntity(attendance) : null;
 }
 // Get attendance by shiftid
@@ -114,7 +112,6 @@ export async function findAttendanceByShiftAndType(
     },
     select: attendanceSelect,
   });
-
   return attendance ? toAttendanceEntity(attendance) : null;
 }
 // Get attendances list
@@ -141,7 +138,6 @@ export async function getAttendances(filters: {
     limit = 50,
     offset = 0,
   } = filters;
-
   const where = {
     organizationId,
     ...(attendanceId !== undefined && { id: attendanceId }),
@@ -157,13 +153,10 @@ export async function getAttendances(filters: {
         }
       : {}),
   };
-
   const [attendances, total] = await Promise.all([
     prisma.attendance.findMany({
       where,
-      orderBy: {
-        occurredAt: "desc",
-      },
+      orderBy: { occurredAt: "desc" },
       take: limit,
       skip: offset,
       select: attendanceSelect,
@@ -189,9 +182,7 @@ export async function updateShiftById(
   }
 ) {
   return prisma.shift.update({
-    where: {
-      id: shiftId,
-    },
+    where: { id: shiftId },
     data: {
       ...(data.status !== undefined && { status: data.status }),
       ...(data.actualStartsAt !== undefined && {
@@ -238,7 +229,6 @@ export async function updateAttendanceById(
     },
     select: attendanceSelect,
   });
-
   return toAttendanceEntity(attendance);
 }
 //#endregion
@@ -249,12 +239,9 @@ export async function deleteAttendanceById(
   attendanceId: number
 ): Promise<AttendanceEntity> {
   const attendance = await prisma.attendance.delete({
-    where: {
-      id: attendanceId,
-    },
+    where: { id: attendanceId },
     select: attendanceSelect,
   });
-
   return toAttendanceEntity(attendance);
 }
 //#endregion

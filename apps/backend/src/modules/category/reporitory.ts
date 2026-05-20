@@ -3,6 +3,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 const prisma = new PrismaClient();
 
 //#region Create
+// Create category 
 export function create(data: {name: string; organizationId: number}) {
   return prisma.category.create({
     data,
@@ -25,12 +26,8 @@ export async function findOrganizationById(id: number) {
 // Find category by organization 
 export function findByOrganization(organizationId: number) {
   return prisma.category.findMany({
-    where: {
-      organizationId,
-    },
-    orderBy: {
-      name: "asc",
-    },
+    where: { organizationId },
+    orderBy: { name: "asc" },
     select: {
       id: true,
       name: true,
@@ -47,16 +44,8 @@ export function findById(id: number) {
 // Find users by category
 export function findUsersByCategory(categoryId: number) {
   return prisma.user.findMany({
-    where: {
-      userCategories: {
-        some: {
-          categoryId,
-        },
-      },
-    },
-    orderBy: {
-      fullName: "asc",
-    },
+    where: { userCategories: { some: { categoryId } } },
+    orderBy: { fullName: "asc" },
     select: {
       id: true,
       fullName: true,
@@ -76,11 +65,7 @@ export function findUsersByCategory(categoryId: number) {
             },
           },
         },
-        orderBy: {
-          category: {
-            name: "asc",
-          },
-        },
+        orderBy: { category: { name: "asc" } },
       },
     },
   }).then((users) => users.map((user) => {

@@ -69,11 +69,7 @@ export async function findById(id: number) {
       organizationId: true,
       userCategories: {
         select: categoriesSelect,
-        orderBy: {
-          category: {
-            name: "asc",
-          },
-        },
+        orderBy: { category: { name: "asc" } },
       },
     },
   });
@@ -116,22 +112,13 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
       NOT: {id: userId},
       role: filters.role,
       userCategories: filters.categoryId
-        ? {
-            some: {
-              categoryId: filters.categoryId,
-            },
-          }
+        ? { some: { categoryId: filters.categoryId } }
         : undefined,
       fullName: filters.fullName
-        ? {
-            contains: filters.fullName,
-            mode: "insensitive",
-          }
+        ? { contains: filters.fullName, mode: "insensitive" }
         : undefined,
     },
-    orderBy: {
-      fullName: "asc",
-    },
+    orderBy: { fullName: "asc" },
     select: {
       id: true,
       fullName: true,
@@ -144,11 +131,7 @@ export function findAllByOrganization(organizationId: number, filters: GetUsersQ
       initDate: true,
       userCategories: {
         select: categoriesSelect,
-        orderBy: {
-          category: {
-            name: "asc",
-          },
-        },
+        orderBy: { category: { name: "asc" } },
       },
     },
   }).then((users) => {
@@ -165,11 +148,7 @@ export function findAll(organizationId: number, filters: GetUsersQueryDto, userI
       organizationId,
       role: filters.role,
       userCategories: filters.categoryId
-        ? {
-            some: {
-              categoryId: filters.categoryId,
-            },
-          }
+        ? { some: { categoryId: filters.categoryId} }
         : undefined,
       fullName: filters.fullName
         ? {
@@ -178,9 +157,7 @@ export function findAll(organizationId: number, filters: GetUsersQueryDto, userI
           }
         : undefined,
     },
-    orderBy: {
-      fullName: "asc",
-    },
+    orderBy: { fullName: "asc" },
     select: {
       id: true,
       fullName: true,
@@ -193,11 +170,7 @@ export function findAll(organizationId: number, filters: GetUsersQueryDto, userI
       initDate: true,
       userCategories: {
         select: categoriesSelect,
-        orderBy: {
-          category: {
-            name: "asc",
-          },
-        },
+        orderBy: { category: { name: "asc" } },
       },
     },
   }).then((users) => {
@@ -229,11 +202,7 @@ export function findMeWithRelations(userId: number) {
             },
           },
         },
-        orderBy: {
-          category: {
-            name: "asc",
-          },
-        },
+        orderBy: { category: { name: "asc" } },
       },
       organization: {
         select: {
@@ -272,18 +241,13 @@ export async function updateUser(userId: number, data: any, categoryIds?: number
   const user = await prisma.$transaction(async (tx) => {
     const uniqueIds = categoryIds ? uniqueCategoryIds(categoryIds) : [];
     if (categoryIds !== undefined) await tx.userCategory.deleteMany({ where: { userId } });
-
     return tx.user.update({
       where: { id: userId },
       data: {
         ...data,
         ...(categoryIds !== undefined
           && uniqueIds.length
-          ? {
-              userCategories: {
-                create: uniqueIds.map((categoryId) => ({ categoryId })),
-              },
-            }
+          ? { userCategories: { create: uniqueIds.map((categoryId) => ({ categoryId })) } }
           : {}),
       },
       select: {
@@ -298,11 +262,7 @@ export async function updateUser(userId: number, data: any, categoryIds?: number
         organizationId: true,
         userCategories: {
           select: categoriesSelect,
-          orderBy: {
-            category: {
-              name: "asc",
-            },
-          },
+          orderBy: { category: { name: "asc" } },
         },
       },
     });
@@ -320,11 +280,7 @@ export async function create(data: CreateUserInput): Promise<CreateUserResponse>
     data: {
       ...userData,
       ...(uniqueIds.length
-        ? {
-            userCategories: {
-              create: uniqueIds.map((categoryId) => ({ categoryId })),
-            },
-          }
+        ? { userCategories: { create: uniqueIds.map((categoryId) => ({ categoryId })) } }
         : {}),
     },
     select: {
@@ -338,11 +294,7 @@ export async function create(data: CreateUserInput): Promise<CreateUserResponse>
       organizationId: true,
       userCategories: {
         select: categoriesSelect,
-        orderBy: {
-          category: {
-            name: "asc",
-          },
-        },
+        orderBy: { category: { name: "asc" } },
       },
     },
   });

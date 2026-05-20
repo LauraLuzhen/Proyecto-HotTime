@@ -20,7 +20,6 @@ export async function organizationRoutes(app: FastifyInstance) {
     const parsed = updateOrganizationSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid organization data", 400, "VALIDATION_ERROR"));
     const organization = await service.updateOrganization(req.user.organizationId, parsed.data);
-    
     return reply.send(organization);
   });
   //#endregion

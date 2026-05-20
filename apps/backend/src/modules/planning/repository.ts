@@ -1,13 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import { httpError } from "@/lib/httpError";
 import type { GetShiftsDto } from "@hottime/types";
 
 const prisma = new PrismaClient();
 
-/* =========================
-   HELPERS
-========================= */
-
+// Transforma un turno reemplazando la propiedad shiftCategories por categories
 function mapShiftCategories(
   shift: {
     shiftCategories: {
@@ -17,124 +13,14 @@ function mapShiftCategories(
   } & any
 ) {
   const { shiftCategories, ...rest } = shift;
-
   return {
     ...rest,
     categories: shiftCategories,
   };
 }
 
-/* =========================
-   USERS
-========================= */
-
-export function findUserById(
-  userId: number,
-  organizationId: number
-) {
-  return prisma.user.findFirst({
-    where: {
-      id: userId,
-      organizationId,
-    },
-    select: {
-      id: true,
-      userCategories: {
-        select: {
-          categoryId: true,
-        },
-      },
-    },
-  });
-}
-
-export function findUsersByIds(
-  userIds: number[],
-  organizationId: number
-) {
-  return prisma.user.findMany({
-    where: {
-      id: {
-        in: [...new Set(userIds)],
-      },
-      organizationId,
-    },
-    select: {
-      id: true,
-      userCategories: {
-        select: {
-          categoryId: true,
-        },
-      },
-    },
-  });
-}
-
-export function findUsersByCategory(
-  categoryId: number | null,
-  organizationId: number
-) {
-  return prisma.user.findMany({
-    where: {
-      organizationId,
-      ...(categoryId === null
-        ? {
-            userCategories: {
-              none: {},
-            },
-          }
-        : {
-            userCategories: {
-              some: {
-                categoryId,
-              },
-            },
-          }),
-    },
-    select: {
-      id: true,
-      userCategories: {
-        select: {
-          categoryId: true,
-        },
-      },
-    },
-  });
-}
-
-/* =========================
-   OVERLAPS
-========================= */
-
-export async function hasOverlappingShift(
-  userId: number,
-  organizationId: number,
-  startsAt: Date,
-  endsAt: Date
-) {
-  const shift = await prisma.shift.findFirst({
-    where: {
-      userId,
-      organizationId,
-      startsAt: {
-        lt: endsAt,
-      },
-      endsAt: {
-        gt: startsAt,
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  return !!shift;
-}
-
-/* =========================
-   CREATE
-========================= */
-
+//#region Create
+// Create shift
 export async function createShift(
   userId: number,
   organizationId: number,
@@ -152,11 +38,7 @@ export async function createShift(
       startsAt,
       endsAt,
       published,
-      shiftCategories: {
-        create: categoryIds.map((categoryId) => ({
-          categoryId,
-        })),
-      },
+      shiftCategories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
     },
     include: {
       shiftCategories: {
@@ -167,15 +49,81 @@ export async function createShift(
       },
     },
   });
-
   return mapShiftCategories(shift);
 }
+//#endregion
 
-/* =========================
-   GET BY ID
-========================= */
-
-export async function getShiftById(
+//#region Get
+// Comprueba si un usuario ya tiene un turno asignado que se solapa en horario con el nuevo turno
+export async function hasOverlappingShift(
+  userId: number,
+  organizationId: number,
+  startsAt: Date,
+  endsAt: Date
+) {
+  const shift = await prisma.shift.findFirst({
+    where: {
+      userId,
+      organizationId,
+      startsAt: { lt: endsAt },
+      endsAt: { gt: startsAt },
+    },
+    select: { id: true },
+  });
+  return !!shift;
+}
+// Get user by id
+export function findUserById(
+  userId: number,
+  organizationId: number
+) {
+  return prisma.user.findFirst({
+    where: {
+      id: userId,
+      organizationId,
+    },
+    select: {
+      id: true,
+      userCategories: { select: { categoryId: true } },
+    },
+  });
+}
+// Get users by ids
+export function findUsersByIds(
+  userIds: number[],
+  organizationId: number
+) {
+  return prisma.user.findMany({
+    where: {
+      id: { in: [...new Set(userIds)] },
+      organizationId,
+    },
+    select: {
+      id: true,
+      userCategories: { select: { categoryId: true } },
+    },
+  });
+}
+// Get users by category
+export function findUsersByCategory(
+  categoryId: number | null,
+  organizationId: number
+) {
+  return prisma.user.findMany({
+    where: {
+      organizationId,
+      ...(categoryId === null
+        ? { userCategories: { none: {} } }
+        : { userCategories: { some: { categoryId } } }),
+    },
+    select: {
+      id: true,
+      userCategories: { select: { categoryId: true } },
+    },
+  });
+}
+// Get shift by id
+export async function findShiftById(
   shiftId: number,
   organizationId: number
 ) {
@@ -193,16 +141,10 @@ export async function getShiftById(
       },
     },
   });
-
   if (!shift) return null;
-
   return mapShiftCategories(shift);
 }
-
-/* =========================
-   GET ALL WITH FILTERS
-========================= */
-
+// Get shifts + filters
 export async function getShifts(
   filters: GetShiftsDto,
   organizationId: number
@@ -221,24 +163,15 @@ export async function getShifts(
     limit = 50,
     offset = 0,
   } = filters;
-
   const where: any = {
     organizationId,
-
     ...(shiftId && { id: shiftId }),
-
     ...(userId && { userId }),
-
     ...(userIds?.length && {
       userId: { in: userIds },
     }),
-
-    ...(published !== undefined && {
-      published,
-    }),
-
+    ...(published !== undefined && { published }),
     ...(status && { status }),
-
     ...(startsFrom || startsTo
       ? {
           startsAt: {
@@ -247,7 +180,6 @@ export async function getShifts(
           },
         }
       : {}),
-
     ...(endsFrom || endsTo
       ? {
           endsAt: {
@@ -256,16 +188,10 @@ export async function getShifts(
           },
         }
       : {}),
-
     ...(categoryId && {
-      shiftCategories: {
-        some: {
-          categoryId,
-        },
-      },
+      shiftCategories: { some: { categoryId } },
     }),
   };
-
   const [shifts, total] = await Promise.all([
     prisma.shift.findMany({
       where,
@@ -277,26 +203,18 @@ export async function getShifts(
           },
         },
       },
-      orderBy: {
-        startsAt: "asc",
-      },
+      orderBy: { startsAt: "asc" },
       take: limit,
       skip: offset,
     }),
-
     prisma.shift.count({ where }),
   ]);
-
   return {
     shifts: shifts.map(mapShiftCategories),
     total,
   };
 }
-
-/* =========================
-   NEXT SHIFT
-========================= */
-
+// Get next shift
 export async function getNextShift(
   organizationId: number,
   userId: number,
@@ -309,9 +227,7 @@ export async function getNextShift(
       published: true,
       startsAt: { gte: now },
     },
-    orderBy: {
-      startsAt: "asc",
-    },
+    orderBy: { startsAt: "asc" },
     include: {
       shiftCategories: {
         select: {
@@ -321,77 +237,9 @@ export async function getNextShift(
       },
     },
   });
-
   return shift ? mapShiftCategories(shift) : null;
 }
-
-/* =========================
-   SYNC OVERDUE SHIFTS
-========================= */
-
-export async function syncOverdueShiftStatuses(
-  organizationId: number,
-  userId: number,
-  now: Date
-) {
-  const shifts = await prisma.shift.findMany({
-    where: {
-      organizationId,
-      userId,
-      published: true,
-      status: {
-        in: ["SCHEDULED", "IN_PROGRESS"],
-      },
-      endsAt: {
-        lt: now,
-      },
-    },
-    select: {
-      id: true,
-      endsAt: true,
-      attendances: {
-        select: {
-          type: true,
-        },
-      },
-    },
-  });
-
-  const overdue = shifts.filter((shift) => {
-    const hasClockIn = shift.attendances.some((attendance) => attendance.type === "CLOCK_IN");
-    const hasClockOut = shift.attendances.some((attendance) => attendance.type === "CLOCK_OUT");
-
-    if (!hasClockIn) {
-      return now >= shift.endsAt;
-    }
-
-    if (!hasClockOut) {
-      return now >= new Date(shift.endsAt.getTime() + 60 * 60 * 1000);
-    }
-
-    return false;
-  });
-
-  if (!overdue.length) return;
-
-  await Promise.all(
-    overdue.map((shift) =>
-      prisma.shift.update({
-        where: {
-          id: shift.id,
-        },
-        data: {
-          status: "MISSED",
-        },
-      })
-    )
-  );
-}
-
-/* =========================
-   WEEK SHIFTS
-========================= */
-
+// Get shifts (week)
 export async function getWeekShifts(
   organizationId: number,
   userId: number,
@@ -407,9 +255,7 @@ export async function getWeekShifts(
         lte: end,
       },
     },
-    orderBy: {
-      startsAt: "asc",
-    },
+    orderBy: { startsAt: "asc" },
     include: {
       shiftCategories: {
         select: {
@@ -419,14 +265,9 @@ export async function getWeekShifts(
       },
     },
   });
-
   return shifts.map(mapShiftCategories);
 }
-
-/* =========================
-   MONTH SHIFTS
-========================= */
-
+// Get shifts (month)
 export async function getMonthShifts(
   organizationId: number,
   userId: number,
@@ -442,9 +283,7 @@ export async function getMonthShifts(
         lte: end,
       },
     },
-    orderBy: {
-      startsAt: "asc",
-    },
+    orderBy: { startsAt: "asc" },
     include: {
       shiftCategories: {
         select: {
@@ -454,30 +293,49 @@ export async function getMonthShifts(
       },
     },
   });
-
   return shifts.map(mapShiftCategories);
 }
+//#endregion
 
-/* =========================
-   FIND SHIFT
-========================= */
-
-export async function findShiftById(
-  shiftId: number,
-  organizationId: number
+//#region Update
+// Sincroniza automáticamente los turnos vencidos
+export async function syncOverdueShiftStatuses(
+  organizationId: number,
+  userId: number,
+  now: Date
 ) {
-  return prisma.shift.findFirst({
+  const shifts = await prisma.shift.findMany({
     where: {
-      id: shiftId,
       organizationId,
+      userId,
+      published: true,
+      status: { in: ["SCHEDULED", "IN_PROGRESS"] },
+      endsAt: { lt: now },
+    },
+    select: {
+      id: true,
+      endsAt: true,
+      attendances: { select: { type: true } },
     },
   });
+  const overdue = shifts.filter((shift) => {
+    const hasClockIn = shift.attendances.some((attendance) => attendance.type === "CLOCK_IN");
+    const hasClockOut = shift.attendances.some((attendance) => attendance.type === "CLOCK_OUT");
+    if (!hasClockIn) return now >= shift.endsAt;
+    if (!hasClockOut) return now >= new Date(shift.endsAt.getTime() + 60 * 60 * 1000);
+    return false;
+  });
+  if (!overdue.length) return;
+  await Promise.all(
+    overdue.map((shift) =>
+      prisma.shift.update({
+        where: { id: shift.id },
+        data: { status: "MISSED" },
+      })
+    )
+  );
 }
-
-/* =========================
-   UPDATE SHIFT
-========================= */
-
+// Update shift by id
 export async function updateShiftById(
   shiftId: number,
   organizationId: number,
@@ -489,9 +347,7 @@ export async function updateShiftById(
   }
 ) {
   const shift = await prisma.shift.update({
-    where: {
-      id: shiftId,
-    },
+    where: { id: shiftId },
     data: {
       ...(data.startsAt && { startsAt: data.startsAt }),
       ...(data.endsAt && { endsAt: data.endsAt }),
@@ -509,10 +365,11 @@ export async function updateShiftById(
       },
     },
   });
-
   return mapShiftCategories(shift);
 }
+//#endregion
 
+//#region Delete
 export async function deleteShiftById(shiftId: number, organizationId: number) {
   await prisma.$transaction([
     prisma.attendance.deleteMany({
@@ -522,11 +379,9 @@ export async function deleteShiftById(shiftId: number, organizationId: number) {
       },
     }),
     prisma.shift.delete({
-      where: {
-        id: shiftId,
-      },
+      where: { id: shiftId },
     }),
   ]);
-
   return true;
 }
+//#endregion

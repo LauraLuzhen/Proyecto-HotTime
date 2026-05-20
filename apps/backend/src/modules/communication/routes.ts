@@ -7,15 +7,11 @@ import { createCommunicationSchema, deleteInboxSchema, getCommunicationIdSchema,
 
 export async function communicationRoutes(app: FastifyInstance) {
   //#region Create
+  // Create communication
   app.post("/", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = createCommunicationSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid communication data", 400, "VALIDATION_ERROR"));
-
-    const communication = await service.createCommunication(
-      parsed.data,
-      req.user.id,
-      req.user.organizationId
-    );
+    const communication = await service.createCommunication(parsed.data, req.user.id, req.user.organizationId);
     return reply.status(201).send(communication);
   });
   //#endregion
@@ -25,20 +21,12 @@ export async function communicationRoutes(app: FastifyInstance) {
   app.get("/inbox", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getInboxSchema.safeParse(req.query);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
-
-    const communications = await service.getInboxCommunications(
-      req.user.id,
-      req.user.organizationId,
-      parsed.data
-    );
+    const communications = await service.getInboxCommunications(req.user.id, req.user.organizationId, parsed.data);
     return reply.send(communications);
   });
   // Get outbox communications
   app.get("/outbox", { preHandler: [authenticate] }, async (req, reply) => {
-    const communications = await service.getOutboxCommunications(
-      req.user.id,
-      req.user.organizationId
-    );
+    const communications = await service.getOutboxCommunications(req.user.id, req.user.organizationId);
     return reply.send(communications);
   });
   // Get count read communications
@@ -50,12 +38,7 @@ export async function communicationRoutes(app: FastifyInstance) {
   app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getCommunicationIdSchema.safeParse(req.params);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid communication id", 400, "VALIDATION_ERROR"));
-
-    const communication = await service.getCommunicationById(
-      parsed.data.id,
-      req.user.id,
-      req.user.organizationId
-    );
+    const communication = await service.getCommunicationById(parsed.data.id, req.user.id, req.user.organizationId);
     return reply.send(communication);
   });
   // Get count unread communications
@@ -70,12 +53,7 @@ export async function communicationRoutes(app: FastifyInstance) {
   app.post("/inbox/hide", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = deleteInboxSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid communication data", 400, "VALIDATION_ERROR"));
-
-    const result = await service.hideInboxCommunications(
-      req.user.id,
-      req.user.organizationId,
-      parsed.data
-    );
+    const result = await service.hideInboxCommunications(req.user.id, req.user.organizationId, parsed.data);
     return reply.send(result);
   });
   //#endregion
@@ -85,13 +63,7 @@ export async function communicationRoutes(app: FastifyInstance) {
   app.post("/delete", { preHandler: [authenticate, requireRole(["ADMIN", "MANAGER"])] }, async (req, reply) => {
     const parsed = deleteInboxSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid communication data", 400, "VALIDATION_ERROR"));
-
-    const result = await service.deleteCommunications(
-      req.user.id,
-      req.user.organizationId,
-      req.user.role,
-      parsed.data
-    );
+    const result = await service.deleteCommunications(req.user.id, req.user.organizationId, req.user.role, parsed.data);
     return reply.send(result);
   });
   //#endregion

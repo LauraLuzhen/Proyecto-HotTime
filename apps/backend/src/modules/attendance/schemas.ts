@@ -1,35 +1,24 @@
 import { AttendanceType } from "@prisma/client";
 import { z } from "zod";
 
-export const clockAttendanceSchema = z.object({
-  shiftId: z.coerce.number().int().positive(),
-  latitude: z.coerce.number(),
-  longitude: z.coerce.number(),
-});
-
+//#region Create
 export const createAttendanceSchema = z.object({
   shiftId: z.coerce.number().int().positive(),
   type: z.nativeEnum(AttendanceType),
   occurredAt: z.coerce.date().optional(),
 });
+//#endregion 
 
-export const updateAttendanceSchema = z.object({
-  shiftId: z.coerce.number().int().positive().optional(),
-  type: z.nativeEnum(AttendanceType).optional(),
-  occurredAt: z.coerce.date().optional(),
-});
-
+//#region Get
 export const attendanceCalendarSchema = z.object({
   userId: z.coerce.number().int().positive().optional(),
   date: z.coerce.date().optional(),
   includeWeek: z.coerce.boolean().optional(),
   includeMonth: z.coerce.boolean().optional(),
 });
-
 export const attendanceIdParamsSchema = z.object({
   attendanceId: z.coerce.number().int().positive(),
 });
-
 export const getAttendancesSchema = z.object({
   attendanceId: z.coerce.number().int().positive().optional(),
   userId: z.coerce.number().int().positive().optional(),
@@ -40,3 +29,17 @@ export const getAttendancesSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
   offset: z.coerce.number().int().nonnegative().optional(),
 });
+//#endregion
+
+//#region Update
+export const updateAttendanceSchema = z.object({
+  shiftId: z.coerce.number().int().positive().optional(),
+  type: z.nativeEnum(AttendanceType).optional(),
+  occurredAt: z.coerce.date().optional(),
+});
+export const clockAttendanceSchema = z.object({
+  shiftId: z.coerce.number().int().positive(),
+  latitude: z.coerce.number(),
+  longitude: z.coerce.number(),
+});
+//#endregion

@@ -139,7 +139,7 @@ pnpm install
 ### 3. Levantar la base de datos con Docker
 
 ```bash
-pnpm setup 
+docker compose up -d
 ```
 
 Esto levanta un contenedor PostgreSQL en el puerto `5432`.
@@ -154,6 +154,7 @@ Crea los archivos `.env` en las carpetas indicadas (ver sección [Variables de e
 ### 5. Inicializar la base de datos
 
 ```bash
+pnpm setup
 pnpm db:reset
 ```
 
@@ -262,9 +263,11 @@ pnpm --filter backend exec prisma db push --force-reset
 pnpm --filter backend exec prisma db seed
 
 # Abrir Prisma Studio (visualización de BD)
+cd ./apps/backend
 npx prisma studio
 
 # Formatear schema.prisma
+cd ./apps/backend
 npx prisma format
 ```
 

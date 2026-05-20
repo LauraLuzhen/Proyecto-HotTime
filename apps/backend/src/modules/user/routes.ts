@@ -26,36 +26,21 @@ export async function userRoutes(app: FastifyInstance) {
   app.get("/", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getUsersSchema.safeParse(req.query);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
-
-    const users = await service.getUsers(
-      req.user.organizationId,
-      parsed.data,
-      req.user.id
-    );
+    const users = await service.getUsers(req.user.organizationId, parsed.data, req.user.id);
     return reply.send(users);
   });
   // Get all
-    app.get("/all", { preHandler: [authenticate] }, async (req, reply) => {
+  app.get("/all", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getUsersSchema.safeParse(req.query);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
-
-    const users = await service.getUsersAll(
-      req.user.organizationId,
-      parsed.data,
-      req.user.id
-    );
+    const users = await service.getUsersAll(req.user.organizationId, parsed.data, req.user.id);
     return reply.send(users);
   });
   // Get by id
   app.get("/:id", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = getUserIdSchema.safeParse(req.params);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid user id", 400, "VALIDATION_ERROR"));
-
-    const user = await service.getUserById(
-      parsed.data.id,
-      req.user.organizationId,
-      req.user.id
-    );
+    const user = await service.getUserById(parsed.data.id, req.user.organizationId, req.user.id);
     return reply.send(user);
   });
   //#endregion
@@ -65,7 +50,6 @@ export async function userRoutes(app: FastifyInstance) {
   app.patch("/me", { preHandler: [authenticate] }, async (req, reply) => {
     const parsed = updateMeSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
-
     const user = await service.updateMe(req.user.id, parsed.data);
     return reply.send(user);
   });
@@ -73,16 +57,9 @@ export async function userRoutes(app: FastifyInstance) {
   app.patch("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
     const idParsed = getUserIdSchema.safeParse(req.params);
     if (!idParsed.success) return reply.status(400).send(httpError("Invalid user id", 400, "VALIDATION_ERROR"));
-
     const parsed = updateUsersSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid filters", 400, "VALIDATION_ERROR"));
-
-    const user = await service.updateUsers(
-      idParsed.data.id,
-      req.user.organizationId,
-      req.user.id,
-      parsed.data
-    );
+    const user = await service.updateUsers(idParsed.data.id, req.user.organizationId, req.user.id, parsed.data);
     return reply.send(user);
   });
   //#endregion
@@ -91,12 +68,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.delete("/:id", { preHandler: [authenticate, requireRole(["ADMIN"])] }, async (req, reply) => {
     const parsed = getUserIdSchema.safeParse(req.params);
     if (!parsed.success) return reply.status(400).send(httpError("Invalid user data", 400, "VALIDATION_ERROR"));
-
-    const result = await service.deleteUser(
-      parsed.data.id,
-      req.user.organizationId,
-      req.user.id
-    );
+    const result = await service.deleteUser(parsed.data.id, req.user.organizationId, req.user.id);
     return reply.send(result);
   });
   //#endregion

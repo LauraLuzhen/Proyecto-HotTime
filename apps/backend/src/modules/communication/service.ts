@@ -1,4 +1,15 @@
-import type { CommunicationDetailResponse, CommunicationInboxResponse, CommunicationOutboxResponse, CountInboxCommunicationsFn, CreateCommunicationFn, DeleteCommunicationsFn, GetCommunicationByIdFn, GetInboxCommunicationsFn, GetOutboxCommunicationsFn, HideInboxCommunicationsFn, } from "@hottime/types";
+import type { 
+  CommunicationDetailResponse, 
+  CommunicationInboxResponse, 
+  CommunicationOutboxResponse, 
+  CountInboxCommunicationsFn, 
+  CreateCommunicationFn, 
+  DeleteCommunicationsFn, 
+  GetCommunicationByIdFn, 
+  GetInboxCommunicationsFn, 
+  GetOutboxCommunicationsFn, 
+  HideInboxCommunicationsFn 
+} from "@hottime/types";
 import { httpError } from "@/lib/httpError";
 import * as repo from "@/modules/communication/repository";
 
@@ -39,14 +50,11 @@ export const createCommunication: CreateCommunicationFn = async (data, senderId,
   const sender = await repo.findUserById(senderId);
   if (!sender) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (sender.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-
   const recipientMode = data.recipientMode ?? "ALL_USERS";
   if (recipientMode === "USERS" && !data.recipientUserIds?.length) throw httpError("Select at least one recipient", 400, "NO_RECIPIENTS_SELECTED");
   if (recipientMode === "CATEGORIES" && !data.recipientCategoryIds?.length && !data.recipientWithoutCategory && !data.recipientExtraUserIds?.length) throw httpError("Select at least one category", 400, "NO_CATEGORIES_SELECTED");
-
   const recipientIds = await repo.resolveRecipientIds(data, senderId, organizationId);
   if (!recipientIds.length) throw httpError("No valid recipients found", 400, "NO_VALID_RECIPIENTS");
-
   const communication = await repo.createForRecipientIds(data, senderId, organizationId, recipientIds);
   return toOutboxResponse(communication);
 };
@@ -58,7 +66,6 @@ export const getInboxCommunications: GetInboxCommunicationsFn = async (userId, o
   const user = await repo.findUserById(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-
   const inbox = await repo.findInbox(userId, organizationId, filters);
   return inbox.map(toInboxResponse);
 };
@@ -67,7 +74,6 @@ export const getOutboxCommunications: GetOutboxCommunicationsFn = async (userId,
   const user = await repo.findUserById(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-
   const outbox = await repo.findOutbox(userId, organizationId);
   return outbox.map(toOutboxResponse);
 };
@@ -81,7 +87,6 @@ export const getCommunicationById: GetCommunicationByIdFn = async (communication
       receivedAt: null,
     };
   }
-
   const recipientCommunication = await repo.findRecipientCommunication(communicationId, userId, organizationId);
   if (recipientCommunication) {
     if (!recipientCommunication.read) await repo.markRecipientAsRead(recipientCommunication.id);
@@ -94,7 +99,6 @@ export const countInboxCommunications: CountInboxCommunicationsFn = async (userI
   const user = await repo.findUserById(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-
   const count = await repo.countInbox(userId, organizationId, read);
   return { count };
 };
@@ -106,10 +110,8 @@ export const hideInboxCommunications: HideInboxCommunicationsFn = async (userId,
   const user = await repo.findUserById(userId);
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
-
   const communicationIds = [...new Set(data.communicationIds)].filter((id) => Number.isInteger(id) && id > 0);
   if (!communicationIds.length) throw httpError("Select at least one communication", 400, "NO_COMMUNICATIONS_SELECTED");
-
   const affected = await repo.hideInboxCommunications(userId, organizationId, communicationIds);
   return { success: true, affected };
 };
@@ -121,10 +123,8 @@ export const deleteCommunications: DeleteCommunicationsFn = async (userId, organ
   if (!user) throw httpError("User not found", 404, "USER_NOT_FOUND");
   if (user.organizationId !== organizationId) throw httpError("User does not belong to your organization", 403, "USER_FORBIDDEN");
   if (role !== "ADMIN" && role !== "MANAGER") throw httpError("Forbidden", 403, "FORBIDDEN");
-
   const communicationIds = [...new Set(data.communicationIds)].filter((id) => Number.isInteger(id) && id > 0);
   if (!communicationIds.length) throw httpError("Select at least one communication", 400, "NO_COMMUNICATIONS_SELECTED");
-
   const affected = await repo.deleteInboxCommunications(organizationId, communicationIds);
   return { success: true, affected };
 };
