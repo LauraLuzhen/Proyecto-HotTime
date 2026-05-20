@@ -1,7 +1,6 @@
 import type { CommunicationType } from "../../shared/common";
 import type { CommunicationBase, CommunicationRecipient, CommunicationSender } from "./entities";
 
-// CREATE
 export interface CreateCommunicationDto {
   title: string;
   content: string;
@@ -14,12 +13,9 @@ export interface CreateCommunicationDto {
   recipientExcludedUserIds?: number[];
 }
 
-// GET
+//#region Get
 export interface CommunicationInboxQueryDto {
   read?: boolean;
-}
-export interface DeleteInboxCommunicationsDto {
-  communicationIds: number[];
 }
 export interface CommunicationInboxResponse extends CommunicationBase {
   sender: CommunicationSender;
@@ -46,4 +42,9 @@ export interface CommunicationCountResponse {
 export interface CommunicationDeleteResponse {
   success: boolean;
   affected: number;
+}
+//#endregion
+
+export interface DeleteInboxCommunicationsDto {
+  communicationIds: number[];
 }

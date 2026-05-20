@@ -32,11 +32,11 @@ __exportStar(require("./modules/category/functions"), exports);
 __exportStar(require("./modules/communication/entities"), exports);
 __exportStar(require("./modules/communication/dtos"), exports);
 __exportStar(require("./modules/communication/functions"), exports);
-// Organization (Los nuevos que añadiste)
+// Organization 
 __exportStar(require("./modules/organization/entities"), exports);
 __exportStar(require("./modules/organization/dtos"), exports);
 __exportStar(require("./modules/organization/functions"), exports);
-// Planning (Los nuevos que añadiste)
+// Planning
 __exportStar(require("./modules/planning/entities"), exports);
 __exportStar(require("./modules/planning/dtos"), exports);
 __exportStar(require("./modules/planning/functions"), exports);

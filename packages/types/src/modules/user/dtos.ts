@@ -5,7 +5,7 @@ export interface UserCategoryResponse {
   name: string;
 }
 
-// CREATE
+//#region Create
 export interface CreateUserDto {
   fullName: string;
   email: string;
@@ -26,8 +26,9 @@ export interface CreateUserResponse {
   initDate: Date;
   organizationId: number;
 };
+//#endregion
 
-// GET
+//#region Get
 export interface GetUsersQueryDto {
   fullName?: string;
   role?: Role;
@@ -63,7 +64,6 @@ export interface MeResponse {
     allowedRadiusMeters: number | null;
   };
 }
-
 export interface GetUserByIdResponse {
   id: number;
   fullName: string;
@@ -76,8 +76,8 @@ export interface GetUserByIdResponse {
   organizationId: number;
   categories: UserCategoryResponse[];
 }
+//#endregion
 
-// UPDATE
 export interface UpdateMeDto {
   fullName?: string;
   email?: string;
@@ -98,7 +98,6 @@ export interface UpdateUsersDto {
   categoryIds?: number[];
 }
 
-// DELETE
 export interface DeleteUserResponse {
   success: boolean;
 }

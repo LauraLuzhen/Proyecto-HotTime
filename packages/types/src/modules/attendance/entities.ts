@@ -1,5 +1,3 @@
-// entities.ts
-
 import type { AttendanceType } from "../../shared/common";
 
 export interface AttendanceEntity {
@@ -7,13 +5,10 @@ export interface AttendanceEntity {
   organizationId: number;
   shiftId: number;
   userId: number;
-
   type: AttendanceType;
-
   latitude: number;
   longitude: number;
   distanceMeters: number;
-
   occurredAt: Date;
   createdAt: Date;
 }

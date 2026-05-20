@@ -1,5 +1,14 @@
 import type { Role } from "../../shared/common";
-import type { CommunicationCountResponse, CommunicationDeleteResponse, CommunicationDetailResponse, CommunicationInboxQueryDto, CommunicationInboxResponse, CommunicationOutboxResponse, CreateCommunicationDto, DeleteInboxCommunicationsDto } from "./dtos";
+import type { 
+    CommunicationCountResponse, 
+    CommunicationDeleteResponse, 
+    CommunicationDetailResponse, 
+    CommunicationInboxQueryDto, 
+    CommunicationInboxResponse, 
+    CommunicationOutboxResponse, 
+    CreateCommunicationDto, 
+    DeleteInboxCommunicationsDto 
+} from "./dtos";
 
 export type CreateCommunicationFn = (data: CreateCommunicationDto, senderId: number, organizationId: number) => Promise<CommunicationOutboxResponse>;
 export type GetInboxCommunicationsFn = (userId: number, organizationId: number, filters: CommunicationInboxQueryDto) => Promise<CommunicationInboxResponse[]>;

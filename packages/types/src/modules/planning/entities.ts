@@ -1,5 +1,3 @@
-// entities.ts
-
 import type { ShiftStatus } from "../../shared/common";
 
 export interface ShiftCategoryEntity {

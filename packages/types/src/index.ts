@@ -21,12 +21,12 @@ export * from "./modules/communication/entities";
 export * from "./modules/communication/dtos";
 export * from "./modules/communication/functions";
 
-// Organization (Los nuevos que añadiste)
+// Organization 
 export * from "./modules/organization/entities";
 export * from "./modules/organization/dtos";
 export * from "./modules/organization/functions";
 
-// Planning (Los nuevos que añadiste)
+// Planning 
 export * from "./modules/planning/entities";
 export * from "./modules/planning/dtos";
 export * from "./modules/planning/functions";
