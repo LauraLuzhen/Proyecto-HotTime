@@ -2,7 +2,6 @@ import type {
   LoginDto,
   LogInResponse,
   ForgotPasswordDto,
-  ForgotPasswordResponse,
   ResetPasswordDto,
   SuccessResponse,
   CategoriesResponse,
@@ -223,7 +222,7 @@ export function createApi(getToken: () => string | null | Promise<string | null>
   return {
     auth: {
       login: (data: LoginDto) => http.post<LogInResponse, LoginDto>("/auth/login", data),
-      forgotPassword: (data: ForgotPasswordDto) => http.post<ForgotPasswordResponse, ForgotPasswordDto>("/auth/forgot-password", data),
+      forgotPassword: (data: ForgotPasswordDto) => http.post<SuccessResponse, ForgotPasswordDto>("/auth/forgot-password", data),
       resetPassword: (data: ResetPasswordDto) => http.post<SuccessResponse, ResetPasswordDto>("/auth/reset-password", data),
     },
     user: {

@@ -15,10 +15,12 @@ import { PlanSchedulesScreen } from "../screens/medium/PlanSchedulesScreen";
 import { PlanAttendanceScreen } from "../screens/medium/PlanAttendanceScreen";
 import { MyScheduleScreen } from "../screens/common/MyScheduleScreen";
 import { MyAttendanceScreen } from "../screens/common/MyAttendanceScreen";
+import { ResetPasswordScreen } from "../screens/common/Resetpasswordscreen ";
+import { ForgotPasswordScreen } from "../screens/common/Forgotpasswordscreen";
 import { HeaderInboxButton } from "./HeaderInboxButton";
 import { palette } from "../lib/schedule";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator();
 
 function AppDrawer() {
@@ -65,15 +67,48 @@ function AppDrawer() {
   );
 }
 
+export type RootStackParamList = {
+  Login: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { token: string };
+  App: undefined;
+};
+
 export function RootNavigator() {
   const auth = useAuth();
-
-  if (auth.status === "loading") return null;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {auth.status === "anonymous" ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login">
+            {(props) => (
+              <LoginScreen
+                {...props}
+                onNavigateToForgotPassword={() =>
+                  props.navigation.navigate("ForgotPassword")
+                }
+              />
+            )}
+          </Stack.Screen>
+
+          <Stack.Screen name="ForgotPassword">
+            {(props) => (
+              <ForgotPasswordScreen
+                onBack={() => props.navigation.goBack()}
+              />
+            )}
+          </Stack.Screen>
+
+          <Stack.Screen name="ResetPassword">
+            {(props) => (
+              <ResetPasswordScreen
+                token={String(props.route.params?.token ?? "")}
+                onSuccess={() => props.navigation.navigate("Login")}
+              />
+            )}
+          </Stack.Screen>
+        </>
       ) : (
         <Stack.Screen name="App" component={AppDrawer} />
       )}

@@ -243,7 +243,7 @@ export function DashboardScreen() {
           ) : activeShift ? (
             <>
               <Text style={styles.nextShiftTitle}>{shiftSummary(activeShift)}</Text>
-              <Text style={styles.nextShiftMeta}>{categoryName(activeShift)} · {statusLabel(activeShift.status)}</Text>
+              <Text style={styles.nextShiftMeta}>{statusLabel(activeShift.status)}</Text>
               {showClockIn || showClockOut ? (
                 <Pressable
                   style={[styles.clockButton, clockLoading && styles.clockButtonDisabled]}

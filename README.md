@@ -124,34 +124,25 @@ Antes de clonar y ejecutar el proyecto, asegúrate de tener instalado:
 Sigue estos pasos **en orden**:
 
 ### 1. Clonar el repositorio
-
 ```bash
 git clone <url-del-repositorio>
 cd proyecto-hottime
 ```
 
 ### 2. Instalar dependencias
-
 ```bash
 pnpm install
 ```
 
 ### 3. Levantar la base de datos con Docker
-
+Previamente debe de estar Docker Desktop abierto y running.
 ```bash
 docker compose up -d
 ```
 
 Esto levanta un contenedor PostgreSQL en el puerto `5432`.
 
-### 4. Configurar variables de entorno
-
-Crea los archivos `.env` en las carpetas indicadas (ver sección [Variables de entorno](#variables-de-entorno)):
-
-- `apps/backend/.env`
-- `apps/frontend-mobile/.env`
-
-### 5. Inicializar la base de datos
+### 4. Inicializar la base de datos
 
 ```bash
 pnpm setup
@@ -166,8 +157,7 @@ pnpm --filter backend exec prisma db push --force-reset
 pnpm --filter backend exec prisma db seed
 ```
 
-### 6. Compilar los tipos compartidos
-
+### 5. Compilar los tipos compartidos
 ```bash
 pnpm build
 ```
@@ -175,8 +165,20 @@ pnpm build
 > Si el editor no reconoce los tipos tras el build, reinicia el servidor de TypeScript en VSCode:
 > `Ctrl + Shift + P` → **TypeScript: Restart TS Server**
 
-### 7. Arrancar los servicios
+### 6. Configurar ngrok para ResetPassword
+Con tu cuenta de ngrok gratuita copia el token que te dan. Copia el enlace Forwarding lo necesitaremos para .env
+```bash
+ngrok config add-authtoken TU_TOKEN_AQUI
+ngrok http 3001
+```
 
+### 7. Configurar variables de entorno
+Crea los archivos `.env` en las carpetas indicadas (ver sección [Variables de entorno](#variables-de-entorno)):
+
+- `apps/backend/.env`
+- `apps/frontend-mobile/.env`
+
+### 8. Arrancar los servicios
 En terminales separadas (o con el comando conjunto):
 
 ```bash
@@ -194,9 +196,14 @@ pnpm frontend
 ### `apps/backend/.env`
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hottime"
-JWT_SECRET="tu_clave_secreta_jwt"
-PORT=3001
+PORT_BACKEND=3001
+DATABASE_URL="postgresql://laura:luzhen@localhost:5432/hottime_db"
+JWT_SECRET="tfToSeLRHQGxO3IaRlMb3Cd99wAH5BcaFOAH7Z3xkj6kVFox6RzIaxrXF0oyIfK3"
+RESEND_API_KEY=re_FUnVmz4k_FipjGMtpZHng8N7dNAXYaX7v
+RESEND_FROM_EMAIL=no-reply@hottime.work.gd
+API_PUBLIC_URL=https://excitable-subprime-surface.ngrok-free.dev
+EXPO_GO_HOST=172.16.0.213
+NODE_ENV=development
 ```
 
 ### `apps/frontend-mobile/.env`

@@ -227,12 +227,21 @@ export function updatePassword(userId: number, password: string) {
   });
 }
 // Update reset token
-export function setResetToken(userId: number, token: string | null) {
+export function setResetToken(userId: number, token: string | null, expires?: Date | null) {
   return prisma.user.update({
     where: { id: userId },
     data: {
       resetToken: token,
-      resetTokenExp: token ? new Date(Date.now() + 1000 * 60 * 15) : null, // 15 min
+      resetTokenExp: token ? expires : null,
+    },
+  });
+}
+export function clearResetToken(userId: number) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      resetToken: null,
+      resetTokenExp: null,
     },
   });
 }

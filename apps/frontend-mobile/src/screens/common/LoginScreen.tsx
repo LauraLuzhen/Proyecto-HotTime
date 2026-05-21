@@ -1,6 +1,5 @@
 ﻿import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
-
 import { ApiClientError } from "../../lib/api";
 import { palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
@@ -8,7 +7,11 @@ import { BrandBackdrop } from "../../components/BrandBackdrop";
 import { LoginOrnaments } from "../../components/LoginOrnaments";
 import { ProfileTextField } from "../../components/ProfileFields";
 
-export function LoginScreen() {
+interface Props {
+  onNavigateToForgotPassword: () => void;
+}
+
+export function LoginScreen({ onNavigateToForgotPassword }: Props) {
   const auth = useAuth();
   const [email, setEmail] = useState("laurarm1002@gmail.com");
   const [password, setPassword] = useState("Password1.");
@@ -38,11 +41,12 @@ export function LoginScreen() {
         style={styles.flex}
       >
         <View style={styles.container}>
-
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Iniciar sesión</Text>
-              <Text style={styles.cardSubtitle}>Accede con tu email y contraseña de HotTime.</Text>
+              <Text style={styles.cardSubtitle}>
+                Accede con tu email y contraseña de HotTime.
+              </Text>
             </View>
 
             <ProfileTextField
@@ -52,19 +56,29 @@ export function LoginScreen() {
               placeholder="usuario@correo.com"
               autoCapitalize="none"
               keyboardType="email-address"
-              inputProps={{ autoComplete: "email", placeholderTextColor: "#8a7f74" }}
+              inputProps={{
+                autoComplete: "email",
+                placeholderTextColor: "#8a7f74",
+              }}
             />
 
             <ProfileTextField
               label="Password"
               value={password}
               onChangeText={setPassword}
-              placeholder="Tu contrasena"
+              placeholder="Tu contraseña"
               secureTextEntry
-              inputProps={{ autoComplete: "password", placeholderTextColor: "#8a7f74" }}
+              inputProps={{
+                autoComplete: "password",
+                placeholderTextColor: "#8a7f74",
+              }}
             />
 
-            {error ? <Text style={styles.error}>El correo o la contraseña no son válidas</Text> : null}
+            {error ? (
+              <Text style={styles.error}>
+                El correo o la contraseña no son válidas
+              </Text>
+            ) : null}
 
             <Pressable
               style={[styles.button, loading && styles.buttonDisabled]}
@@ -78,6 +92,12 @@ export function LoginScreen() {
               )}
             </Pressable>
 
+            <Pressable
+              style={styles.forgotButton}
+              onPress={onNavigateToForgotPassword}
+            >
+              <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -137,6 +157,15 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0.4,
   },
+  forgotButton: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  forgotText: {
+    color: palette.accent,
+    fontSize: 13,
+    fontWeight: "600",
+  },
   error: {
     backgroundColor: "#fff1f0",
     borderColor: "#f0b8af",
@@ -148,4 +177,3 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
 });
-

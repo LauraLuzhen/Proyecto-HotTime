@@ -9,9 +9,6 @@ export interface LogInResponse {
 export interface ForgotPasswordDto {
   email: string;
 }
-export interface ForgotPasswordResponse {
-  resetToken: string;
-}
 
 export interface ResetPasswordDto {
   token: string;

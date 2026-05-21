@@ -4,6 +4,7 @@
     "slug": "hottime",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "hottime",
     "splash": {
       "image": "./assets/hottime.png",
       "resizeMode": "contain"
