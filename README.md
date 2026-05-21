@@ -166,7 +166,8 @@ pnpm build
 > `Ctrl + Shift + P` → **TypeScript: Restart TS Server**
 
 ### 6. Configurar ngrok para ResetPassword
-Con tu cuenta de ngrok gratuita copia el token que te dan. Copia el enlace Forwarding lo necesitaremos para .env
+Con tu cuenta de ngrok gratuita copia el token que te dan. Copia el enlace Forwarding lo necesitaremos para el archivo env.
+IMPORTANTE ngrok status online, para que funcione reset password.
 ```bash
 ngrok config add-authtoken TU_TOKEN_AQUI
 ngrok http 3001
