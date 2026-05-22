@@ -9,7 +9,7 @@ import {
   RefreshControl,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
+  
   Text,
   View,
 } from "react-native";
@@ -31,6 +31,7 @@ import {
 import { useAuth } from "../../state/auth/AuthContext";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
+import { profileStyles as styles } from "../../lib/mobileStyles";
 type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "birthDate" | "password", string>>;
 
 function categoriesLabel(categories?: { name: string }[]) {
@@ -254,133 +255,3 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  content: {
-    gap: 16,
-    padding: 16,
-    paddingBottom: 96,
-  },
-  header: {
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 10,
-  },
-  name: {
-    color: "#151515",
-    fontSize: 24,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  meta: {
-    color: "#676760",
-    fontSize: 15,
-  },
-  panel: {
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 16,
-  },
-  panelTitle: {
-    color: "#151515",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  fab: {
-    backgroundColor: "#5f6df5",
-    borderRadius: 8,
-    bottom: 24,
-    elevation: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    position: "absolute",
-    right: 16,
-    shadowColor: "#000",
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-  },
-  fabText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  modalOverlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modal: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    maxHeight: "90%",
-  },
-  modalContent: {
-    gap: 14,
-    padding: 16,
-    paddingBottom: 28,
-  },
-  modalTitle: {
-    color: "#151515",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  photoEditor: {
-    alignItems: "center",
-    gap: 12,
-  },
-  photoActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "center",
-  },
-  secondaryButton: {
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  secondaryButtonText: {
-    color: "#5f6df5",
-    fontWeight: "700",
-  },
-  error: {
-    color: "#b42318",
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-end",
-  },
-  cancelButton: {
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  cancelButtonText: {
-    color: "#3d3d39",
-    fontWeight: "700",
-  },
-  saveButton: {
-    alignItems: "center",
-    backgroundColor: "#5f6df5",
-    borderRadius: 8,
-    minWidth: 92,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-});

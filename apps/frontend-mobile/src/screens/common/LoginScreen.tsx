@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, Text, View } from "react-native";
 import { ApiClientError } from "../../lib/api";
 import { palette } from "../../lib/schedule";
 import { useAuth } from "../../state/auth/AuthContext";
@@ -7,13 +7,14 @@ import { BrandBackdrop } from "../../components/BrandBackdrop";
 import { LoginOrnaments } from "../../components/LoginOrnaments";
 import { ProfileTextField } from "../../components/ProfileFields";
 
+import { authStyles as styles } from "../../lib/mobileStyles";
 interface Props {
   onNavigateToForgotPassword: () => void;
 }
 
 export function LoginScreen({ onNavigateToForgotPassword }: Props) {
   const auth = useAuth();
-  const [email, setEmail] = useState("laurarm1002@gmail.com");
+  const [email, setEmail] = useState("admin@muerde.com");
   const [password, setPassword] = useState("Password1.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -104,76 +105,3 @@ export function LoginScreen({ onNavigateToForgotPassword }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 24,
-    gap: 18,
-  },
-  card: {
-    backgroundColor: palette.surfaceElevated,
-    borderColor: palette.border,
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: 14,
-    padding: 18,
-  },
-  cardHeader: {
-    gap: 4,
-  },
-  cardTitle: {
-    color: palette.text,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  cardSubtitle: {
-    color: palette.muted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: palette.accent,
-    borderRadius: 16,
-    minHeight: 52,
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "900",
-    letterSpacing: 0.4,
-  },
-  forgotButton: {
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  forgotText: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  error: {
-    backgroundColor: "#fff1f0",
-    borderColor: "#f0b8af",
-    borderRadius: 14,
-    borderWidth: 1,
-    color: palette.danger,
-    fontWeight: "700",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-});

@@ -110,6 +110,7 @@ Antes de clonar y ejecutar el proyecto, asegúrate de tener instalado:
 - **pnpm** v9 o superior
 - **Docker Desktop** (en ejecución)
 - **Git**
+- **Ngrok**
 - Editor recomendado: **Visual Studio Code**
 
 > Para instalar o activar pnpm con corepack:
@@ -223,9 +224,11 @@ Las siguientes credenciales son insertadas automáticamente por el seed de Prism
 
 | Rol | Email | Contraseña |
 |---|---|---|
-| Admin | `admin@hottime.com` | `Admin1234!` |
-| Manager | `manager@hottime.com` | `Manager1234!` |
-| Employee | `employee@hottime.com` | `Employee1234!` |
+| Admin | `admin@muerde.com` | `Password1.` |
+| Manager | `manager@muerde.com` | `Password1.` |
+| Employee | `cocina@muerde.com` | `Password1.` |
+| Employee | `nocat@muerde.com` | `Password1.` |
+| Admin | `admin@nervion.com` | `Password1.` |
 
 > Las contraseñas se almacenan hasheadas en la base de datos. Estas credenciales son exclusivamente para entorno de desarrollo y pruebas.
 

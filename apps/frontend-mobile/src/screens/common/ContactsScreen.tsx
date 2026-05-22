@@ -6,7 +6,7 @@ import {
   RefreshControl,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
+  
   Text,
   TextInput,
   View,
@@ -24,6 +24,7 @@ import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 
 const roles: Role[] = ["ADMIN", "MANAGER", "EMPLOYEE"];
 
+import { contactsStyles as styles } from "../../lib/mobileStyles";
 function roleLabel(role: Role) {
   return role.charAt(0) + role.slice(1).toLowerCase();
 }
@@ -272,144 +273,4 @@ export function ContactsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  content: {
-    gap: 16,
-    padding: 16,
-  },
-  filtersPanel: {
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 12,
-    padding: 14,
-  },
-  filterField: {
-    flex: 1,
-    gap: 6,
-    minWidth: 0,
-  },
-  filterLabel: {
-    color: "#4c4c47",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  input: {
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    color: "#1f1f1d",
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  filtersRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: "#5f6df5",
-    borderRadius: 8,
-    flex: 1,
-    paddingVertical: 12,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    flex: 1,
-    paddingVertical: 12,
-  },
-  secondaryButtonText: {
-    color: "#5f6df5",
-    fontWeight: "700",
-  },
-  loading: {
-    alignItems: "center",
-    gap: 8,
-    padding: 28,
-  },
-  loadingText: {
-    color: "#666",
-  },
-  list: {
-    gap: 10,
-  },
-  userCard: {
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 10,
-  },
-  userMain: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-  },
-  userName: {
-    color: "#1f1f1d",
-    flex: 1.25,
-    fontSize: 15,
-    fontWeight: "700",
-    minWidth: 0,
-  },
-  userCategory: {
-    color: "#63635e",
-    flex: 1,
-    fontSize: 13,
-    minWidth: 0,
-  },
-  userRole: {
-    color: "#5f6df5",
-    fontSize: 12,
-    fontWeight: "700",
-    minWidth: 62,
-    textAlign: "right",
-  },
-  userDetails: {
-    borderTopColor: "#e8ecff",
-    borderTopWidth: 1,
-    gap: 4,
-    marginTop: 10,
-    paddingTop: 10,
-  },
-  detailActionRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-  },
-  detailText: {
-    color: "#3d3d39",
-    flex: 1,
-    fontSize: 14,
-    minWidth: 0,
-  },
-  detailActionButton: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-});
-
 

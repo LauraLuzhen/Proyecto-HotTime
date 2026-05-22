@@ -1,11 +1,10 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -16,6 +15,7 @@ import { useAppAlert } from "../../components/AppAlert";
 import { ScreenEmptyState } from "../../components/ScreenEmptyState";
 import { ApiClientError, createApi } from "../../lib/api";
 import { communicationTone, communicationTypeLabel, normalizeSearchText, palette } from "../../lib/schedule";
+import { sendCommunicationStyles as styles } from "../../lib/mobileStyles";
 import { useAuth } from "../../state/auth/AuthContext";
 import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
@@ -292,7 +292,7 @@ export function SendCommunicationScreen() {
       >
         <View style={styles.panel}>
           <View style={styles.field}>
-            <Text style={styles.label}>Título</Text>
+            <Text style={styles.label}>T�tulo</Text>
             <TextInput
               onChangeText={(value) => {
                 setTitle(value);
@@ -570,245 +570,8 @@ export function SendCommunicationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  content: {
-    gap: 16,
-    padding: 16,
-    paddingBottom: 28,
-  },
-  panel: {
-    backgroundColor: "#fff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 12,
-    padding: 14,
-  },
-  title: {
-    color: "#151515",
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  sectionTitle: {
-    color: "#1f1f1d",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    color: "#4c4c47",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  fieldError: {
-    color: "#b42318",
-    fontSize: 12,
-  },
-  input: {
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    color: "#1f1f1d",
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  textArea: {
-    minHeight: 132,
-  },
-  segmentRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  segmentButton: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    minHeight: 38,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  segmentButtonActive: {
-    backgroundColor: "#5f6df5",
-    borderColor: "#5f6df5",
-  },
-  segmentText: {
-    color: "#5f6df5",
-    fontWeight: "700",
-  },
-  segmentTextActive: {
-    color: "#fff",
-  },
-  modeButton: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 40,
-    minWidth: 86,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  modeButtonActive: {
-    backgroundColor: "#e4e7ff",
-    borderColor: "#5f6df5",
-  },
-  modeText: {
-    color: "#3d3d39",
-    fontWeight: "700",
-  },
-  modeTextActive: {
-    color: "#5f6df5",
-  },
-  loading: {
-    alignItems: "center",
-    gap: 8,
-    padding: 22,
-  },
-  loadingText: {
-    color: "#666",
-  },
-  infoBox: {
-    backgroundColor: "#f7f8ff",
-    borderColor: "#d7ddff",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 4,
-    padding: 12,
-  },
-  infoTitle: {
-    color: "#1f1f1d",
-    fontWeight: "700",
-  },
-  infoDetail: {
-    color: "#5c5c56",
-  },
-  selector: {
-    gap: 10,
-  },
-  selectionCount: {
-    color: "#5c5c56",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  list: {
-    gap: 8,
-  },
-  row: {
-    alignItems: "center",
-    borderColor: "#e8ecff",
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 10,
-    padding: 10,
-  },
-  categoryBlock: {
-    borderColor: "#e8ecff",
-    borderRadius: 8,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  categoryHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    padding: 10,
-  },
-  categoryTitleButton: {
-    flex: 1,
-    minWidth: 0,
-  },
-  categoryUsers: {
-    borderTopColor: "#e8ecff",
-    borderTopWidth: 1,
-    gap: 7,
-    padding: 10,
-  },
-  categoryUserRow: {
-    alignItems: "center",
-    borderColor: "#e8ecff",
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    padding: 8,
-  },
-  categoryUserRowSelected: {
-    backgroundColor: "#f7f8ff",
-    borderColor: "#b8cec8",
-  },
-  rowSelected: {
-    backgroundColor: "#f7f8ff",
-    borderColor: "#5f6df5",
-  },
-  checkbox: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 6,
-    borderWidth: 1,
-    height: 26,
-    justifyContent: "center",
-    width: 26,
-  },
-  checkboxText: {
-    color: "#5f6df5",
-    fontWeight: "700",
-  },
-  smallCheckbox: {
-    alignItems: "center",
-    borderColor: "#d7ddff",
-    borderRadius: 6,
-    borderWidth: 1,
-    height: 24,
-    justifyContent: "center",
-    width: 24,
-  },
-  rowText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  rowTitle: {
-    color: "#1f1f1d",
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  rowDetail: {
-    color: "#676760",
-    fontSize: 13,
-  },
-  formError: {
-    color: "#b42318",
-  },
-  submitButton: {
-    alignItems: "center",
-    backgroundColor: "#5f6df5",
-    borderRadius: 8,
-    minHeight: 48,
-    justifyContent: "center",
-    paddingVertical: 13,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  submitButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  checkboxSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-});
+
+
+
 
 

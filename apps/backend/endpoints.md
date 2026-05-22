@@ -1,12 +1,12 @@
 ## AUTH
 LogIn POST - /auth/login ✅
 {
-    "email": "laurarm1002@gmail.com",
+    "email": "admin@muerde.com",
     "password": "Password1."
 }
 ForgotPassword POST - /auth/forgot-password ✅
 {
-    "email": "laurarm1002@gmail.com"
+    "email": "admin@muerde.com",
 }
 ResetPassword POST - /auth/reset-password ✅
 {

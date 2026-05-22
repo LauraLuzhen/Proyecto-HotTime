@@ -1,11 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   SafeAreaView,
-  StyleSheet,
+  
   Text,
   View,
 } from "react-native";
@@ -18,6 +18,7 @@ import { ProfileTextField } from "../../components/ProfileFields";
 
 // Validación de contraseña:
 // mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número, 1 carácter especial
+import { resetPasswordStyles as styles } from "../../lib/mobileStyles";
 function validatePassword(password: string): string | null {
   if (password.length < 8) return "Mínimo 8 caracteres.";
   if (!/[A-Z]/.test(password)) return "Debe incluir al menos una mayúscula.";
@@ -192,120 +193,3 @@ export function ResetPasswordScreen({ token, onSuccess }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 24,
-    gap: 18,
-  },
-  card: {
-    backgroundColor: palette.surfaceElevated,
-    borderColor: palette.border,
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: 14,
-    padding: 18,
-  },
-  cardHeader: {
-    gap: 4,
-  },
-  cardTitle: {
-    color: palette.text,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  cardSubtitle: {
-    color: palette.muted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: palette.accent,
-    borderRadius: 16,
-    minHeight: 52,
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "900",
-    letterSpacing: 0.4,
-  },
-  error: {
-    backgroundColor: "#fff1f0",
-    borderColor: "#f0b8af",
-    borderRadius: 14,
-    borderWidth: 1,
-    color: palette.danger,
-    fontWeight: "700",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  requirementsContainer: {
-    backgroundColor: "#f8f9ff",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  requirementRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 5,
-  },
-  requirementDot: {
-    borderRadius: 4,
-    height: 7,
-    width: 7,
-  },
-  requirementDotMet: {
-    backgroundColor: "#22c55e",
-  },
-  requirementDotUnmet: {
-    backgroundColor: "#d1d5db",
-  },
-  requirementText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  requirementTextMet: {
-    color: "#16a34a",
-  },
-  requirementTextUnmet: {
-    color: palette.muted,
-  },
-  successContainer: {
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 8,
-  },
-  successIcon: {
-    alignItems: "center",
-    backgroundColor: "#f0f7ff",
-    borderRadius: 50,
-    height: 72,
-    justifyContent: "center",
-    width: 72,
-  },
-  successIconText: {
-    fontSize: 32,
-  },
-});

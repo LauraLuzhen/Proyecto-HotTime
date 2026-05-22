@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Pressable, RefreshControl, SafeAreaView, ScrollView,  Text, View } from "react-native";
 import type { AttendanceEntity } from "@hottime/types";
 
 import { screenSharedStyles as calendarDayStyles } from "../../lib/mobileStyles";
@@ -24,6 +24,7 @@ import { tokenStorage } from "../../state/auth/storage";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useAuth } from "../../state/auth/AuthContext";
 
+import { myAttendanceStyles as styles } from "../../lib/mobileStyles";
 function attendanceLabel(type: AttendanceEntity["type"]) {
   return type === "CLOCK_IN" ? "Entrada" : "Salida";
 }
@@ -180,151 +181,3 @@ export function MyAttendanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  content: {
-    gap: 16,
-    padding: 16,
-    paddingBottom: 28,
-  },
-  hero: {
-    gap: 6,
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-  },
-  kicker: {
-    color: palette.accent,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1.3,
-    textTransform: "uppercase",
-  },
-  title: {
-    color: palette.text,
-    fontSize: 26,
-    fontWeight: "800",
-  },
-  subtitle: {
-    color: palette.muted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  panel: {
-    backgroundColor: palette.surfaceElevated,
-    borderColor: palette.border,
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 14,
-  },
-  panelHeader: {
-    gap: 4,
-  },
-  panelHint: {
-    color: palette.muted,
-    fontSize: 12,
-  },
-  sectionTitle: {
-    color: palette.text,
-    fontSize: 17,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  list: {
-    gap: 10,
-  },
-  card: {
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 6,
-    padding: 12,
-  },
-  cardTop: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  typeChip: {
-    borderRadius: 999,
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "800",
-    overflow: "hidden",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  typeChipIn: {
-    backgroundColor: palette.success,
-  },
-  typeChipOut: {
-    backgroundColor: palette.warning,
-  },
-  time: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  meta: {
-    color: palette.muted,
-  },
-  muted: {
-    color: palette.muted,
-    lineHeight: 20,
-  },
-  weekSummary: {
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    gap: 6,
-  },
-  weekSummaryItem: {
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flex: 1,
-    minWidth: 0,
-    padding: 12,
-  },
-  weekSummaryDay: {
-    color: palette.text,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  weekSummaryCount: {
-    color: palette.muted,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  navButton: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    minHeight: 40,
-    minWidth: 86,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  monthCenter: {
-    flex: 1,
-    gap: 2,
-  },
-  todayButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  todayButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-});

@@ -1,6 +1,6 @@
-ï»¿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, Text, View } from "react-native";
 import type { AttendanceEntity, AttendanceType, CategoriesResponse, GeneralUserResponse, ShiftResponse } from "@hottime/types";
 
 import { useAppAlert } from "../../components/AppAlert";
@@ -9,7 +9,7 @@ import { ScreenFieldButton } from "../../components/ScreenFieldButton";
 import { ApiClientError, createApi } from "../../lib/api";
 import { MonthYearPicker } from "../../components/MonthYearPicker";
 import { BrandBackdrop } from "../../components/BrandBackdrop";
-import { screenSharedStyles as calendarDayStyles } from "../../lib/mobileStyles";
+import { planAttendanceStyles as styles, screenSharedStyles as calendarDayStyles } from "../../lib/mobileStyles";
 import {
   addDays,
   buildMonthDays,
@@ -257,7 +257,7 @@ export function PlanAttendanceScreen() {
     const user = usersById[attendance.userId]?.fullName ?? (attendance.userId === auth.user?.id ? auth.user.fullName : `Usuario ${attendance.userId}`);
     appAlert.showAlert({
       title: "Eliminar fichaje",
-      message: `Â¿Eliminar ${attendanceLabel(attendance.type)} de ${user}?`,
+      message: `¿Eliminar ${attendanceLabel(attendance.type)} de ${user}?`,
       buttons: [
         { text: "Cancelar", style: "cancel" },
         { text: "Eliminar", style: "destructive", onPress: () => void deleteAttendance(attendance) },
@@ -366,8 +366,8 @@ export function PlanAttendanceScreen() {
                       <Text style={[styles.typeChip, chipStyle(attendance.type)]}>{attendanceLabel(attendance.type)}</Text>
                       <Text style={styles.attendanceTime}>{formatTime(attendance.occurredAt)}</Text>
                     </View>
-                    <Text style={styles.shiftMeta}>{user} Â· turno #{attendance.shiftId}</Text>
-                    <Text style={styles.shiftMeta}>Distancia {formatDistance(attendance.distanceMeters)} Â· {formatDateTime(attendance.occurredAt)}</Text>
+                    <Text style={styles.shiftMeta}>{user} · turno #{attendance.shiftId}</Text>
+                    <Text style={styles.shiftMeta}>Distancia {formatDistance(attendance.distanceMeters)} · {formatDateTime(attendance.occurredAt)}</Text>
                     <View style={styles.shiftActions}>
                       <Pressable style={styles.miniButton} onPress={() => editAttendance(attendance)}>
                         <Text style={styles.miniButtonText}>Editar</Text>
@@ -403,7 +403,7 @@ export function PlanAttendanceScreen() {
                     {user}
                   </Text>
                   <Text style={[styles.shiftChipMeta, selectedShiftId === shift.id && styles.shiftChipTextSelected]} numberOfLines={1}>
-                    {formatRange(shift)} Â· {categoriesText}
+                    {formatRange(shift)} · {categoriesText}
                   </Text>
                 </Pressable>
               );
@@ -438,7 +438,7 @@ export function PlanAttendanceScreen() {
       </ScrollView>
 
       <MonthYearPicker
-        title="Elegir mes y aÃ±o"
+        title="Elegir mes y año"
         visible={monthPickerOpen}
         value={month}
         onClose={() => setMonthPickerOpen(false)}
@@ -457,257 +457,7 @@ export function PlanAttendanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  content: {
-    gap: 16,
-    padding: 16,
-    paddingBottom: 28,
-  },
-  hero: {
-    gap: 6,
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-  },
-  kicker: {
-    color: palette.accent,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1.3,
-    textTransform: "uppercase",
-  },
-  title: {
-    color: palette.text,
-    fontSize: 26,
-    fontWeight: "800",
-  },
-  subtitle: {
-    color: palette.muted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  deniedBox: {
-    gap: 8,
-    padding: 16,
-  },
-  panel: {
-    backgroundColor: palette.surfaceElevated,
-    borderColor: palette.border,
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 14,
-  },
-  panelHeader: {
-    gap: 4,
-  },
-  panelHint: {
-    color: palette.muted,
-    fontSize: 12,
-  },
-  sectionTitle: {
-    color: palette.text,
-    fontSize: 17,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  muted: {
-    color: palette.muted,
-    lineHeight: 20,
-  },
-  errorText: {
-    color: palette.danger,
-    marginTop: 10,
-    fontWeight: "700",
-  },
-  successText: {
-    color: palette.success,
-    marginTop: 10,
-    fontWeight: "700",
-  },
-  shiftList: {
-    gap: 10,
-  },
-  attendanceCard: {
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 6,
-    padding: 12,
-  },
-  attendanceTop: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  attendanceTime: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  typeChip: {
-    borderRadius: 999,
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "800",
-    overflow: "hidden",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  typeChipIn: {
-    backgroundColor: palette.success,
-  },
-  typeChipOut: {
-    backgroundColor: palette.warning,
-  },
-  shiftMeta: {
-    color: palette.muted,
-  },
-  shiftActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-  },
-  miniButton: {
-    alignItems: "center",
-    borderColor: palette.accent,
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 36,
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  miniButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-  dangerButton: {
-    alignItems: "center",
-    borderColor: "#efc0ba",
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 36,
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  dangerButtonText: {
-    color: palette.danger,
-    fontWeight: "800",
-  },
-  label: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 14,
-    textTransform: "uppercase",
-  },
-  chipsRow: {
-    gap: 8,
-    paddingRight: 12,
-  },
-  shiftChip: {
-    backgroundColor: palette.backgroundSoft,
-    borderColor: palette.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 2,
-    minHeight: 58,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    width: 220,
-  },
-  shiftChipSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-  shiftChipText: {
-    color: palette.text,
-    fontWeight: "800",
-  },
-  shiftChipTextSelected: {
-    color: "#fff",
-  },
-  shiftChipMeta: {
-    color: palette.muted,
-    fontSize: 11,
-  },
-  controlsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  typeButton: {
-    alignItems: "center",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 42,
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  typeButtonSelected: {
-    backgroundColor: palette.accent,
-    borderColor: palette.accent,
-  },
-  typeButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-  typeButtonTextSelected: {
-    color: "#fff",
-  },
-  formGrid: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-  },
-  actionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 16,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: palette.accent,
-    borderRadius: 14,
-    flexGrow: 1,
-    minHeight: 46,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "800",
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: palette.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexGrow: 1,
-    minHeight: 42,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
-  },
-  secondaryButtonText: {
-    color: palette.accent,
-    fontWeight: "800",
-  },
-  disabled: {
-    opacity: 0.65,
-  },
-});
+
 
 
 

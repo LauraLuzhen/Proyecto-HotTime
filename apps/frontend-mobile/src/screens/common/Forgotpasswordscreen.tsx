@@ -1,11 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   SafeAreaView,
-  StyleSheet,
+  
   Text,
   View,
 } from "react-native";
@@ -16,6 +16,7 @@ import { BrandBackdrop } from "../../components/BrandBackdrop";
 import { LoginOrnaments } from "../../components/LoginOrnaments";
 import { ProfileTextField } from "../../components/ProfileFields";
 
+import { forgotPasswordStyles as styles } from "../../lib/mobileStyles";
 interface Props {
   onBack: () => void;
 }
@@ -129,92 +130,3 @@ export function ForgotPasswordScreen({ onBack }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  safeArea: {
-    backgroundColor: "#eef3ff",
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 24,
-    gap: 18,
-  },
-  card: {
-    backgroundColor: palette.surfaceElevated,
-    borderColor: palette.border,
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: 14,
-    padding: 18,
-  },
-  cardHeader: {
-    gap: 4,
-  },
-  cardTitle: {
-    color: palette.text,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  cardSubtitle: {
-    color: palette.muted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: palette.accent,
-    borderRadius: 16,
-    minHeight: 52,
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "900",
-    letterSpacing: 0.4,
-  },
-  backButton: {
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  backText: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  error: {
-    backgroundColor: "#fff1f0",
-    borderColor: "#f0b8af",
-    borderRadius: 14,
-    borderWidth: 1,
-    color: palette.danger,
-    fontWeight: "700",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  successContainer: {
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 8,
-  },
-  successIcon: {
-    alignItems: "center",
-    backgroundColor: "#f0f7ff",
-    borderRadius: 50,
-    height: 72,
-    justifyContent: "center",
-    width: 72,
-  },
-  successIconText: {
-    fontSize: 32,
-  },
-});
